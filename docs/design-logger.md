@@ -453,8 +453,145 @@ flowchart LR
 - 本番環境ではクライアントにログが送信されない（セキュリティ上の理由）
 - 長期保存が必要な場合はLog Stream連携を検討
 
+---
+
+## 付録A: ログレベル定義
+
+### 各レベルの詳細定義
+
+| レベル | 定義 | 想定読者 | 出力タイミング |
+|--------|------|----------|----------------|
+| `debug` | 開発者向け詳細情報。問題解決に必要な内部状態 | 開発者 | 開発時のみ推奨 |
+| `info` | 正常系の処理完了。ビジネス上の重要イベント | 運用者/開発者 | 常時 |
+| `warn` | 処理は継続するが注意が必要な状況 | 運用者 | 常時 |
+| `error` | 処理失敗。ユーザー影響あり | 運用者（要対応） | 常時 |
+| `audit` | セキュリティ・コンプライアンス上重要な操作 | 監査担当者 | 常時（必須） |
+
+### レベル選択フローチャート
+
+```mermaid
+flowchart TD
+    Start[ログ出力判断] --> Q1{処理が成功したか?}
+    Q1 -->|No| Q2{リカバリー可能か?}
+    Q2 -->|No| Error[error]
+    Q2 -->|Yes| Warn[warn]
+    Q1 -->|Yes| Q3{セキュリティ上重要か?}
+    Q3 -->|Yes| Audit[audit]
+    Q3 -->|No| Q4{ビジネス上重要か?}
+    Q4 -->|Yes| Info[info]
+    Q4 -->|No| Debug[debug]
+```
+
+## 付録B: ログ粒度ガイドライン
+
+### 操作別ログ出力基準
+
+#### 1. 認証・認可（AUTH）
+
+| 操作 | レベル | ログ | metadata |
+|------|--------|------|----------|
+| 初回ユーザー作成 | `audit` | 必須 | userId |
+| ログイン試行成功 | `info` | 任意 | - |
+| 認証失敗 | `warn` | 必須 | reason |
+| 権限チェック失敗 | `warn` | 必須 | action, resource |
+
+#### 2. グループ操作（GROUP）
+
+| 操作 | レベル | ログ | metadata |
+|------|--------|------|----------|
+| グループ作成 | `audit` | 必須 | groupId, groupName |
+| グループ更新 | `audit` | 必須 | groupId, changes |
+| グループ削除 | `audit` | 必須 | groupId |
+| メンバー追加 | `audit` | 必須 | groupId, addedUserId |
+| メンバー削除 | `audit` | 必須 | groupId, removedUserId |
+| 招待作成 | `audit` | 必須 | groupId, expiresAt |
+| 招待使用 | `audit` | 必須 | groupId, token |
+| バリデーション失敗 | `warn` | 必須 | reason |
+
+#### 3. 支出操作（EXPENSE）
+
+| 操作 | レベル | ログ | metadata |
+|------|--------|------|----------|
+| 支出作成 | `info` | 必須 | expenseId, amount, categoryId |
+| 支出更新 | `info` | 必須 | expenseId, changes |
+| 支出削除 | `audit` | 必須 | expenseId |
+| バリデーション失敗 | `warn` | 必須 | reason |
+
+#### 4. 精算操作（SETTLEMENT）
+
+| 操作 | レベル | ログ | metadata |
+|------|--------|------|----------|
+| 精算作成 | `audit` | 必須 | settlementId, amount, fromUser, toUser |
+| 精算完了 | `audit` | 必須 | settlementId |
+| 精算取消 | `audit` | 必須 | settlementId, reason |
+
+#### 5. 買い物リスト（SHOPPING）
+
+| 操作 | レベル | ログ | metadata |
+|------|--------|------|----------|
+| アイテム追加 | `debug` | 任意 | - |
+| アイテム完了 | `debug` | 任意 | - |
+| アイテム削除 | `debug` | 任意 | - |
+
+### ログ出力しないもの
+
+以下はログ出力対象外とする:
+
+| 操作 | 理由 |
+|------|------|
+| Query（読み取り）の実行 | 量が多すぎる、パフォーマンス影響 |
+| 認証トークンやセッション情報 | セキュリティリスク |
+| 個人情報（メールアドレス等） | プライバシー保護 |
+| パスワード、APIキー | 絶対禁止 |
+| リクエスト/レスポンス全体 | 量が多すぎる |
+
+### metadata に含めるべき情報
+
+```mermaid
+mindmap
+  root((metadata))
+    必須
+      対象リソースID
+      操作結果
+    推奨
+      変更内容（差分）
+      関連リソースID
+    禁止
+      個人情報
+      認証情報
+      大量データ
+```
+
+### 具体的なログ出力例
+
+```typescript
+// ✅ Good: 必要十分な情報
+ctx.logger.audit("GROUP", "created", {
+  groupId,
+  groupName: name,
+});
+
+// ✅ Good: エラー理由を含む
+ctx.logger.warn("GROUP", "create_validation_failed", {
+  reason: "name_too_long",
+  actualLength: name.length,
+  maxLength: 50,
+});
+
+// ❌ Bad: 情報が少なすぎる
+ctx.logger.info("GROUP", "action");
+
+// ❌ Bad: 情報が多すぎる・機密情報を含む
+ctx.logger.info("GROUP", "created", {
+  group: entireGroupObject,
+  user: entireUserObject,
+  token: authToken,
+});
+```
+
 ## 変更履歴
 
 | 日付 | 変更内容 | 変更者 |
 |------|----------|--------|
 | 2024-12-30 | 初版作成 | Claude |
+| 2024-12-30 | 付録A・B追加（ログレベル定義、粒度ガイドライン） | Claude |
