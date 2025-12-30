@@ -103,3 +103,115 @@ export const listMyGroups = authQuery({
       .sort((a, b) => b.joinedAt - a.joinedAt);
   },
 });
+
+/**
+ * グループ詳細取得
+ */
+export const getDetail = authQuery({
+  args: { groupId: v.id("groups") },
+  handler: async (ctx, args) => {
+    // 1. グループ情報取得
+    const group = await ctx.db.get(args.groupId);
+    if (!group) {
+      throw new Error("グループが見つかりません");
+    }
+
+    // 2. 自分がメンバーかチェック
+    const myMembership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
+      )
+      .unique();
+
+    if (!myMembership) {
+      throw new Error("このグループにアクセスする権限がありません");
+    }
+
+    // 3. メンバー一覧取得（ユーザー情報含む）
+    const memberships = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) => q.eq("groupId", args.groupId))
+      .collect();
+
+    const members = await Promise.all(
+      memberships.map(async (membership) => {
+        const user = await ctx.db.get(membership.userId);
+        if (!user) return null;
+
+        return {
+          _id: membership._id,
+          userId: user._id,
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+          role: membership.role,
+          joinedAt: membership.joinedAt,
+          isMe: user._id === ctx.user._id,
+        };
+      }),
+    );
+
+    // 4. カテゴリ一覧取得
+    const categories = await ctx.db
+      .query("categories")
+      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .collect();
+
+    return {
+      group: {
+        _id: group._id,
+        name: group.name,
+        description: group.description,
+        closingDay: group.closingDay,
+      },
+      members: members
+        .filter((m): m is NonNullable<typeof m> => m !== null)
+        .sort((a, b) => a.joinedAt - b.joinedAt),
+      categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
+      myRole: myMembership.role,
+    };
+  },
+});
+
+/**
+ * 招待リンク作成
+ */
+export const createInvitation = authMutation({
+  args: { groupId: v.id("groups") },
+  handler: async (ctx, args) => {
+    // 1. グループ存在確認
+    const group = await ctx.db.get(args.groupId);
+    if (!group) {
+      throw new Error("グループが見つかりません");
+    }
+
+    // 2. 権限チェック（オーナーのみ）
+    const myMembership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
+      )
+      .unique();
+
+    if (!myMembership || myMembership.role !== "owner") {
+      throw new Error("招待リンクを作成する権限がありません");
+    }
+
+    // 3. トークン生成（UUID v4形式）
+    const token = crypto.randomUUID();
+
+    // 4. 招待レコード作成（有効期限: 7日）
+    const now = Date.now();
+    const expiresAt = now + 7 * 24 * 60 * 60 * 1000;
+
+    await ctx.db.insert("groupInvitations", {
+      groupId: args.groupId,
+      token,
+      createdBy: ctx.user._id,
+      expiresAt,
+      createdAt: now,
+    });
+
+    return { token, expiresAt };
+  },
+});
