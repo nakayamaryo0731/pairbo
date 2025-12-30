@@ -7,6 +7,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { MemberList } from "./MemberList";
 import { InviteDialog } from "./InviteDialog";
 import { ExpenseList } from "@/components/expenses/ExpenseList";
+import { SettlementPreview, SettlementHistory } from "@/components/settlements";
 
 type GroupDetailProps = {
   group: {
@@ -29,6 +30,11 @@ type GroupDetailProps = {
 
 export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
   const expenses = useQuery(api.expenses.listByGroup, { groupId: group._id });
+
+  // 現在の年月を取得（精算プレビュー用）
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
 
   return (
     <div className="space-y-6">
@@ -86,6 +92,23 @@ export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
         ) : (
           <ExpenseList expenses={expenses} />
         )}
+      </div>
+
+      {/* 精算 */}
+      <div>
+        <h2 className="font-medium text-slate-800 mb-3">今月の精算</h2>
+        <SettlementPreview
+          groupId={group._id}
+          year={currentYear}
+          month={currentMonth}
+          isOwner={myRole === "owner"}
+        />
+      </div>
+
+      {/* 精算履歴 */}
+      <div>
+        <h2 className="font-medium text-slate-800 mb-3">過去の精算</h2>
+        <SettlementHistory groupId={group._id} />
       </div>
 
       {/* 支出記録ボタン */}

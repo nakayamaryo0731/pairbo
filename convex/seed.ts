@@ -7,9 +7,11 @@ import {
   TEST_GROUP,
   SAMPLE_EXPENSES,
   SAMPLE_SHOPPING_ITEMS,
+  SAMPLE_SETTLEMENTS,
   RATIO_SPLIT,
   SEED_PREFIX,
   generateRandomDate,
+  getSettlementPeriodForSeed,
 } from "./lib/seedData";
 
 /**
@@ -116,6 +118,39 @@ export const seedTestData = internalMutation({
       });
     }
 
+    // 8. 精算データ作成
+    let settlementCount = 0;
+    for (const settlement of SAMPLE_SETTLEMENTS) {
+      const period = getSettlementPeriodForSeed(
+        TEST_GROUP.closingDay,
+        settlement.yearOffset,
+        settlement.monthOffset,
+      );
+
+      const settlementId = await ctx.db.insert("settlements", {
+        groupId,
+        periodStart: period.periodStart,
+        periodEnd: period.periodEnd,
+        status: settlement.status,
+        settledAt: settlement.status === "settled" ? now : undefined,
+        createdBy: userIds[0],
+        createdAt: now,
+      });
+
+      for (const payment of settlement.payments) {
+        await ctx.db.insert("settlementPayments", {
+          settlementId,
+          fromUserId: userIds[payment.fromUserIndex],
+          toUserId: userIds[payment.toUserIndex],
+          amount: payment.amount,
+          isPaid: payment.isPaid,
+          paidAt: payment.isPaid ? now : undefined,
+        });
+      }
+
+      settlementCount++;
+    }
+
     return {
       success: true,
       message: "シードデータを作成しました",
@@ -123,6 +158,7 @@ export const seedTestData = internalMutation({
       userCount: userIds.length,
       expenseCount: SAMPLE_EXPENSES.length,
       shoppingItemCount: SAMPLE_SHOPPING_ITEMS.length,
+      settlementCount,
     };
   },
 });
@@ -259,6 +295,8 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
   let deletedExpenses = 0;
   let deletedSplits = 0;
   let deletedShoppingItems = 0;
+  let deletedSettlements = 0;
+  let deletedSettlementPayments = 0;
 
   // シードユーザーを検索
   const allUsers = await ctx.db.query("users").collect();
@@ -273,6 +311,8 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       deletedExpenses,
       deletedSplits,
       deletedShoppingItems,
+      deletedSettlements,
+      deletedSettlementPayments,
     };
   }
 
@@ -321,6 +361,25 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       deletedShoppingItems++;
     }
 
+    // グループの精算を削除
+    const settlements = await ctx.db
+      .query("settlements")
+      .withIndex("by_group_and_period", (q) => q.eq("groupId", group._id))
+      .collect();
+    for (const settlement of settlements) {
+      // 精算の支払いを削除
+      const payments = await ctx.db
+        .query("settlementPayments")
+        .withIndex("by_settlement", (q) => q.eq("settlementId", settlement._id))
+        .collect();
+      for (const payment of payments) {
+        await ctx.db.delete(payment._id);
+        deletedSettlementPayments++;
+      }
+      await ctx.db.delete(settlement._id);
+      deletedSettlements++;
+    }
+
     // グループメンバーを削除
     const members = await ctx.db
       .query("groupMembers")
@@ -350,6 +409,8 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
     deletedExpenses,
     deletedSplits,
     deletedShoppingItems,
+    deletedSettlements,
+    deletedSettlementPayments,
   };
 }
 
