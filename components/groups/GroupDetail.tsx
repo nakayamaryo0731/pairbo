@@ -1,8 +1,12 @@
 "use client";
 
-import { Id } from "@/convex/_generated/dataModel";
+import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { MemberList } from "./MemberList";
 import { InviteDialog } from "./InviteDialog";
+import { ExpenseList } from "@/components/expenses/ExpenseList";
 
 type GroupDetailProps = {
   group: {
@@ -24,6 +28,8 @@ type GroupDetailProps = {
 };
 
 export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
+  const expenses = useQuery(api.expenses.listByGroup, { groupId: group._id });
+
   return (
     <div className="space-y-6">
       {/* グループ情報 */}
@@ -65,14 +71,28 @@ export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
         <MemberList members={members} />
       </div>
 
-      {/* 支出記録ボタン（プレースホルダー） */}
+      {/* 支出一覧 */}
+      <div>
+        <h2 className="font-medium text-slate-800 mb-3">支出履歴</h2>
+        {expenses === undefined ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-24 bg-slate-100 rounded-lg animate-pulse"
+              />
+            ))}
+          </div>
+        ) : (
+          <ExpenseList expenses={expenses} />
+        )}
+      </div>
+
+      {/* 支出記録ボタン */}
       <div className="fixed bottom-6 right-6">
-        <button
+        <Link
+          href={`/groups/${group._id}/expenses/new`}
           className="w-14 h-14 bg-slate-800 text-white rounded-full shadow-lg hover:bg-slate-700 transition-colors flex items-center justify-center"
-          onClick={() => {
-            // TODO: 支出記録画面への遷移
-            alert("支出記録機能は次のフェーズで実装します");
-          }}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -88,7 +108,7 @@ export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
             <path d="M12 5v14" />
             <path d="M5 12h14" />
           </svg>
-        </button>
+        </Link>
       </div>
     </div>
   );
