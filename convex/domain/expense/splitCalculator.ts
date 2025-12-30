@@ -1,12 +1,5 @@
-import type { Id } from "../_generated/dataModel";
-
-/**
- * 負担配分の計算結果
- */
-export interface SplitResult {
-  userId: Id<"users">;
-  amount: number;
-}
+import type { Id } from "../../_generated/dataModel";
+import type { SplitResult } from "./types";
 
 /**
  * 均等分割（端数は支払者が負担）

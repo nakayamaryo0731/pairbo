@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { calculateEqualSplit } from "../lib/splitCalculator";
+import { calculateEqualSplit } from "../domain/expense";
 import type { Id } from "../_generated/dataModel";
 
 // テスト用のモックID

@@ -8,6 +8,12 @@
  * @module
  */
 
+import type * as domain_expense_index from "../domain/expense/index.js";
+import type * as domain_expense_rules from "../domain/expense/rules.js";
+import type * as domain_expense_splitCalculator from "../domain/expense/splitCalculator.js";
+import type * as domain_expense_types from "../domain/expense/types.js";
+import type * as domain_shared_index from "../domain/shared/index.js";
+import type * as domain_shared_money from "../domain/shared/money.js";
 import type * as expenses from "../expenses.js";
 import type * as groups from "../groups.js";
 import type * as invitations from "../invitations.js";
@@ -15,7 +21,6 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as lib_presetCategories from "../lib/presetCategories.js";
 import type * as lib_seedData from "../lib/seedData.js";
-import type * as lib_splitCalculator from "../lib/splitCalculator.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
@@ -27,6 +32,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "domain/expense/index": typeof domain_expense_index;
+  "domain/expense/rules": typeof domain_expense_rules;
+  "domain/expense/splitCalculator": typeof domain_expense_splitCalculator;
+  "domain/expense/types": typeof domain_expense_types;
+  "domain/shared/index": typeof domain_shared_index;
+  "domain/shared/money": typeof domain_shared_money;
   expenses: typeof expenses;
   groups: typeof groups;
   invitations: typeof invitations;
@@ -34,7 +45,6 @@ declare const fullApi: ApiFromModules<{
   "lib/logger": typeof lib_logger;
   "lib/presetCategories": typeof lib_presetCategories;
   "lib/seedData": typeof lib_seedData;
-  "lib/splitCalculator": typeof lib_splitCalculator;
   "lib/validators": typeof lib_validators;
   seed: typeof seed;
   users: typeof users;
