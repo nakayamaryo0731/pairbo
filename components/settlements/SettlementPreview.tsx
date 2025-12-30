@@ -21,7 +21,11 @@ export function SettlementPreview({
   month,
   isOwner,
 }: SettlementPreviewProps) {
-  const preview = useQuery(api.settlements.getPreview, { groupId, year, month });
+  const preview = useQuery(api.settlements.getPreview, {
+    groupId,
+    year,
+    month,
+  });
   const createSettlement = useMutation(api.settlements.create);
   const [isCreating, setIsCreating] = useState(false);
 
