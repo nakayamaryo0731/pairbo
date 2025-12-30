@@ -1,7 +1,7 @@
 # Oaiko - セッション引き継ぎ書
 
 > 最終更新: 2024-12-30
-> ステータス: デプロイフロー確立完了
+> ステータス: CI/CD構築完了
 
 ---
 
@@ -15,6 +15,10 @@
 - プロジェクト初期セットアップ
 - Convexアカウント連携・開発環境セットアップ
 - デプロイフロー確立（Vercel + Convex）
+- GitHub Actions CI/CD構築
+  - CI: lint, format, typecheck, build（並列実行）
+  - Deploy: Convex → Vercel Deploy Hook
+- pnpmへ移行
 
 **次にやること**
 
