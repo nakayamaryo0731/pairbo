@@ -199,6 +199,51 @@ export const joinTestGroup = internalMutation({
   },
 });
 
+/**
+ * テストグループのオーナーを変更
+ *
+ * 実行: npx convex run seed:makeOwner '{"userId": "j57..."}'
+ */
+export const makeOwner = internalMutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // テストグループを検索
+    const groups = await ctx.db.query("groups").collect();
+    const testGroup = groups.find((g) => g.name === TEST_GROUP.name);
+    if (!testGroup) {
+      return {
+        success: false,
+        message: "テストグループが見つかりません",
+      };
+    }
+
+    // 現在のメンバーシップを取得
+    const membership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", testGroup._id).eq("userId", args.userId),
+      )
+      .unique();
+
+    if (!membership) {
+      return {
+        success: false,
+        message: "ユーザーがテストグループのメンバーではありません",
+      };
+    }
+
+    // ロールをオーナーに変更
+    await ctx.db.patch(membership._id, { role: "owner" });
+
+    return {
+      success: true,
+      message: "オーナーに変更しました",
+    };
+  },
+});
+
 // ========================================
 // 内部ヘルパー関数
 // ========================================

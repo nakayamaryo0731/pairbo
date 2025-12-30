@@ -1,0 +1,95 @@
+"use client";
+
+import { Id } from "@/convex/_generated/dataModel";
+import { MemberList } from "./MemberList";
+import { InviteDialog } from "./InviteDialog";
+
+type GroupDetailProps = {
+  group: {
+    _id: Id<"groups">;
+    name: string;
+    description?: string;
+    closingDay: number;
+  };
+  members: {
+    _id: Id<"groupMembers">;
+    userId: Id<"users">;
+    displayName: string;
+    avatarUrl?: string;
+    role: "owner" | "member";
+    joinedAt: number;
+    isMe: boolean;
+  }[];
+  myRole: "owner" | "member";
+};
+
+export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
+  return (
+    <div className="space-y-6">
+      {/* グループ情報 */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4">
+        <div className="flex items-center gap-2 text-slate-600">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+            <line x1="16" x2="16" y1="2" y2="6" />
+            <line x1="8" x2="8" y1="2" y2="6" />
+            <line x1="3" x2="21" y1="10" y2="10" />
+          </svg>
+          <span>締め日: 毎月{group.closingDay}日</span>
+        </div>
+        {group.description && (
+          <p className="mt-2 text-sm text-slate-500">{group.description}</p>
+        )}
+      </div>
+
+      {/* メンバー一覧 */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-medium text-slate-800">
+            メンバー ({members.length}人)
+          </h2>
+          {myRole === "owner" && (
+            <InviteDialog groupId={group._id} groupName={group.name} />
+          )}
+        </div>
+        <MemberList members={members} />
+      </div>
+
+      {/* 支出記録ボタン（プレースホルダー） */}
+      <div className="fixed bottom-6 right-6">
+        <button
+          className="w-14 h-14 bg-slate-800 text-white rounded-full shadow-lg hover:bg-slate-700 transition-colors flex items-center justify-center"
+          onClick={() => {
+            // TODO: 支出記録画面への遷移
+            alert("支出記録機能は次のフェーズで実装します");
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}

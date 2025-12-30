@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { GroupCard } from "./GroupCard";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { GroupListSkeleton } from "@/components/ui/skeleton";
 
 export function GroupList() {
+  const router = useRouter();
   const groups = useQuery(api.groups.listMyGroups);
 
   // ローディング中
@@ -42,6 +44,7 @@ export function GroupList() {
           name={group.name}
           memberCount={group.memberCount}
           myRole={group.myRole}
+          onClick={() => router.push(`/groups/${group._id}`)}
         />
       ))}
       <CreateGroupDialog>
