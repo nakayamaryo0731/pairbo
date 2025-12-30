@@ -25,14 +25,12 @@ async function createGroupWithMembers(
   t: ReturnType<typeof convexTest>,
   memberIdentities: (typeof userAIdentity)[],
 ) {
-  // オーナーがグループ作成
   const groupId = await t
     .withIdentity(userAIdentity)
     .mutation(api.groups.create, {
       name: "テストグループ",
     });
 
-  // 他のメンバーを招待
   for (const identity of memberIdentities.slice(1)) {
     const { token } = await t
       .withIdentity(userAIdentity)
@@ -124,7 +122,6 @@ describe("settlements", () => {
       expect(preview.totalExpenses).toBe(1);
       expect(preview.totalAmount).toBe(1000);
       expect(preview.payments).toHaveLength(1);
-      // ユーザーBがユーザーAに500円払う
       expect(preview.payments[0].amount).toBe(500);
     });
 
@@ -133,7 +130,6 @@ describe("settlements", () => {
 
       const groupId = await createGroupWithMembers(t, [userAIdentity]);
 
-      // ユーザーBを別のグループのオーナーとして登録（DBにユーザーを作成）
       await t.withIdentity(userBIdentity).mutation(api.groups.create, {
         name: "ユーザーBのグループ",
       });
@@ -174,7 +170,6 @@ describe("settlements", () => {
 
       expect(settlementId).toBeDefined();
 
-      // 確定後のプレビューでexistingSettlementIdが設定される
       const preview = await t
         .withIdentity(userAIdentity)
         .query(api.settlements.getPreview, {
@@ -210,14 +205,12 @@ describe("settlements", () => {
         userBIdentity,
       ]);
 
-      // 1回目: 成功
       await t.withIdentity(userAIdentity).mutation(api.settlements.create, {
         groupId,
         year: 2024,
         month: 12,
       });
 
-      // 2回目: エラー
       await expect(
         t.withIdentity(userAIdentity).mutation(api.settlements.create, {
           groupId,
@@ -249,7 +242,6 @@ describe("settlements", () => {
           settlementId,
         });
 
-      // 支払いが不要なので即座にsettled
       expect(settlement.status).toBe("settled");
       expect(settlement.payments).toHaveLength(0);
     });
@@ -279,7 +271,6 @@ describe("settlements", () => {
           month: 12,
         });
 
-      // 精算詳細を取得
       const settlement = await t
         .withIdentity(userAIdentity)
         .query(api.settlements.getById, {
@@ -289,7 +280,6 @@ describe("settlements", () => {
       expect(settlement.payments).toHaveLength(1);
       const paymentId = settlement.payments[0]._id;
 
-      // ユーザーA（受取人）が支払い完了をマーク
       const result = await t
         .withIdentity(userAIdentity)
         .mutation(api.settlements.markPaid, {
@@ -299,7 +289,6 @@ describe("settlements", () => {
       expect(result.success).toBe(true);
       expect(result.allCompleted).toBe(true);
 
-      // 精算が完了していることを確認
       const updatedSettlement = await t
         .withIdentity(userAIdentity)
         .query(api.settlements.getById, {
@@ -338,7 +327,6 @@ describe("settlements", () => {
         });
       const paymentId = settlement.payments[0]._id;
 
-      // ユーザーB（支払い元）がマークしようとするとエラー
       await expect(
         t
           .withIdentity(userBIdentity)
@@ -356,7 +344,6 @@ describe("settlements", () => {
         userBIdentity,
       ]);
 
-      // 複数の精算を作成
       await t.withIdentity(userAIdentity).mutation(api.settlements.create, {
         groupId,
         year: 2024,
@@ -375,7 +362,6 @@ describe("settlements", () => {
         });
 
       expect(settlements).toHaveLength(2);
-      // 新しい順にソート
       expect(settlements[0].periodStart).toBe("2024-11-26");
       expect(settlements[1].periodStart).toBe("2024-10-26");
     });
@@ -429,7 +415,6 @@ describe("settlements", () => {
           month: 12,
         });
 
-      // ユーザーBを別のグループのオーナーとして登録（DBにユーザーを作成）
       await t.withIdentity(userBIdentity).mutation(api.groups.create, {
         name: "ユーザーBのグループ",
       });

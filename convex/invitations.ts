@@ -14,7 +14,6 @@ import {
 export const getByToken = query({
   args: { token: v.string() },
   handler: async (ctx, args) => {
-    // 1. トークンで招待情報取得
     const invitation = await ctx.db
       .query("groupInvitations")
       .withIndex("by_token", (q) => q.eq("token", args.token))
@@ -24,17 +23,14 @@ export const getByToken = query({
       return { error: "invalid_token" as const };
     }
 
-    // 2. 有効期限チェック
     if (isInvitationExpired(invitation.expiresAt)) {
       return { error: "expired" as const };
     }
 
-    // 3. 使用済みチェック
     if (isInvitationUsed(invitation.usedAt)) {
       return { error: "already_used" as const };
     }
 
-    // 4. グループ情報取得
     const group = await ctx.db.get(invitation.groupId);
     if (!group) {
       return { error: "invalid_token" as const };
@@ -68,7 +64,6 @@ export const getByToken = query({
 export const accept = authMutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
-    // 1. トークン検証（再度）
     const invitation = await ctx.db
       .query("groupInvitations")
       .withIndex("by_token", (q) => q.eq("token", args.token))
@@ -97,7 +92,6 @@ export const accept = authMutation({
       throw new Error(getInvitationErrorMessage("already_used"));
     }
 
-    // 2. 既にメンバーかチェック
     const existingMember = await ctx.db
       .query("groupMembers")
       .withIndex("by_group_and_user", (q) =>
@@ -112,7 +106,6 @@ export const accept = authMutation({
       return { alreadyMember: true, groupId: invitation.groupId };
     }
 
-    // 3. メンバー追加
     await ctx.db.insert("groupMembers", {
       groupId: invitation.groupId,
       userId: ctx.user._id,
@@ -120,13 +113,11 @@ export const accept = authMutation({
       joinedAt: Date.now(),
     });
 
-    // 4. 招待を使用済みに更新
     await ctx.db.patch(invitation._id, {
       usedAt: Date.now(),
       usedBy: ctx.user._id,
     });
 
-    // 監査ログ
     ctx.logger.audit("GROUP", "member_joined", {
       groupId: invitation.groupId,
       invitationId: invitation._id,

@@ -24,12 +24,10 @@ import {
 export const seedTestData = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // 1. 既存シードデータを削除
     await clearSeedDataInternal(ctx);
 
     const now = Date.now();
 
-    // 2. ダミーユーザー作成
     const userIds: Id<"users">[] = [];
     for (const seedUser of SEED_USERS) {
       const userId = await ctx.db.insert("users", {
@@ -42,7 +40,6 @@ export const seedTestData = internalMutation({
       userIds.push(userId);
     }
 
-    // 3. テストグループ作成
     const groupId = await ctx.db.insert("groups", {
       name: TEST_GROUP.name,
       description: TEST_GROUP.description,
@@ -51,7 +48,6 @@ export const seedTestData = internalMutation({
       updatedAt: now,
     });
 
-    // 4. プリセットカテゴリ作成
     const categoryMap = new Map<string, Id<"categories">>();
     for (const preset of PRESET_CATEGORIES) {
       const categoryId = await ctx.db.insert("categories", {
@@ -65,7 +61,6 @@ export const seedTestData = internalMutation({
       categoryMap.set(preset.name, categoryId);
     }
 
-    // 5. メンバー追加（最初のユーザーをオーナーに）
     for (let i = 0; i < userIds.length; i++) {
       await ctx.db.insert("groupMembers", {
         groupId,
@@ -75,7 +70,6 @@ export const seedTestData = internalMutation({
       });
     }
 
-    // 6. 支出データ作成
     for (const expense of SAMPLE_EXPENSES) {
       const categoryId = categoryMap.get(expense.categoryName);
       if (!categoryId) continue;
@@ -94,7 +88,6 @@ export const seedTestData = internalMutation({
         updatedAt: now,
       });
 
-      // 支出分割データ作成
       await createExpenseSplits(
         ctx,
         expenseId,
@@ -105,7 +98,6 @@ export const seedTestData = internalMutation({
       );
     }
 
-    // 7. 買い物リスト作成
     for (const item of SAMPLE_SHOPPING_ITEMS) {
       await ctx.db.insert("shoppingItems", {
         groupId,
@@ -118,7 +110,6 @@ export const seedTestData = internalMutation({
       });
     }
 
-    // 8. 精算データ作成
     let settlementCount = 0;
     for (const settlement of SAMPLE_SETTLEMENTS) {
       const period = getSettlementPeriodForSeed(
@@ -190,13 +181,11 @@ export const joinTestGroup = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    // ユーザーの存在確認
     const user = await ctx.db.get(args.userId);
     if (!user) {
       return { success: false, message: "ユーザーが見つかりません" };
     }
 
-    // テストグループを検索
     const groups = await ctx.db.query("groups").collect();
     const testGroup = groups.find((g) => g.name === TEST_GROUP.name);
     if (!testGroup) {
@@ -207,7 +196,6 @@ export const joinTestGroup = internalMutation({
       };
     }
 
-    // 既にメンバーかチェック
     const existingMembership = await ctx.db
       .query("groupMembers")
       .withIndex("by_group_and_user", (q) =>
@@ -219,7 +207,6 @@ export const joinTestGroup = internalMutation({
       return { success: false, message: "既にテストグループのメンバーです" };
     }
 
-    // メンバーに追加
     await ctx.db.insert("groupMembers", {
       groupId: testGroup._id,
       userId: args.userId,
@@ -245,7 +232,6 @@ export const makeOwner = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    // テストグループを検索
     const groups = await ctx.db.query("groups").collect();
     const testGroup = groups.find((g) => g.name === TEST_GROUP.name);
     if (!testGroup) {
@@ -255,7 +241,6 @@ export const makeOwner = internalMutation({
       };
     }
 
-    // 現在のメンバーシップを取得
     const membership = await ctx.db
       .query("groupMembers")
       .withIndex("by_group_and_user", (q) =>
@@ -270,7 +255,6 @@ export const makeOwner = internalMutation({
       };
     }
 
-    // ロールをオーナーに変更
     await ctx.db.patch(membership._id, { role: "owner" });
 
     return {
@@ -279,10 +263,6 @@ export const makeOwner = internalMutation({
     };
   },
 });
-
-// ========================================
-// 内部ヘルパー関数
-// ========================================
 
 /**
  * シードデータを削除する内部関数
@@ -298,7 +278,6 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
   let deletedSettlements = 0;
   let deletedSettlementPayments = 0;
 
-  // シードユーザーを検索
   const allUsers = await ctx.db.query("users").collect();
   const seedUsers = allUsers.filter((u) => u.clerkId.startsWith(SEED_PREFIX));
 
@@ -316,19 +295,16 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
     };
   }
 
-  // テストグループを検索
   const allGroups = await ctx.db.query("groups").collect();
   const testGroups = allGroups.filter((g) => g.name === TEST_GROUP.name);
 
   for (const group of testGroups) {
-    // グループの支出を削除
     const expenses = await ctx.db
       .query("expenses")
       .withIndex("by_group_and_date", (q) => q.eq("groupId", group._id))
       .collect();
 
     for (const expense of expenses) {
-      // 支出分割を削除
       const splits = await ctx.db
         .query("expenseSplits")
         .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
@@ -341,7 +317,6 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       deletedExpenses++;
     }
 
-    // グループのカテゴリを削除
     const categories = await ctx.db
       .query("categories")
       .withIndex("by_group", (q) => q.eq("groupId", group._id))
@@ -351,7 +326,6 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       deletedCategories++;
     }
 
-    // グループの買い物リストを削除
     const shoppingItems = await ctx.db
       .query("shoppingItems")
       .withIndex("by_group_and_purchased", (q) => q.eq("groupId", group._id))
@@ -361,13 +335,11 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       deletedShoppingItems++;
     }
 
-    // グループの精算を削除
     const settlements = await ctx.db
       .query("settlements")
       .withIndex("by_group_and_period", (q) => q.eq("groupId", group._id))
       .collect();
     for (const settlement of settlements) {
-      // 精算の支払いを削除
       const payments = await ctx.db
         .query("settlementPayments")
         .withIndex("by_settlement", (q) => q.eq("settlementId", settlement._id))
@@ -380,7 +352,6 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       deletedSettlements++;
     }
 
-    // グループメンバーを削除
     const members = await ctx.db
       .query("groupMembers")
       .withIndex("by_group_and_user", (q) => q.eq("groupId", group._id))
@@ -390,12 +361,10 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       deletedMembers++;
     }
 
-    // グループを削除
     await ctx.db.delete(group._id);
     deletedGroups++;
   }
 
-  // シードユーザーを削除
   for (const user of seedUsers) {
     await ctx.db.delete(user._id);
     deletedUsers++;

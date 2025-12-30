@@ -29,14 +29,12 @@ describe("expenses", () => {
     test("支出を登録できる", async () => {
       const t = convexTest(schema, modules);
 
-      // グループを作成
       const groupId = await t
         .withIdentity(userAIdentity)
         .mutation(api.groups.create, {
           name: "テストグループ",
         });
 
-      // グループ詳細を取得してカテゴリIDを取得
       const detail = await t
         .withIdentity(userAIdentity)
         .query(api.groups.getDetail, { groupId });
@@ -44,7 +42,6 @@ describe("expenses", () => {
       const categoryId = detail.categories[0]._id;
       const payerId = detail.members[0].userId;
 
-      // 支出を登録
       const expenseId = await t
         .withIdentity(userAIdentity)
         .mutation(api.expenses.create, {
@@ -58,7 +55,6 @@ describe("expenses", () => {
 
       expect(expenseId).toBeDefined();
 
-      // 登録した支出を取得
       const expense = await t
         .withIdentity(userAIdentity)
         .query(api.expenses.getById, { expenseId });
@@ -72,14 +68,12 @@ describe("expenses", () => {
     test("均等分割が正しく計算される（2人）", async () => {
       const t = convexTest(schema, modules);
 
-      // グループを作成
       const groupId = await t
         .withIdentity(userAIdentity)
         .mutation(api.groups.create, {
           name: "テストグループ",
         });
 
-      // 招待を作成してユーザーBを招待
       const { token } = await t
         .withIdentity(userAIdentity)
         .mutation(api.groups.createInvitation, { groupId });
@@ -88,7 +82,6 @@ describe("expenses", () => {
         .withIdentity(userBIdentity)
         .mutation(api.invitations.accept, { token });
 
-      // グループ詳細を取得
       const detail = await t
         .withIdentity(userAIdentity)
         .query(api.groups.getDetail, { groupId });
@@ -98,7 +91,6 @@ describe("expenses", () => {
         (m) => m.displayName === "ユーザーA",
       )!.userId;
 
-      // 1000円を2人で均等分割
       const expenseId = await t
         .withIdentity(userAIdentity)
         .mutation(api.expenses.create, {
@@ -121,14 +113,12 @@ describe("expenses", () => {
     test("均等分割で端数は支払者が負担する（3人）", async () => {
       const t = convexTest(schema, modules);
 
-      // グループを作成
       const groupId = await t
         .withIdentity(userAIdentity)
         .mutation(api.groups.create, {
           name: "テストグループ",
         });
 
-      // ユーザーBを招待
       const { token: tokenB } = await t
         .withIdentity(userAIdentity)
         .mutation(api.groups.createInvitation, { groupId });
@@ -137,7 +127,6 @@ describe("expenses", () => {
         .withIdentity(userBIdentity)
         .mutation(api.invitations.accept, { token: tokenB });
 
-      // ユーザーCを招待
       const { token: tokenC } = await t
         .withIdentity(userAIdentity)
         .mutation(api.groups.createInvitation, { groupId });
@@ -146,7 +135,6 @@ describe("expenses", () => {
         .withIdentity(userCIdentity)
         .mutation(api.invitations.accept, { token: tokenC });
 
-      // グループ詳細を取得
       const detail = await t
         .withIdentity(userAIdentity)
         .query(api.groups.getDetail, { groupId });
@@ -156,7 +144,7 @@ describe("expenses", () => {
         (m) => m.displayName === "ユーザーA",
       )!.userId;
 
-      // 1000円を3人で均等分割（1000 ÷ 3 = 333余り1）
+      // 1000 ÷ 3 = 333余り1
       const expenseId = await t
         .withIdentity(userAIdentity)
         .mutation(api.expenses.create, {
@@ -173,14 +161,12 @@ describe("expenses", () => {
 
       expect(expense.splits.length).toBe(3);
 
-      // 支払者（ユーザーA）が334円、他が333円
       const payerSplit = expense.splits.find((s) => s.userId === payerA);
       const otherSplits = expense.splits.filter((s) => s.userId !== payerA);
 
       expect(payerSplit?.amount).toBe(334);
       expect(otherSplits.every((s) => s.amount === 333)).toBe(true);
 
-      // 合計が1000円になることを確認
       const total = expense.splits.reduce((sum, s) => sum + s.amount, 0);
       expect(total).toBe(1000);
     });
@@ -310,7 +296,6 @@ describe("expenses", () => {
       const categoryId = detail.categories[0]._id;
       const payerId = detail.members[0].userId;
 
-      // ユーザーBはグループメンバーではない
       await expect(
         t.withIdentity(userBIdentity).mutation(api.expenses.create, {
           groupId,
@@ -340,7 +325,6 @@ describe("expenses", () => {
       const categoryId = detail.categories[0]._id;
       const payerId = detail.members[0].userId;
 
-      // 複数の支出を登録
       await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
         groupId,
         amount: 1000,
@@ -357,13 +341,11 @@ describe("expenses", () => {
         date: "2024-12-30",
       });
 
-      // 一覧を取得
       const expenses = await t
         .withIdentity(userAIdentity)
         .query(api.expenses.listByGroup, { groupId });
 
       expect(expenses.length).toBe(2);
-      // 日付降順
       expect(expenses[0].date).toBe("2024-12-30");
       expect(expenses[1].date).toBe("2024-12-29");
     });
@@ -384,7 +366,6 @@ describe("expenses", () => {
       const categoryId = detail.categories[0]._id;
       const payerId = detail.members[0].userId;
 
-      // 3つの支出を登録
       for (let i = 1; i <= 3; i++) {
         await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
           groupId,
@@ -395,7 +376,6 @@ describe("expenses", () => {
         });
       }
 
-      // limit=2で取得
       const expenses = await t
         .withIdentity(userAIdentity)
         .query(api.expenses.listByGroup, { groupId, limit: 2 });
@@ -412,7 +392,6 @@ describe("expenses", () => {
           name: "テストグループ",
         });
 
-      // ユーザーBを別のグループ作成で作成（ユーザーとして存在させる）
       await t.withIdentity(userBIdentity).mutation(api.groups.create, {
         name: "別のグループ",
       });
@@ -475,7 +454,6 @@ describe("expenses", () => {
           name: "テストグループ",
         });
 
-      // ユーザーBを別のグループ作成で作成（ユーザーとして存在させる）
       await t.withIdentity(userBIdentity).mutation(api.groups.create, {
         name: "別のグループ",
       });
