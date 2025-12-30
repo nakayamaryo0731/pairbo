@@ -18,6 +18,10 @@ import type * as domain_group_types from "../domain/group/types.js";
 import type * as domain_invitation_index from "../domain/invitation/index.js";
 import type * as domain_invitation_rules from "../domain/invitation/rules.js";
 import type * as domain_invitation_types from "../domain/invitation/types.js";
+import type * as domain_settlement_calculator from "../domain/settlement/calculator.js";
+import type * as domain_settlement_index from "../domain/settlement/index.js";
+import type * as domain_settlement_rules from "../domain/settlement/rules.js";
+import type * as domain_settlement_types from "../domain/settlement/types.js";
 import type * as domain_shared_index from "../domain/shared/index.js";
 import type * as domain_shared_money from "../domain/shared/money.js";
 import type * as expenses from "../expenses.js";
@@ -29,6 +33,7 @@ import type * as lib_presetCategories from "../lib/presetCategories.js";
 import type * as lib_seedData from "../lib/seedData.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as seed from "../seed.js";
+import type * as settlements from "../settlements.js";
 import type * as users from "../users.js";
 
 import type {
@@ -48,6 +53,10 @@ declare const fullApi: ApiFromModules<{
   "domain/invitation/index": typeof domain_invitation_index;
   "domain/invitation/rules": typeof domain_invitation_rules;
   "domain/invitation/types": typeof domain_invitation_types;
+  "domain/settlement/calculator": typeof domain_settlement_calculator;
+  "domain/settlement/index": typeof domain_settlement_index;
+  "domain/settlement/rules": typeof domain_settlement_rules;
+  "domain/settlement/types": typeof domain_settlement_types;
   "domain/shared/index": typeof domain_shared_index;
   "domain/shared/money": typeof domain_shared_money;
   expenses: typeof expenses;
@@ -59,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   "lib/seedData": typeof lib_seedData;
   "lib/validators": typeof lib_validators;
   seed: typeof seed;
+  settlements: typeof settlements;
   users: typeof users;
 }>;
 

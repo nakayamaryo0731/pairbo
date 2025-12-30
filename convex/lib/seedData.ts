@@ -117,6 +117,58 @@ export const SAMPLE_SHOPPING_ITEMS = [
 ] as const;
 
 /**
+ * サンプル精算データ
+ * 先月分の精算済みデータを作成
+ */
+export const SAMPLE_SETTLEMENTS = [
+  {
+    // 先月分（精算完了）
+    yearOffset: 0, // 今年
+    monthOffset: -1, // 先月
+    status: "settled" as const,
+    payments: [
+      {
+        fromUserIndex: 1, // パートナーB
+        toUserIndex: 0, // パートナーA
+        amount: 3000,
+        isPaid: true,
+      },
+    ],
+  },
+] as const;
+
+/**
+ * 精算期間を計算するヘルパー
+ */
+export function getSettlementPeriodForSeed(
+  closingDay: number,
+  yearOffset: number,
+  monthOffset: number,
+): { periodStart: string; periodEnd: string } {
+  const now = new Date();
+  const targetYear = now.getFullYear() + yearOffset;
+  const targetMonth = now.getMonth() + 1 + monthOffset;
+
+  // 終了日 = 当月の締め日
+  const endDate = new Date(targetYear, targetMonth - 1, closingDay);
+
+  // 開始日 = 前月の締め日 + 1日
+  const startDate = new Date(targetYear, targetMonth - 2, closingDay + 1);
+
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    periodStart: formatDate(startDate),
+    periodEnd: formatDate(endDate),
+  };
+}
+
+/**
  * 過去30日以内のランダムな日付を生成
  */
 export function generateRandomDate(): string {
