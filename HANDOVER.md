@@ -1,7 +1,7 @@
 # Oaiko - セッション引き継ぎ書
 
 > 最終更新: 2024-12-30
-> ステータス: 初期セットアップ完了、開発開始前
+> ステータス: デプロイフロー確立完了
 
 ---
 
@@ -12,11 +12,13 @@
 - プロダクト名決定（Oaiko = おあいこ）
 - MVP機能仕様策定
 - プロジェクト初期セットアップ
+- Convexアカウント連携・開発環境セットアップ
+- デプロイフロー確立（Vercel + Convex）
 
 **次にやること**
-- Convexアカウント連携（`npx convex dev` 初回実行）
 - ドメインモデル設計
 - DBスキーマ設計（`convex/schema.ts`）
+- 認証方式決定・実装
 
 ---
 
@@ -146,18 +148,20 @@ Deploy: Vercel + Convex
 
 ---
 
+## デプロイ情報
+
+| 環境 | URL |
+|------|-----|
+| 本番（Vercel） | https://oaiko.vercel.app |
+| Convex本番 | https://hip-moose-165.convex.cloud |
+| Convex開発 | https://proper-guanaco-454.convex.cloud |
+| GitHub | https://github.com/nakayamaryo0731/oaiko |
+
+---
+
 ## 次のセッションでやること
 
-### 1. Convex初期化（最優先）
-```bash
-cd /Users/ron/Dev/oaiko
-npx convex dev
-```
-- 初回実行でConvexアカウント連携
-- プロジェクトが作成される
-- ダッシュボードURLが発行される
-
-### 2. ドメインモデル設計
+### 1. ドメインモデル設計
 検討すべきエンティティ：
 - User（ユーザー）
 - Group（グループ）
@@ -168,14 +172,14 @@ npx convex dev
 - Settlement（精算）
 - ShoppingList / ShoppingItem（買い物リスト）
 
-### 3. DBスキーマ設計
+### 2. DBスキーマ設計
 `convex/schema.ts` にスキーマを定義。
 Convexの特徴：
 - リレーションはID参照（`v.id("users")`）
 - インデックスを明示的に定義
 - マイグレーション自動
 
-### 4. 認証方式決定
+### 3. 認証方式決定
 - Clerk: DX良い、UIコンポーネント付き
 - Convex Auth: Convex統合、シンプル
 

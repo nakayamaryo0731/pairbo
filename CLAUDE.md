@@ -67,6 +67,7 @@ Deploy: Vercel + Convex
 詳細は `docs/tech-selection.md` を参照。
 
 ## ドキュメント
+- `HANDOVER.md` - セッション引き継ぎ書（現在のステータス・次のステップ）
 - `docs/tech-selection.md` - 技術選定の比較検討・決定事項
 - `docs/mvp-features.md` - MVP機能仕様
 
