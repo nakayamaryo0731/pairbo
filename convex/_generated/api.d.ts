@@ -8,11 +8,14 @@
  * @module
  */
 
+import type * as expenses from "../expenses.js";
 import type * as groups from "../groups.js";
 import type * as invitations from "../invitations.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_logger from "../lib/logger.js";
 import type * as lib_presetCategories from "../lib/presetCategories.js";
 import type * as lib_seedData from "../lib/seedData.js";
+import type * as lib_splitCalculator from "../lib/splitCalculator.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
@@ -24,11 +27,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  expenses: typeof expenses;
   groups: typeof groups;
   invitations: typeof invitations;
   "lib/auth": typeof lib_auth;
+  "lib/logger": typeof lib_logger;
   "lib/presetCategories": typeof lib_presetCategories;
   "lib/seedData": typeof lib_seedData;
+  "lib/splitCalculator": typeof lib_splitCalculator;
   "lib/validators": typeof lib_validators;
   seed: typeof seed;
   users: typeof users;
