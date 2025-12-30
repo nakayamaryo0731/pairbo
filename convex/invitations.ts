@@ -70,14 +70,25 @@ export const accept = authMutation({
       .unique();
 
     if (!invitation) {
+      ctx.logger.warn("GROUP", "invitation_accept_failed", {
+        reason: "invalid_token",
+      });
       throw new Error("無効な招待リンクです");
     }
 
     if (invitation.expiresAt < Date.now()) {
+      ctx.logger.warn("GROUP", "invitation_accept_failed", {
+        reason: "expired",
+        groupId: invitation.groupId,
+      });
       throw new Error("招待リンクの有効期限が切れています");
     }
 
     if (invitation.usedAt) {
+      ctx.logger.warn("GROUP", "invitation_accept_failed", {
+        reason: "already_used",
+        groupId: invitation.groupId,
+      });
       throw new Error("この招待リンクは既に使用されています");
     }
 
@@ -90,6 +101,9 @@ export const accept = authMutation({
       .unique();
 
     if (existingMember) {
+      ctx.logger.info("GROUP", "invitation_accept_already_member", {
+        groupId: invitation.groupId,
+      });
       return { alreadyMember: true, groupId: invitation.groupId };
     }
 
@@ -105,6 +119,12 @@ export const accept = authMutation({
     await ctx.db.patch(invitation._id, {
       usedAt: Date.now(),
       usedBy: ctx.user._id,
+    });
+
+    // 監査ログ
+    ctx.logger.audit("GROUP", "member_joined", {
+      groupId: invitation.groupId,
+      invitationId: invitation._id,
     });
 
     return { success: true, groupId: invitation.groupId };
