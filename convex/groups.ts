@@ -1,6 +1,12 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import { PRESET_CATEGORIES } from "./lib/presetCategories";
+import {
+  validateGroupInput,
+  GROUP_RULES,
+  GroupValidationError,
+} from "./domain/group";
+import { INVITATION_RULES, calculateExpiresAt } from "./domain/invitation";
 
 /**
  * グループ作成
@@ -16,27 +22,28 @@ export const create = authMutation({
   },
   handler: async (ctx, args) => {
     // バリデーション
-    const name = args.name.trim();
-    if (name.length === 0) {
-      ctx.logger.warn("GROUP", "create_validation_failed", {
-        reason: "empty_name",
+    let validated;
+    try {
+      validated = validateGroupInput({
+        name: args.name,
+        description: args.description,
       });
-      throw new Error("グループ名を入力してください");
-    }
-    if (name.length > 50) {
-      ctx.logger.warn("GROUP", "create_validation_failed", {
-        reason: "name_too_long",
-      });
-      throw new Error("グループ名は50文字以内で入力してください");
+    } catch (error) {
+      if (error instanceof GroupValidationError) {
+        ctx.logger.warn("GROUP", "create_validation_failed", {
+          reason: error.message,
+        });
+      }
+      throw error;
     }
 
     const now = Date.now();
 
     // 1. グループ作成
     const groupId = await ctx.db.insert("groups", {
-      name,
-      description: args.description?.trim() || undefined,
-      closingDay: 25, // デフォルト値
+      name: validated.name,
+      description: validated.description,
+      closingDay: GROUP_RULES.DEFAULT_CLOSING_DAY,
       createdAt: now,
       updatedAt: now,
     });
@@ -64,7 +71,7 @@ export const create = authMutation({
     // 監査ログ
     ctx.logger.audit("GROUP", "created", {
       groupId,
-      groupName: name,
+      groupName: validated.name,
     });
 
     return groupId;
@@ -220,9 +227,9 @@ export const createInvitation = authMutation({
     // 3. トークン生成（UUID v4形式）
     const token = crypto.randomUUID();
 
-    // 4. 招待レコード作成（有効期限: 7日）
+    // 4. 招待レコード作成
     const now = Date.now();
-    const expiresAt = now + 7 * 24 * 60 * 60 * 1000;
+    const expiresAt = calculateExpiresAt(now, INVITATION_RULES.EXPIRATION_MS);
 
     await ctx.db.insert("groupInvitations", {
       groupId: args.groupId,

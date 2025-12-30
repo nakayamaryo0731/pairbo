@@ -1,6 +1,11 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { authMutation } from "./lib/auth";
+import {
+  isInvitationExpired,
+  isInvitationUsed,
+  getInvitationErrorMessage,
+} from "./domain/invitation";
 
 /**
  * トークンで招待情報を取得（認証不要）
@@ -20,12 +25,12 @@ export const getByToken = query({
     }
 
     // 2. 有効期限チェック
-    if (invitation.expiresAt < Date.now()) {
+    if (isInvitationExpired(invitation.expiresAt)) {
       return { error: "expired" as const };
     }
 
     // 3. 使用済みチェック
-    if (invitation.usedAt) {
+    if (isInvitationUsed(invitation.usedAt)) {
       return { error: "already_used" as const };
     }
 
@@ -73,23 +78,23 @@ export const accept = authMutation({
       ctx.logger.warn("GROUP", "invitation_accept_failed", {
         reason: "invalid_token",
       });
-      throw new Error("無効な招待リンクです");
+      throw new Error(getInvitationErrorMessage("invalid_token"));
     }
 
-    if (invitation.expiresAt < Date.now()) {
+    if (isInvitationExpired(invitation.expiresAt)) {
       ctx.logger.warn("GROUP", "invitation_accept_failed", {
         reason: "expired",
         groupId: invitation.groupId,
       });
-      throw new Error("招待リンクの有効期限が切れています");
+      throw new Error(getInvitationErrorMessage("expired"));
     }
 
-    if (invitation.usedAt) {
+    if (isInvitationUsed(invitation.usedAt)) {
       ctx.logger.warn("GROUP", "invitation_accept_failed", {
         reason: "already_used",
         groupId: invitation.groupId,
       });
-      throw new Error("この招待リンクは既に使用されています");
+      throw new Error(getInvitationErrorMessage("already_used"));
     }
 
     // 2. 既にメンバーかチェック

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
-import { calculateEqualSplit } from "./lib/splitCalculator";
+import { calculateEqualSplit, validateExpenseInput } from "./domain/expense";
 
 /**
  * 支出登録（Phase 1: 均等分割のみ）
@@ -15,28 +15,12 @@ export const create = authMutation({
     memo: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // 1. バリデーション
-    if (!Number.isInteger(args.amount)) {
-      throw new Error("金額は整数で入力してください");
-    }
-    if (args.amount < 1 || args.amount > 100_000_000) {
-      throw new Error("金額は1円から1億円の範囲で入力してください");
-    }
-    if (args.memo && args.memo.length > 500) {
-      throw new Error("メモは500文字以内で入力してください");
-    }
-
-    // 日付フォーマット検証（YYYY-MM-DD）
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(args.date)) {
-      throw new Error("日付の形式が正しくありません");
-    }
-
-    // 未来日チェック
-    const today = new Date().toISOString().split("T")[0];
-    if (args.date > today) {
-      throw new Error("未来の日付は指定できません");
-    }
+    // 1. ドメインバリデーション
+    validateExpenseInput({
+      amount: args.amount,
+      date: args.date,
+      memo: args.memo,
+    });
 
     // 2. グループ存在確認
     const group = await ctx.db.get(args.groupId);
