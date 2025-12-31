@@ -373,7 +373,7 @@ export function ExpenseForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={100}
-          className="flex-1 py-3 px-4 bg-slate-50 rounded-xl border-none text-slate-800 outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-slate-400"
+          className="flex-1 min-w-0 py-3 px-4 bg-slate-50 rounded-xl border-none text-slate-800 outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-slate-400"
         />
         <input
           type="date"
@@ -381,7 +381,7 @@ export function ExpenseForm({
           onChange={(e) => setDate(e.target.value)}
           max={getTodayString()}
           required
-          className="py-3 px-3 bg-slate-50 rounded-xl border-none text-slate-800 text-sm outline-none focus:ring-2 focus:ring-blue-200 w-36"
+          className="shrink-0 py-3 px-3 bg-slate-50 rounded-xl border-none text-slate-800 text-sm outline-none focus:ring-2 focus:ring-blue-200 w-32"
         />
       </div>
 
