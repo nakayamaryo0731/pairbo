@@ -9,6 +9,10 @@
  */
 
 import type * as analytics from "../analytics.js";
+import type * as categories from "../categories.js";
+import type * as domain_category_index from "../domain/category/index.js";
+import type * as domain_category_rules from "../domain/category/rules.js";
+import type * as domain_category_types from "../domain/category/types.js";
 import type * as domain_expense_index from "../domain/expense/index.js";
 import type * as domain_expense_rules from "../domain/expense/rules.js";
 import type * as domain_expense_splitCalculator from "../domain/expense/splitCalculator.js";
@@ -45,6 +49,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
+  categories: typeof categories;
+  "domain/category/index": typeof domain_category_index;
+  "domain/category/rules": typeof domain_category_rules;
+  "domain/category/types": typeof domain_category_types;
   "domain/expense/index": typeof domain_expense_index;
   "domain/expense/rules": typeof domain_expense_rules;
   "domain/expense/splitCalculator": typeof domain_expense_splitCalculator;
