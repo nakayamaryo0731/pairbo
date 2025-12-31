@@ -12,20 +12,20 @@ type SettlementPreviewProps = {
   groupId: Id<"groups">;
   year: number;
   month: number;
-  isOwner: boolean;
 };
 
 export function SettlementPreview({
   groupId,
   year,
   month,
-  isOwner,
 }: SettlementPreviewProps) {
   const preview = useQuery(api.settlements.getPreview, {
     groupId,
     year,
     month,
   });
+  const groupDetail = useQuery(api.groups.getDetail, { groupId });
+  const isOwner = groupDetail?.myRole === "owner";
   const createSettlement = useMutation(api.settlements.create);
   const [isCreating, setIsCreating] = useState(false);
 

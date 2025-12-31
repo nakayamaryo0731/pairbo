@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { MemberList } from "./MemberList";
-import { InviteDialog } from "./InviteDialog";
 import { PeriodExpenseList } from "@/components/expenses/PeriodExpenseList";
 import { DeleteExpenseDialog } from "@/components/expenses/DeleteExpenseDialog";
 import {
@@ -16,17 +14,8 @@ import {
   PeriodNavigator,
 } from "@/components/settlements";
 import { AnalyticsSection } from "@/components/analytics";
-import { CategoryManager } from "@/components/categories";
-import { ShoppingCart } from "lucide-react";
 
 type TabType = "expenses" | "settlement" | "analytics";
-
-type Category = {
-  _id: Id<"categories">;
-  name: string;
-  icon: string;
-  isPreset: boolean;
-};
 
 type GroupDetailProps = {
   group: {
@@ -35,17 +24,6 @@ type GroupDetailProps = {
     description?: string;
     closingDay: number;
   };
-  members: {
-    _id: Id<"groupMembers">;
-    userId: Id<"users">;
-    displayName: string;
-    avatarUrl?: string;
-    role: "owner" | "member";
-    joinedAt: number;
-    isMe: boolean;
-  }[];
-  categories: Category[];
-  myRole: "owner" | "member";
 };
 
 type ExpenseToDelete = {
@@ -102,12 +80,7 @@ function getSettlementPeriod(
   };
 }
 
-export function GroupDetail({
-  group,
-  members,
-  categories,
-  myRole,
-}: GroupDetailProps) {
+export function GroupDetail({ group }: GroupDetailProps) {
   const router = useRouter();
   const removeExpense = useMutation(api.expenses.remove);
 
@@ -187,99 +160,55 @@ export function GroupDetail({
 
   return (
     <div className="space-y-6">
-      {/* グループ情報 */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4">
-        <div className="flex items-center gap-2 text-slate-600">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      {/* 固定ナビゲーション（期間 + タブ） */}
+      <div className="sticky top-17.25 z-10 -mx-4 px-4 pb-2 bg-white border-b border-slate-200">
+        {/* 期間ナビゲーター */}
+        <div className="pt-4">
+          <PeriodNavigator
+            year={displayYear}
+            month={displayMonth}
+            startDate={period.startDate}
+            endDate={period.endDate}
+            onPrevious={goToPreviousMonth}
+            onNext={goToNextMonth}
+            canGoNext={canGoNext}
+          />
+        </div>
+
+        {/* タブ */}
+        <div className="flex mt-4">
+          <button
+            onClick={() => setActiveTab("expenses")}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+              activeTab === "expenses"
+                ? "text-slate-800 border-b-2 border-slate-800"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
-            <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-            <line x1="16" x2="16" y1="2" y2="6" />
-            <line x1="8" x2="8" y1="2" y2="6" />
-            <line x1="3" x2="21" y1="10" y2="10" />
-          </svg>
-          <span>締め日: 毎月{group.closingDay}日</span>
-        </div>
-        {group.description && (
-          <p className="mt-2 text-sm text-slate-500">{group.description}</p>
-        )}
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-          <CategoryManager groupId={group._id} categories={categories} />
-          <Link
-            href={`/groups/${group._id}/shopping`}
-            className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-800 transition-colors"
+            支出
+          </button>
+          <button
+            onClick={() => setActiveTab("settlement")}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+              activeTab === "settlement"
+                ? "text-slate-800 border-b-2 border-slate-800"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
-            <ShoppingCart className="h-4 w-4" />
-            買い物リスト
-          </Link>
+            精算
+          </button>
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+              activeTab === "analytics"
+                ? "text-slate-800 border-b-2 border-slate-800"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            分析
+          </button>
         </div>
       </div>
-
-      {/* メンバー一覧 */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium text-slate-800">
-            メンバー ({members.length}人)
-          </h2>
-          {myRole === "owner" && (
-            <InviteDialog groupId={group._id} groupName={group.name} />
-          )}
-        </div>
-        <MemberList members={members} />
-      </div>
-
-      {/* タブ */}
-      <div className="flex border-b border-slate-200">
-        <button
-          onClick={() => setActiveTab("expenses")}
-          className={`flex-1 py-2 text-sm font-medium transition-colors ${
-            activeTab === "expenses"
-              ? "text-slate-800 border-b-2 border-slate-800"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          支出
-        </button>
-        <button
-          onClick={() => setActiveTab("settlement")}
-          className={`flex-1 py-2 text-sm font-medium transition-colors ${
-            activeTab === "settlement"
-              ? "text-slate-800 border-b-2 border-slate-800"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          精算
-        </button>
-        <button
-          onClick={() => setActiveTab("analytics")}
-          className={`flex-1 py-2 text-sm font-medium transition-colors ${
-            activeTab === "analytics"
-              ? "text-slate-800 border-b-2 border-slate-800"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          分析
-        </button>
-      </div>
-
-      {/* 期間ナビゲーター（全タブ共通） */}
-      <PeriodNavigator
-        year={displayYear}
-        month={displayMonth}
-        startDate={period.startDate}
-        endDate={period.endDate}
-        onPrevious={goToPreviousMonth}
-        onNext={goToNextMonth}
-        canGoNext={canGoNext}
-      />
 
       {/* タブコンテンツ */}
       {activeTab === "expenses" && (
@@ -302,7 +231,6 @@ export function GroupDetail({
               groupId={group._id}
               year={displayYear}
               month={displayMonth}
-              isOwner={myRole === "owner"}
             />
           </div>
           <div>
