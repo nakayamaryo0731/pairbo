@@ -121,11 +121,13 @@ describe("analytics", () => {
       });
 
       await expect(
-        t.withIdentity(userBIdentity).query(api.analytics.getCategoryBreakdown, {
-          groupId,
-          year: 2025,
-          month: 1,
-        }),
+        t
+          .withIdentity(userBIdentity)
+          .query(api.analytics.getCategoryBreakdown, {
+            groupId,
+            year: 2025,
+            month: 1,
+          }),
       ).rejects.toThrow("このグループにアクセスする権限がありません");
     });
   });
