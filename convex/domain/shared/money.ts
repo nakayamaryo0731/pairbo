@@ -1,3 +1,5 @@
+import { ConvexError } from "convex/values";
+
 /**
  * 金額関連のユーティリティ
  *
@@ -21,7 +23,7 @@ export function divideWithRemainder(
   count: number,
 ): [base: number, remainder: number] {
   if (count <= 0) {
-    throw new Error("分割数は1以上である必要があります");
+    throw new ConvexError("分割数は1以上である必要があります");
   }
   const base = Math.floor(amount / count);
   const remainder = amount % count;

@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import {
   requireGroupMember,
@@ -71,7 +71,7 @@ export const create = authMutation({
 
     const category = await ctx.db.get(args.categoryId);
     if (!category || category.groupId !== args.groupId) {
-      throw new Error("カテゴリが見つかりません");
+      throw new ConvexError("カテゴリが見つかりません");
     }
 
     // 支払者がグループメンバーであることを確認
@@ -410,7 +410,7 @@ export const update = authMutation({
       group.closingDay,
     );
     if (isSettled) {
-      throw new Error("精算済みの期間の支出は編集できません");
+      throw new ConvexError("精算済みの期間の支出は編集できません");
     }
 
     // バリデーション
@@ -425,7 +425,7 @@ export const update = authMutation({
 
     const category = await ctx.db.get(args.categoryId);
     if (!category || category.groupId !== expense.groupId) {
-      throw new Error("カテゴリが見つかりません");
+      throw new ConvexError("カテゴリが見つかりません");
     }
 
     // 支払者がグループメンバーであることを確認
@@ -526,7 +526,7 @@ export const remove = authMutation({
       group.closingDay,
     );
     if (isSettled) {
-      throw new Error("精算済みの期間の支出は削除できません");
+      throw new ConvexError("精算済みの期間の支出は削除できません");
     }
 
     // 関連するsplitsを削除

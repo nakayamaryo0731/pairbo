@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
 import { getOrThrow } from "./lib/dataHelpers";
@@ -44,7 +44,7 @@ export const create = authMutation({
       (c) => c.name.trim().toLowerCase() === validatedName.toLowerCase(),
     );
     if (duplicate) {
-      throw new Error("同じ名前のカテゴリが既に存在します");
+      throw new ConvexError("同じ名前のカテゴリが既に存在します");
     }
 
     const maxSortOrder = existingCategories.reduce(
@@ -91,7 +91,7 @@ export const update = authMutation({
     await requireGroupMember(ctx, category.groupId);
 
     if (category.isPreset) {
-      throw new Error("プリセットカテゴリは編集できません");
+      throw new ConvexError("プリセットカテゴリは編集できません");
     }
 
     let validatedName: string;
@@ -119,7 +119,7 @@ export const update = authMutation({
         c.name.trim().toLowerCase() === validatedName.toLowerCase(),
     );
     if (duplicate) {
-      throw new Error("同じ名前のカテゴリが既に存在します");
+      throw new ConvexError("同じ名前のカテゴリが既に存在します");
     }
 
     await ctx.db.patch(args.categoryId, {
@@ -153,7 +153,7 @@ export const remove = authMutation({
     await requireGroupMember(ctx, category.groupId);
 
     if (category.isPreset) {
-      throw new Error("プリセットカテゴリは削除できません");
+      throw new ConvexError("プリセットカテゴリは削除できません");
     }
 
     const usedExpense = await ctx.db
@@ -163,7 +163,7 @@ export const remove = authMutation({
       .first();
 
     if (usedExpense) {
-      throw new Error(
+      throw new ConvexError(
         "このカテゴリは使用中のため削除できません。先に支出のカテゴリを変更してください。",
       );
     }
