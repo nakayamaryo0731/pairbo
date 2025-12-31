@@ -29,6 +29,9 @@ import type * as domain_settlement_rules from "../domain/settlement/rules.js";
 import type * as domain_settlement_types from "../domain/settlement/types.js";
 import type * as domain_shared_index from "../domain/shared/index.js";
 import type * as domain_shared_money from "../domain/shared/money.js";
+import type * as domain_shopping_index from "../domain/shopping/index.js";
+import type * as domain_shopping_rules from "../domain/shopping/rules.js";
+import type * as domain_shopping_types from "../domain/shopping/types.js";
 import type * as expenses from "../expenses.js";
 import type * as groups from "../groups.js";
 import type * as invitations from "../invitations.js";
@@ -39,6 +42,7 @@ import type * as lib_seedData from "../lib/seedData.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as seed from "../seed.js";
 import type * as settlements from "../settlements.js";
+import type * as shoppingList from "../shoppingList.js";
 import type * as users from "../users.js";
 
 import type {
@@ -69,6 +73,9 @@ declare const fullApi: ApiFromModules<{
   "domain/settlement/types": typeof domain_settlement_types;
   "domain/shared/index": typeof domain_shared_index;
   "domain/shared/money": typeof domain_shared_money;
+  "domain/shopping/index": typeof domain_shopping_index;
+  "domain/shopping/rules": typeof domain_shopping_rules;
+  "domain/shopping/types": typeof domain_shopping_types;
   expenses: typeof expenses;
   groups: typeof groups;
   invitations: typeof invitations;
@@ -79,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   "lib/validators": typeof lib_validators;
   seed: typeof seed;
   settlements: typeof settlements;
+  shoppingList: typeof shoppingList;
   users: typeof users;
 }>;
 

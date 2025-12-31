@@ -37,6 +37,7 @@ export const create = authMutation({
     date: v.string(),
     memo: v.optional(v.string()),
     splitDetails: v.optional(splitDetailsValidator),
+    shoppingItemIds: v.optional(v.array(v.id("shoppingItems"))),
   },
   handler: async (ctx, args) => {
     validateExpenseInput({
@@ -117,6 +118,32 @@ export const create = authMutation({
         }),
       ),
     );
+
+    // 買い物リストアイテムとの連携
+    if (args.shoppingItemIds && args.shoppingItemIds.length > 0) {
+      const now = Date.now();
+      await Promise.all(
+        args.shoppingItemIds.map(async (itemId) => {
+          const item = await ctx.db.get(itemId);
+          if (
+            item &&
+            item.groupId === args.groupId &&
+            item.purchasedAt === undefined
+          ) {
+            await ctx.db.patch(itemId, {
+              purchasedAt: now,
+              purchasedBy: ctx.user._id,
+              linkedExpenseId: expenseId,
+            });
+          }
+        }),
+      );
+
+      ctx.logger.info("SHOPPING", "items_linked_to_expense", {
+        expenseId,
+        shoppingItemIds: args.shoppingItemIds,
+      });
+    }
 
     ctx.logger.audit("EXPENSE", "created", {
       expenseId,
@@ -683,6 +710,30 @@ export const remove = authMutation({
       .collect();
 
     await Promise.all(splits.map((split) => ctx.db.delete(split._id)));
+
+    // 買い物リストアイテムの連携解除（購入済み状態は維持）
+    const linkedItems = await ctx.db
+      .query("shoppingItems")
+      .withIndex("by_group_and_purchased", (q) =>
+        q.eq("groupId", expense.groupId),
+      )
+      .filter((q) => q.eq(q.field("linkedExpenseId"), args.expenseId))
+      .collect();
+
+    if (linkedItems.length > 0) {
+      await Promise.all(
+        linkedItems.map((item) =>
+          ctx.db.patch(item._id, {
+            linkedExpenseId: undefined,
+          }),
+        ),
+      );
+
+      ctx.logger.info("SHOPPING", "items_unlinked_from_expense", {
+        expenseId: args.expenseId,
+        itemCount: linkedItems.length,
+      });
+    }
 
     // 支出を削除
     await ctx.db.delete(args.expenseId);

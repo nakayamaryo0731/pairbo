@@ -75,10 +75,10 @@ export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
         {chartData.map((item) => (
           <div key={item.categoryId} className="flex items-center gap-2">
             <div
-              className="w-3 h-3 rounded-full flex-shrink-0"
+              className="w-3 h-3 rounded-full shrink-0"
               style={{ backgroundColor: item.fill }}
             />
-            <span className="flex-shrink-0">{item.categoryIcon}</span>
+            <span className="shrink-0">{item.categoryIcon}</span>
             <span className="flex-1 truncate text-sm">{item.categoryName}</span>
             <span className="text-sm font-medium">
               ¥{item.amount.toLocaleString()}

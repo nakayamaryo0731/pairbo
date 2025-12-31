@@ -17,6 +17,7 @@ import {
 } from "@/components/settlements";
 import { AnalyticsSection } from "@/components/analytics";
 import { CategoryManager } from "@/components/categories";
+import { ShoppingCart } from "lucide-react";
 
 type TabType = "expenses" | "settlement" | "analytics";
 
@@ -210,8 +211,15 @@ export function GroupDetail({
         {group.description && (
           <p className="mt-2 text-sm text-slate-500">{group.description}</p>
         )}
-        <div className="mt-3 pt-3 border-t border-slate-100">
+        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
           <CategoryManager groupId={group._id} categories={categories} />
+          <Link
+            href={`/groups/${group._id}/shopping`}
+            className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-800 transition-colors"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            買い物リスト
+          </Link>
         </div>
       </div>
 

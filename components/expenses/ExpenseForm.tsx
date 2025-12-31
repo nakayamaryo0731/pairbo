@@ -13,6 +13,7 @@ import {
   type SplitMethod,
   type SplitDetails,
 } from "./SplitMethodSelector";
+import { ShoppingItemSelector } from "./ShoppingItemSelector";
 
 type Category = {
   _id: Id<"categories">;
@@ -117,6 +118,9 @@ export function ExpenseForm({
   });
   const [bearerId, setBearerId] = useState<Id<"users"> | null>(
     isEditMode && initialData.bearerId ? initialData.bearerId : null,
+  );
+  const [shoppingItemIds, setShoppingItemIds] = useState<Id<"shoppingItems">[]>(
+    [],
   );
 
   const handleMethodChange = (newMethod: SplitMethod) => {
@@ -226,6 +230,8 @@ export function ExpenseForm({
           date,
           memo: memo.trim() || undefined,
           splitDetails,
+          shoppingItemIds:
+            shoppingItemIds.length > 0 ? shoppingItemIds : undefined,
         });
       }
 
@@ -379,6 +385,15 @@ export function ExpenseForm({
           maxLength={500}
         />
       </div>
+
+      {/* 買い物リスト連携（新規作成時のみ） */}
+      {!isEditMode && (
+        <ShoppingItemSelector
+          groupId={groupId}
+          selectedIds={shoppingItemIds}
+          onSelectionChange={setShoppingItemIds}
+        />
+      )}
 
       {/* エラー表示 */}
       {error && (
