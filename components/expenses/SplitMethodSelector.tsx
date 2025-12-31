@@ -74,7 +74,7 @@ export function SplitMethodSelector({
             type="button"
             className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
               method === m
-                ? "bg-blue-600 text-white border-blue-600"
+                ? "bg-blue-500 text-white border-blue-500"
                 : "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
             }`}
             onClick={() => onMethodChange(m)}
@@ -140,7 +140,7 @@ function RatioInput({
   };
 
   return (
-    <div className="space-y-3 p-3 bg-slate-50 rounded-md">
+    <div className="space-y-3 p-3 bg-blue-50 rounded-xl">
       {members.map((member) => (
         <div key={member.userId} className="flex items-center gap-3">
           <span className="flex-1 text-sm">{member.displayName}</span>
@@ -190,7 +190,7 @@ function AmountInput({
   };
 
   return (
-    <div className="space-y-3 p-3 bg-slate-50 rounded-md">
+    <div className="space-y-3 p-3 bg-blue-50 rounded-xl">
       {members.map((member) => (
         <div key={member.userId} className="flex items-center gap-3">
           <span className="flex-1 text-sm">{member.displayName}</span>
@@ -229,7 +229,7 @@ function FullInput({
   onBearerIdChange: (bearerId: Id<"users">) => void;
 }) {
   return (
-    <div className="space-y-2 p-3 bg-slate-50 rounded-md">
+    <div className="space-y-2 p-3 bg-blue-50 rounded-xl">
       <p className="text-sm text-slate-600">誰が全額負担しますか？</p>
       {members.map((member) => (
         <label
@@ -317,8 +317,8 @@ function MemberSelector({
               onClick={() => handleToggle(member.userId)}
               className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                 isSelected
-                  ? "bg-blue-100 text-blue-700 border-blue-300"
-                  : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
               }`}
             >
               {member.displayName}
@@ -349,7 +349,7 @@ function EqualPreview({
   const remainder = totalAmount % memberCount;
 
   return (
-    <div className="p-3 bg-slate-50 rounded-md text-sm text-slate-600">
+    <div className="p-3 bg-blue-50 rounded-xl text-sm text-slate-600">
       {memberCount}人で均等分割: 1人あたり ¥{perPerson.toLocaleString()}
       {remainder > 0 && (
         <span className="text-slate-500">

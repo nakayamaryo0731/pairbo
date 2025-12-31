@@ -35,15 +35,15 @@ export function ShoppingItemSelector({
   }
 
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden">
+    <div className="border border-blue-200 rounded-xl overflow-hidden">
       {/* ヘッダー（クリックで展開/折りたたみ） */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-blue-50 hover:bg-blue-100 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <ShoppingCart className="h-4 w-4 text-slate-500" />
+          <ShoppingCart className="h-4 w-4 text-blue-500" />
           <span className="text-sm font-medium text-slate-700">
             買い物リストから選択
           </span>
@@ -77,8 +77,8 @@ export function ShoppingItemSelector({
                 <div
                   className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                     isSelected
-                      ? "bg-blue-600 border-blue-600"
-                      : "border-slate-300"
+                      ? "bg-blue-500 border-blue-500"
+                      : "border-blue-300"
                   }`}
                 >
                   {isSelected && <Check className="h-3 w-3 text-white" />}

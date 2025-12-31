@@ -3,6 +3,103 @@
 import { useState } from "react";
 
 type StylePattern = "minimal" | "card" | "modern";
+type ColorTheme = "slate" | "violet" | "emerald" | "blue" | "skyblue" | "indigo" | "amber" | "rose";
+
+const COLOR_THEMES: Record<
+  ColorTheme,
+  {
+    name: string;
+    chip: string;
+    chipSelected: string;
+    chipUnselected: string;
+    button: string;
+    border: string;
+    segmentBg: string;
+    preview: string;
+  }
+> = {
+  slate: {
+    name: "Slate",
+    chip: "bg-slate-800 text-white",
+    chipSelected: "bg-slate-800 text-white",
+    chipUnselected: "bg-slate-100 text-slate-600 hover:bg-slate-200",
+    button: "bg-slate-800 hover:bg-slate-700 text-white",
+    border: "border-slate-800 text-slate-800",
+    segmentBg: "bg-slate-100",
+    preview: "bg-slate-800",
+  },
+  violet: {
+    name: "Violet",
+    chip: "bg-violet-600 text-white",
+    chipSelected: "bg-violet-600 text-white",
+    chipUnselected: "bg-violet-50 text-violet-700 hover:bg-violet-100",
+    button: "bg-violet-600 hover:bg-violet-500 text-white",
+    border: "border-violet-600 text-violet-600",
+    segmentBg: "bg-violet-50",
+    preview: "bg-violet-600",
+  },
+  emerald: {
+    name: "Emerald",
+    chip: "bg-emerald-600 text-white",
+    chipSelected: "bg-emerald-600 text-white",
+    chipUnselected: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+    button: "bg-emerald-600 hover:bg-emerald-500 text-white",
+    border: "border-emerald-600 text-emerald-600",
+    segmentBg: "bg-emerald-50",
+    preview: "bg-emerald-600",
+  },
+  blue: {
+    name: "Blue",
+    chip: "bg-blue-500 text-white",
+    chipSelected: "bg-blue-500 text-white",
+    chipUnselected: "bg-blue-50 text-blue-600 hover:bg-blue-100",
+    button: "bg-blue-500 hover:bg-blue-400 text-white",
+    border: "border-blue-400 text-blue-500",
+    segmentBg: "bg-blue-50",
+    preview: "bg-blue-500",
+  },
+  // 淡いブルーバリエーション
+  skyblue: {
+    name: "Sky Blue",
+    chip: "bg-sky-400 text-white",
+    chipSelected: "bg-sky-400 text-white",
+    chipUnselected: "bg-sky-50 text-sky-600 hover:bg-sky-100",
+    button: "bg-sky-400 hover:bg-sky-300 text-white",
+    border: "border-sky-300 text-sky-500",
+    segmentBg: "bg-sky-50",
+    preview: "bg-sky-400",
+  },
+  indigo: {
+    name: "Indigo",
+    chip: "bg-indigo-400 text-white",
+    chipSelected: "bg-indigo-400 text-white",
+    chipUnselected: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100",
+    button: "bg-indigo-400 hover:bg-indigo-300 text-white",
+    border: "border-indigo-300 text-indigo-500",
+    segmentBg: "bg-indigo-50",
+    preview: "bg-indigo-400",
+  },
+  amber: {
+    name: "Amber",
+    chip: "bg-amber-500 text-white",
+    chipSelected: "bg-amber-500 text-white",
+    chipUnselected: "bg-amber-50 text-amber-700 hover:bg-amber-100",
+    button: "bg-amber-500 hover:bg-amber-400 text-white",
+    border: "border-amber-500 text-amber-600",
+    segmentBg: "bg-amber-50",
+    preview: "bg-amber-500",
+  },
+  rose: {
+    name: "Rose",
+    chip: "bg-rose-500 text-white",
+    chipSelected: "bg-rose-500 text-white",
+    chipUnselected: "bg-rose-50 text-rose-700 hover:bg-rose-100",
+    button: "bg-rose-500 hover:bg-rose-400 text-white",
+    border: "border-rose-500 text-rose-600",
+    segmentBg: "bg-rose-50",
+    preview: "bg-rose-500",
+  },
+};
 
 const MOCK_CATEGORIES = [
   { id: "1", name: "食費", icon: "🍽️" },
@@ -34,8 +131,9 @@ function getTodayString(): string {
  * - 日付: コンパクト
  * - カテゴリ/支払者: 横スクロール対応
  */
-function MinimalForm() {
+function MinimalForm({ theme }: { theme: ColorTheme }) {
   const [amount, setAmount] = useState("");
+  const colors = COLOR_THEMES[theme];
 
   return (
     <div className="space-y-6 py-2">
@@ -78,9 +176,7 @@ function MinimalForm() {
             <button
               key={cat.id}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap transition-all shrink-0 ${
-                i === 0
-                  ? "bg-slate-800 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                i === 0 ? colors.chipSelected : colors.chipUnselected
               }`}
             >
               <span>{cat.icon}</span>
@@ -100,9 +196,7 @@ function MinimalForm() {
             <button
               key={member.id}
               className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
-                member.isMe
-                  ? "bg-slate-800 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                member.isMe ? colors.chipSelected : colors.chipUnselected
               }`}
             >
               {member.name}
@@ -129,7 +223,7 @@ function MinimalForm() {
           {MOCK_MEMBERS.map((member) => (
             <button
               key={member.id}
-              className="px-3 py-1.5 rounded-full text-sm border-2 border-slate-800 text-slate-800 bg-white"
+              className={`px-3 py-1.5 rounded-full text-sm border-2 bg-white ${colors.border}`}
             >
               {member.name}
             </button>
@@ -137,7 +231,7 @@ function MinimalForm() {
         </div>
         <p className="text-xs text-slate-500">5人で分割</p>
         {/* 分割方法 */}
-        <div className="bg-slate-100 p-1 rounded-xl flex">
+        <div className={`${colors.segmentBg} p-1 rounded-xl flex`}>
           {["均等", "割合", "金額", "全額"].map((method, i) => (
             <button
               key={method}
@@ -187,7 +281,9 @@ function MinimalForm() {
       </button>
 
       {/* 送信ボタン */}
-      <button className="w-full py-4 bg-slate-800 text-white font-medium rounded-2xl hover:bg-slate-700 transition-colors">
+      <button
+        className={`w-full py-4 font-medium rounded-2xl transition-colors ${colors.button}`}
+      >
         記録する
       </button>
     </div>
@@ -478,11 +574,13 @@ function ModernForm() {
 
 export default function ExpenseFormDemoPage() {
   const [pattern, setPattern] = useState<StylePattern>("minimal");
+  const [colorTheme, setColorTheme] = useState<ColorTheme>("violet");
 
   return (
     <div className="min-h-screen bg-slate-100">
       {/* パターン切り替え */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 p-3">
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 p-3 space-y-3">
+        {/* レイアウトパターン */}
         <div className="flex gap-2 max-w-lg mx-auto">
           {[
             { key: "minimal", label: "A. ミニマル" },
@@ -502,6 +600,22 @@ export default function ExpenseFormDemoPage() {
             </button>
           ))}
         </div>
+
+        {/* カラーテーマ */}
+        <div className="flex gap-2 max-w-lg mx-auto justify-center">
+          {(Object.keys(COLOR_THEMES) as ColorTheme[]).map((theme) => (
+            <button
+              key={theme}
+              onClick={() => setColorTheme(theme)}
+              className={`w-8 h-8 rounded-full transition-all ${COLOR_THEMES[theme].preview} ${
+                colorTheme === theme
+                  ? "ring-2 ring-offset-2 ring-slate-400 scale-110"
+                  : "opacity-70 hover:opacity-100"
+              }`}
+              title={COLOR_THEMES[theme].name}
+            />
+          ))}
+        </div>
       </div>
 
       {/* フォーム表示 */}
@@ -509,7 +623,7 @@ export default function ExpenseFormDemoPage() {
         <div
           className={`rounded-2xl p-5 ${pattern === "card" ? "bg-slate-50" : "bg-white"}`}
         >
-          {pattern === "minimal" && <MinimalForm />}
+          {pattern === "minimal" && <MinimalForm theme={colorTheme} />}
           {pattern === "card" && <CardForm />}
           {pattern === "modern" && <ModernForm />}
         </div>

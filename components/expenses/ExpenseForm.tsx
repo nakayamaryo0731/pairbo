@@ -373,7 +373,7 @@ export function ExpenseForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={100}
-          className="flex-1 py-3 px-4 bg-slate-50 rounded-xl border-none text-slate-800 outline-none focus:ring-2 focus:ring-slate-200 placeholder:text-slate-400"
+          className="flex-1 py-3 px-4 bg-slate-50 rounded-xl border-none text-slate-800 outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-slate-400"
         />
         <input
           type="date"
@@ -381,7 +381,7 @@ export function ExpenseForm({
           onChange={(e) => setDate(e.target.value)}
           max={getTodayString()}
           required
-          className="py-3 px-3 bg-slate-50 rounded-xl border-none text-slate-800 text-sm outline-none focus:ring-2 focus:ring-slate-200 w-36"
+          className="py-3 px-3 bg-slate-50 rounded-xl border-none text-slate-800 text-sm outline-none focus:ring-2 focus:ring-blue-200 w-36"
         />
       </div>
 
@@ -398,8 +398,8 @@ export function ExpenseForm({
               onClick={() => setCategoryId(category._id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap transition-all shrink-0 ${
                 categoryId === category._id
-                  ? "bg-slate-800 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-blue-500 text-white"
+                  : "bg-blue-50 text-blue-600 hover:bg-blue-100"
               }`}
             >
               <span>{category.icon}</span>
@@ -422,8 +422,8 @@ export function ExpenseForm({
               onClick={() => setPaidBy(member.userId)}
               className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
                 paidBy === member.userId
-                  ? "bg-slate-800 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-blue-500 text-white"
+                  : "bg-blue-50 text-blue-600 hover:bg-blue-100"
               }`}
             >
               {member.displayName}
@@ -475,7 +475,7 @@ export function ExpenseForm({
         <button
           type="submit"
           disabled={isLoading || !isFormValid}
-          className="w-full py-4 bg-slate-800 text-white font-medium rounded-2xl hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-4 bg-blue-500 text-white font-medium rounded-2xl hover:bg-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading
             ? isEditMode
