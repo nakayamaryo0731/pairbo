@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { authMutation, authQuery } from "./lib/auth";
 import {
   calculateEqualSplit,
@@ -17,7 +18,10 @@ import {
 } from "./domain/settlement";
 
 const splitDetailsValidator = v.union(
-  v.object({ method: v.literal("equal") }),
+  v.object({
+    method: v.literal("equal"),
+    memberIds: v.optional(v.array(v.id("users"))),
+  }),
   v.object({
     method: v.literal("ratio"),
     ratios: v.array(v.object({ userId: v.id("users"), ratio: v.number() })),
@@ -88,15 +92,40 @@ export const create = authMutation({
       .withIndex("by_group_and_user", (q) => q.eq("groupId", args.groupId))
       .collect();
 
-    const memberIds = memberships.map((m) => m.userId);
+    const allMemberIds = memberships.map((m) => m.userId);
 
     const splitDetails: SplitDetails = args.splitDetails ?? { method: "equal" };
-    validateSplitDetails(splitDetails, args.amount, memberIds);
+
+    // 分割対象メンバーを決定
+    let targetMemberIds: Id<"users">[];
+    if (splitDetails.method === "equal" && splitDetails.memberIds) {
+      // 選択メンバーがグループメンバーであることを確認
+      for (const id of splitDetails.memberIds) {
+        if (!allMemberIds.includes(id)) {
+          throw new Error("選択されたメンバーがグループに所属していません");
+        }
+      }
+      targetMemberIds = splitDetails.memberIds;
+    } else if (splitDetails.method === "ratio") {
+      targetMemberIds = splitDetails.ratios.map((r) => r.userId);
+    } else if (splitDetails.method === "amount") {
+      targetMemberIds = splitDetails.amounts.map((a) => a.userId);
+    } else if (splitDetails.method === "full") {
+      targetMemberIds = [splitDetails.bearerId];
+    } else {
+      targetMemberIds = allMemberIds;
+    }
+
+    if (targetMemberIds.length === 0) {
+      throw new Error("少なくとも1人のメンバーを選択してください");
+    }
+
+    validateSplitDetails(splitDetails, args.amount, targetMemberIds);
 
     const splits = calculateSplits(
       splitDetails,
       args.amount,
-      memberIds,
+      targetMemberIds,
       args.paidBy,
     );
 
@@ -640,15 +669,40 @@ export const update = authMutation({
       .withIndex("by_group_and_user", (q) => q.eq("groupId", expense.groupId))
       .collect();
 
-    const memberIds = memberships.map((m) => m.userId);
+    const allMemberIds = memberships.map((m) => m.userId);
 
     const splitDetails: SplitDetails = args.splitDetails ?? { method: "equal" };
-    validateSplitDetails(splitDetails, args.amount, memberIds);
+
+    // 分割対象メンバーを決定
+    let targetMemberIds: Id<"users">[];
+    if (splitDetails.method === "equal" && splitDetails.memberIds) {
+      // 選択メンバーがグループメンバーであることを確認
+      for (const id of splitDetails.memberIds) {
+        if (!allMemberIds.includes(id)) {
+          throw new Error("選択されたメンバーがグループに所属していません");
+        }
+      }
+      targetMemberIds = splitDetails.memberIds;
+    } else if (splitDetails.method === "ratio") {
+      targetMemberIds = splitDetails.ratios.map((r) => r.userId);
+    } else if (splitDetails.method === "amount") {
+      targetMemberIds = splitDetails.amounts.map((a) => a.userId);
+    } else if (splitDetails.method === "full") {
+      targetMemberIds = [splitDetails.bearerId];
+    } else {
+      targetMemberIds = allMemberIds;
+    }
+
+    if (targetMemberIds.length === 0) {
+      throw new Error("少なくとも1人のメンバーを選択してください");
+    }
+
+    validateSplitDetails(splitDetails, args.amount, targetMemberIds);
 
     const splits = calculateSplits(
       splitDetails,
       args.amount,
-      memberIds,
+      targetMemberIds,
       args.paidBy,
     );
 

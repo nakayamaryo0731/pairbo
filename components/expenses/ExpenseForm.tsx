@@ -39,6 +39,7 @@ type InitialData = {
   ratios?: { userId: Id<"users">; ratio: number }[];
   amounts?: { userId: Id<"users">; amount: number }[];
   bearerId?: Id<"users">;
+  splits?: { userId: Id<"users">; amount: number }[];
 };
 
 type ExpenseFormProps = {
@@ -123,6 +124,21 @@ export function ExpenseForm({
   const [bearerId, setBearerId] = useState<Id<"users"> | null>(
     isEditMode && initialData.bearerId ? initialData.bearerId : null,
   );
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<Id<"users">>>(
+    () => {
+      if (isEditMode && initialData.splits) {
+        // 編集時: 負担額 > 0 のメンバーを選択
+        const splitUserIds = initialData.splits
+          .filter((s) => s.amount > 0)
+          .map((s) => s.userId);
+        return splitUserIds.length > 0
+          ? new Set(splitUserIds)
+          : new Set(members.map((m) => m.userId));
+      }
+      // 新規: 全員選択
+      return new Set(members.map((m) => m.userId));
+    },
+  );
   const [shoppingItemIds, setShoppingItemIds] = useState<Id<"shoppingItems">[]>(
     [],
   );
@@ -131,15 +147,51 @@ export function ExpenseForm({
     setSplitMethod(newMethod);
     if (newMethod === "amount") {
       const amountNum = parseInt(amount, 10) || 0;
-      if (amountNum > 0 && members.length > 0) {
-        const baseAmount = Math.floor(amountNum / members.length);
-        const remainder = amountNum % members.length;
+      const selectedMembers = members.filter((m) =>
+        selectedMemberIds.has(m.userId),
+      );
+      if (amountNum > 0 && selectedMembers.length > 0) {
+        const baseAmount = Math.floor(amountNum / selectedMembers.length);
+        const remainder = amountNum % selectedMembers.length;
         const newAmounts = new Map<Id<"users">, number>();
-        members.forEach((m, i) => {
+        selectedMembers.forEach((m, i) => {
           newAmounts.set(m.userId, baseAmount + (i === 0 ? remainder : 0));
         });
         setAmounts(newAmounts);
       }
+    }
+  };
+
+  const handleSelectedMemberIdsChange = (newIds: Set<Id<"users">>) => {
+    setSelectedMemberIds(newIds);
+    // 選択メンバーが変わったら、割合と金額をリセット
+    const selectedMembers = members.filter((m) => newIds.has(m.userId));
+    // 割合: 選択メンバーで均等配分
+    const defaultRatio = Math.floor(100 / selectedMembers.length);
+    const newRatios = new Map<Id<"users">, number>();
+    selectedMembers.forEach((m, i) => {
+      newRatios.set(
+        m.userId,
+        i === 0
+          ? 100 - defaultRatio * (selectedMembers.length - 1)
+          : defaultRatio,
+      );
+    });
+    setRatios(newRatios);
+    // 金額: 選択メンバーで均等配分
+    const amountNum = parseInt(amount, 10) || 0;
+    if (amountNum > 0 && selectedMembers.length > 0) {
+      const baseAmount = Math.floor(amountNum / selectedMembers.length);
+      const remainder = amountNum % selectedMembers.length;
+      const newAmounts = new Map<Id<"users">, number>();
+      selectedMembers.forEach((m, i) => {
+        newAmounts.set(m.userId, baseAmount + (i === 0 ? remainder : 0));
+      });
+      setAmounts(newAmounts);
+    }
+    // 全額負担者: 選択から外れたらリセット
+    if (bearerId && !newIds.has(bearerId)) {
+      setBearerId(null);
     }
   };
 
@@ -169,28 +221,38 @@ export function ExpenseForm({
       return;
     }
 
+    // 選択メンバーのバリデーション
+    if (selectedMemberIds.size === 0) {
+      setError("少なくとも1人のメンバーを選択してください");
+      return;
+    }
+
+    const selectedMemberIdArray = Array.from(selectedMemberIds);
+
     let splitDetails: SplitDetails;
     if (splitMethod === "equal") {
-      splitDetails = { method: "equal" };
+      splitDetails = { method: "equal", memberIds: selectedMemberIdArray };
     } else if (splitMethod === "ratio") {
-      const totalRatio = Array.from(ratios.values()).reduce(
-        (sum, v) => sum + v,
-        0,
-      );
+      // 選択メンバーのみの割合をフィルタ
+      const selectedRatios = Array.from(ratios.entries())
+        .filter(([userId]) => selectedMemberIds.has(userId))
+        .map(([userId, ratio]) => ({ userId, ratio }));
+      const totalRatio = selectedRatios.reduce((sum, r) => sum + r.ratio, 0);
       if (totalRatio !== 100) {
         setError("割合の合計を100%にしてください");
         return;
       }
       splitDetails = {
         method: "ratio",
-        ratios: Array.from(ratios.entries()).map(([userId, ratio]) => ({
-          userId,
-          ratio,
-        })),
+        ratios: selectedRatios,
       };
     } else if (splitMethod === "amount") {
-      const totalAmounts = Array.from(amounts.values()).reduce(
-        (sum, v) => sum + v,
+      // 選択メンバーのみの金額をフィルタ
+      const selectedAmounts = Array.from(amounts.entries())
+        .filter(([userId]) => selectedMemberIds.has(userId))
+        .map(([userId, amt]) => ({ userId, amount: amt }));
+      const totalAmounts = selectedAmounts.reduce(
+        (sum, a) => sum + a.amount,
         0,
       );
       if (totalAmounts !== amountNum) {
@@ -199,14 +261,15 @@ export function ExpenseForm({
       }
       splitDetails = {
         method: "amount",
-        amounts: Array.from(amounts.entries()).map(([userId, amt]) => ({
-          userId,
-          amount: amt,
-        })),
+        amounts: selectedAmounts,
       };
     } else {
       if (!bearerId) {
         setError("全額負担者を選択してください");
+        return;
+      }
+      if (!selectedMemberIds.has(bearerId)) {
+        setError("全額負担者は選択メンバーから選んでください");
         return;
       }
       splitDetails = { method: "full", bearerId };
@@ -382,6 +445,8 @@ export function ExpenseForm({
           method={splitMethod}
           onMethodChange={handleMethodChange}
           members={members}
+          selectedMemberIds={selectedMemberIds}
+          onSelectedMemberIdsChange={handleSelectedMemberIdsChange}
           totalAmount={parseInt(amount, 10) || 0}
           ratios={ratios}
           onRatiosChange={setRatios}

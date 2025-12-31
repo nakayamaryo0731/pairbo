@@ -24,7 +24,7 @@ export interface AmountSplitInput {
 }
 
 export type SplitDetails =
-  | { method: "equal" }
+  | { method: "equal"; memberIds?: Id<"users">[] }
   | { method: "ratio"; ratios: RatioSplitInput[] }
   | { method: "amount"; amounts: AmountSplitInput[] }
   | { method: "full"; bearerId: Id<"users"> };

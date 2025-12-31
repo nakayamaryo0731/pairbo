@@ -162,6 +162,10 @@ export default function ExpenseEditPage({ params }: PageProps) {
       expense.splitMethod === "full"
         ? expense.splits.find((s) => s.amount === expense.amount)?.userId
         : undefined,
+    splits: expense.splits.map((s) => ({
+      userId: s.userId,
+      amount: s.amount,
+    })),
   };
 
   return (
