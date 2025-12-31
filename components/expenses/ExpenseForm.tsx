@@ -26,10 +26,25 @@ type Member = {
   isMe: boolean;
 };
 
+type InitialData = {
+  expenseId: Id<"expenses">;
+  amount: number;
+  categoryId: Id<"categories">;
+  paidBy: Id<"users">;
+  date: string;
+  memo?: string;
+  splitMethod: "equal" | "ratio" | "amount" | "full";
+  ratios?: { userId: Id<"users">; ratio: number }[];
+  amounts?: { userId: Id<"users">; amount: number }[];
+  bearerId?: Id<"users">;
+};
+
 type ExpenseFormProps = {
   groupId: Id<"groups">;
   categories: Category[];
   members: Member[];
+  mode?: "create" | "edit";
+  initialData?: InitialData;
 };
 
 /**
@@ -43,25 +58,43 @@ export function ExpenseForm({
   groupId,
   categories,
   members,
+  mode = "create",
+  initialData,
 }: ExpenseFormProps) {
   const router = useRouter();
   const createExpense = useMutation(api.expenses.create);
+  const updateExpense = useMutation(api.expenses.update);
+
+  const isEditMode = mode === "edit" && initialData;
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(
+    isEditMode ? String(initialData.amount) : "",
+  );
   const [categoryId, setCategoryId] = useState<Id<"categories"> | "">(
-    categories[0]?._id ?? "",
+    isEditMode ? initialData.categoryId : (categories[0]?._id ?? ""),
   );
   const [paidBy, setPaidBy] = useState<Id<"users">>(
-    members.find((m) => m.isMe)?.userId ?? members[0]?.userId,
+    isEditMode
+      ? initialData.paidBy
+      : (members.find((m) => m.isMe)?.userId ?? members[0]?.userId),
   );
-  const [date, setDate] = useState(getTodayString());
-  const [memo, setMemo] = useState("");
+  const [date, setDate] = useState(
+    isEditMode ? initialData.date : getTodayString(),
+  );
+  const [memo, setMemo] = useState(isEditMode ? (initialData.memo ?? "") : "");
 
-  const [splitMethod, setSplitMethod] = useState<SplitMethod>("equal");
+  const [splitMethod, setSplitMethod] = useState<SplitMethod>(
+    isEditMode ? initialData.splitMethod : "equal",
+  );
   const [ratios, setRatios] = useState<Map<Id<"users">, number>>(() => {
+    if (isEditMode && initialData.ratios) {
+      const map = new Map<Id<"users">, number>();
+      initialData.ratios.forEach((r) => map.set(r.userId, r.ratio));
+      return map;
+    }
     const defaultRatio = Math.floor(100 / members.length);
     const map = new Map<Id<"users">, number>();
     members.forEach((m, i) => {
@@ -73,11 +106,18 @@ export function ExpenseForm({
     return map;
   });
   const [amounts, setAmounts] = useState<Map<Id<"users">, number>>(() => {
+    if (isEditMode && initialData.amounts) {
+      const map = new Map<Id<"users">, number>();
+      initialData.amounts.forEach((a) => map.set(a.userId, a.amount));
+      return map;
+    }
     const map = new Map<Id<"users">, number>();
     members.forEach((m) => map.set(m.userId, 0));
     return map;
   });
-  const [bearerId, setBearerId] = useState<Id<"users"> | null>(null);
+  const [bearerId, setBearerId] = useState<Id<"users"> | null>(
+    isEditMode && initialData.bearerId ? initialData.bearerId : null,
+  );
 
   const handleMethodChange = (newMethod: SplitMethod) => {
     setSplitMethod(newMethod);
@@ -167,19 +207,37 @@ export function ExpenseForm({
     setIsLoading(true);
 
     try {
-      await createExpense({
-        groupId,
-        amount: amountNum,
-        categoryId,
-        paidBy,
-        date,
-        memo: memo.trim() || undefined,
-        splitDetails,
-      });
+      if (isEditMode) {
+        await updateExpense({
+          expenseId: initialData.expenseId,
+          amount: amountNum,
+          categoryId,
+          paidBy,
+          date,
+          memo: memo.trim() || undefined,
+          splitDetails,
+        });
+      } else {
+        await createExpense({
+          groupId,
+          amount: amountNum,
+          categoryId,
+          paidBy,
+          date,
+          memo: memo.trim() || undefined,
+          splitDetails,
+        });
+      }
 
       router.push(`/groups/${groupId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "支出の登録に失敗しました");
+      setError(
+        err instanceof Error
+          ? err.message
+          : isEditMode
+            ? "支出の更新に失敗しました"
+            : "支出の登録に失敗しました",
+      );
       setIsLoading(false);
     }
   };
@@ -337,7 +395,13 @@ export function ExpenseForm({
           size="lg"
           disabled={isLoading || !isFormValid}
         >
-          {isLoading ? "登録中..." : "記録する"}
+          {isLoading
+            ? isEditMode
+              ? "更新中..."
+              : "登録中..."
+            : isEditMode
+              ? "更新する"
+              : "記録する"}
         </Button>
         <button
           type="button"

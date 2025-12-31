@@ -481,5 +481,359 @@ describe("expenses", () => {
           .query(api.expenses.getById, { expenseId }),
       ).rejects.toThrow("この支出にアクセスする権限がありません");
     });
+
+    test("isSettledフラグが返される", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+        });
+
+      const expense = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.getById, { expenseId });
+
+      // 未精算の状態ではfalse
+      expect(expense.isSettled).toBe(false);
+    });
+  });
+
+  describe("update", () => {
+    test("支出を更新できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+          memo: "元のメモ",
+        });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.update, {
+        expenseId,
+        amount: 2000,
+        categoryId,
+        paidBy: payerId,
+        date: "2024-12-29",
+        memo: "更新後のメモ",
+      });
+
+      const expense = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.getById, { expenseId });
+
+      expect(expense.amount).toBe(2000);
+      expect(expense.date).toBe("2024-12-29");
+      expect(expense.memo).toBe("更新後のメモ");
+    });
+
+    test("分割方法を変更できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const { token } = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.createInvitation, { groupId });
+
+      await t
+        .withIdentity(userBIdentity)
+        .mutation(api.invitations.accept, { token });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const userA = detail.members.find(
+        (m) => m.displayName === "ユーザーA",
+      )!.userId;
+      const userB = detail.members.find(
+        (m) => m.displayName === "ユーザーB",
+      )!.userId;
+
+      // 最初は均等分割
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: userA,
+          date: "2024-12-30",
+        });
+
+      // 割合指定に変更
+      await t.withIdentity(userAIdentity).mutation(api.expenses.update, {
+        expenseId,
+        amount: 1000,
+        categoryId,
+        paidBy: userA,
+        date: "2024-12-30",
+        splitDetails: {
+          method: "ratio",
+          ratios: [
+            { userId: userA, ratio: 70 },
+            { userId: userB, ratio: 30 },
+          ],
+        },
+      });
+
+      const expense = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.getById, { expenseId });
+
+      expect(expense.splitMethod).toBe("ratio");
+      const splitA = expense.splits.find((s) => s.userId === userA);
+      const splitB = expense.splits.find((s) => s.userId === userB);
+      expect(splitA?.amount).toBe(700);
+      expect(splitB?.amount).toBe(300);
+    });
+
+    test("グループメンバーでない場合はエラー", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      await t.withIdentity(userBIdentity).mutation(api.groups.create, {
+        name: "別のグループ",
+      });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+        });
+
+      await expect(
+        t.withIdentity(userBIdentity).mutation(api.expenses.update, {
+          expenseId,
+          amount: 2000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+        }),
+      ).rejects.toThrow("このグループにアクセスする権限がありません");
+    });
+
+    test("無効な金額でエラー", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+        });
+
+      await expect(
+        t.withIdentity(userAIdentity).mutation(api.expenses.update, {
+          expenseId,
+          amount: 0,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+        }),
+      ).rejects.toThrow("金額は1円から1億円の範囲で入力してください");
+    });
+  });
+
+  describe("remove", () => {
+    test("支出を削除できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+        });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.remove, {
+        expenseId,
+      });
+
+      await expect(
+        t
+          .withIdentity(userAIdentity)
+          .query(api.expenses.getById, { expenseId }),
+      ).rejects.toThrow("支出が見つかりません");
+    });
+
+    test("支出一覧から削除した支出が消える", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      const expenseId1 = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-29",
+        });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 2000,
+        categoryId,
+        paidBy: payerId,
+        date: "2024-12-30",
+      });
+
+      let expenses = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.listByGroup, { groupId });
+
+      expect(expenses.length).toBe(2);
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.remove, {
+        expenseId: expenseId1,
+      });
+
+      expenses = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.listByGroup, { groupId });
+
+      expect(expenses.length).toBe(1);
+      expect(expenses[0].amount).toBe(2000);
+    });
+
+    test("グループメンバーでない場合はエラー", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      await t.withIdentity(userBIdentity).mutation(api.groups.create, {
+        name: "別のグループ",
+      });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+        });
+
+      await expect(
+        t.withIdentity(userBIdentity).mutation(api.expenses.remove, {
+          expenseId,
+        }),
+      ).rejects.toThrow("このグループにアクセスする権限がありません");
+    });
   });
 });

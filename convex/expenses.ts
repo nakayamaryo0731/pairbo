@@ -10,7 +10,10 @@ import {
   type SplitDetails,
   type SplitResult,
 } from "./domain/expense";
-import { getSettlementPeriod } from "./domain/settlement";
+import {
+  getSettlementPeriod,
+  getSettlementYearMonthForDate,
+} from "./domain/settlement";
 
 const splitDetailsValidator = v.union(
   v.object({ method: v.literal("equal") }),
@@ -266,6 +269,11 @@ export const getById = authQuery({
       throw new Error("支出が見つかりません");
     }
 
+    const group = await ctx.db.get(expense.groupId);
+    if (!group) {
+      throw new Error("グループが見つかりません");
+    }
+
     const myMembership = await ctx.db
       .query("groupMembers")
       .withIndex("by_group_and_user", (q) =>
@@ -287,6 +295,14 @@ export const getById = authQuery({
         .collect(),
     ]);
 
+    // 精算済みチェック
+    const isSettled = await isExpenseSettled(
+      ctx,
+      expense.date,
+      expense.groupId,
+      group.closingDay,
+    );
+
     const splitUserIds = [...new Set(splits.map((s) => s.userId))];
     const splitUsers = await Promise.all(
       splitUserIds.map((id) => ctx.db.get(id)),
@@ -307,6 +323,7 @@ export const getById = authQuery({
       date: expense.date,
       memo: expense.memo,
       splitMethod: expense.splitMethod,
+      isSettled,
       category: category
         ? { _id: category._id, name: category.name, icon: category.icon }
         : null,
@@ -463,5 +480,217 @@ export const listByPeriod = authQuery({
       totalCount: expenses.length,
       totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0),
     };
+  },
+});
+
+/**
+ * 支出が精算済みかどうかをチェック
+ */
+async function isExpenseSettled(
+  ctx: { db: import("./_generated/server").DatabaseReader },
+  expenseDate: string,
+  groupId: import("./_generated/dataModel").Id<"groups">,
+  closingDay: number,
+): Promise<boolean> {
+  const { year, month } = getSettlementYearMonthForDate(
+    expenseDate,
+    closingDay,
+  );
+  const period = getSettlementPeriod(closingDay, year, month);
+
+  const existingSettlement = await ctx.db
+    .query("settlements")
+    .withIndex("by_group_and_period", (q) =>
+      q.eq("groupId", groupId).eq("periodStart", period.startDate),
+    )
+    .unique();
+
+  return existingSettlement !== null;
+}
+
+/**
+ * 支出更新
+ */
+export const update = authMutation({
+  args: {
+    expenseId: v.id("expenses"),
+    amount: v.number(),
+    categoryId: v.id("categories"),
+    paidBy: v.id("users"),
+    date: v.string(),
+    memo: v.optional(v.string()),
+    splitDetails: v.optional(splitDetailsValidator),
+  },
+  handler: async (ctx, args) => {
+    const expense = await ctx.db.get(args.expenseId);
+    if (!expense) {
+      throw new Error("支出が見つかりません");
+    }
+
+    const group = await ctx.db.get(expense.groupId);
+    if (!group) {
+      throw new Error("グループが見つかりません");
+    }
+
+    const myMembership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", expense.groupId).eq("userId", ctx.user._id),
+      )
+      .unique();
+
+    if (!myMembership) {
+      throw new Error("このグループにアクセスする権限がありません");
+    }
+
+    // 精算済みチェック
+    const isSettled = await isExpenseSettled(
+      ctx,
+      expense.date,
+      expense.groupId,
+      group.closingDay,
+    );
+    if (isSettled) {
+      throw new Error("精算済みの期間の支出は編集できません");
+    }
+
+    // バリデーション
+    validateExpenseInput({
+      amount: args.amount,
+      date: args.date,
+      memo: args.memo,
+    });
+
+    const category = await ctx.db.get(args.categoryId);
+    if (!category || category.groupId !== expense.groupId) {
+      throw new Error("カテゴリが見つかりません");
+    }
+
+    const payerMembership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", expense.groupId).eq("userId", args.paidBy),
+      )
+      .unique();
+
+    if (!payerMembership) {
+      throw new Error("支払者がグループメンバーではありません");
+    }
+
+    const memberships = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) => q.eq("groupId", expense.groupId))
+      .collect();
+
+    const memberIds = memberships.map((m) => m.userId);
+
+    const splitDetails: SplitDetails = args.splitDetails ?? { method: "equal" };
+    validateSplitDetails(splitDetails, args.amount, memberIds);
+
+    const splits = calculateSplits(
+      splitDetails,
+      args.amount,
+      memberIds,
+      args.paidBy,
+    );
+
+    // 既存のsplitsを削除
+    const existingSplits = await ctx.db
+      .query("expenseSplits")
+      .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
+      .collect();
+
+    await Promise.all(existingSplits.map((split) => ctx.db.delete(split._id)));
+
+    // 支出を更新
+    await ctx.db.patch(args.expenseId, {
+      amount: args.amount,
+      categoryId: args.categoryId,
+      paidBy: args.paidBy,
+      date: args.date,
+      memo: args.memo?.trim() || undefined,
+      splitMethod: splitDetails.method,
+      updatedAt: Date.now(),
+    });
+
+    // 新しいsplitsを作成
+    await Promise.all(
+      splits.map((split) =>
+        ctx.db.insert("expenseSplits", {
+          expenseId: args.expenseId,
+          userId: split.userId,
+          amount: split.amount,
+        }),
+      ),
+    );
+
+    ctx.logger.audit("EXPENSE", "updated", {
+      expenseId: args.expenseId,
+      groupId: expense.groupId,
+      amount: args.amount,
+      splitMethod: splitDetails.method,
+      categoryName: category.name,
+    });
+
+    return args.expenseId;
+  },
+});
+
+/**
+ * 支出削除
+ */
+export const remove = authMutation({
+  args: {
+    expenseId: v.id("expenses"),
+  },
+  handler: async (ctx, args) => {
+    const expense = await ctx.db.get(args.expenseId);
+    if (!expense) {
+      throw new Error("支出が見つかりません");
+    }
+
+    const group = await ctx.db.get(expense.groupId);
+    if (!group) {
+      throw new Error("グループが見つかりません");
+    }
+
+    const myMembership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", expense.groupId).eq("userId", ctx.user._id),
+      )
+      .unique();
+
+    if (!myMembership) {
+      throw new Error("このグループにアクセスする権限がありません");
+    }
+
+    // 精算済みチェック
+    const isSettled = await isExpenseSettled(
+      ctx,
+      expense.date,
+      expense.groupId,
+      group.closingDay,
+    );
+    if (isSettled) {
+      throw new Error("精算済みの期間の支出は削除できません");
+    }
+
+    // 関連するsplitsを削除
+    const splits = await ctx.db
+      .query("expenseSplits")
+      .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
+      .collect();
+
+    await Promise.all(splits.map((split) => ctx.db.delete(split._id)));
+
+    // 支出を削除
+    await ctx.db.delete(args.expenseId);
+
+    ctx.logger.audit("EXPENSE", "deleted", {
+      expenseId: args.expenseId,
+      groupId: expense.groupId,
+      amount: expense.amount,
+    });
   },
 });

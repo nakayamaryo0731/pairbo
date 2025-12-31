@@ -7,6 +7,7 @@ import {
   isDateInPeriod,
   getSettlementLabel,
   getCurrentSettlementYearMonth,
+  getSettlementYearMonthForDate,
 } from "../domain/settlement";
 
 // テスト用のモックID生成
@@ -398,6 +399,74 @@ describe("settlement/calculator", () => {
       expect(result).toEqual({ year: 2024, month: 7 });
 
       global.Date = originalDate;
+    });
+  });
+
+  describe("getSettlementYearMonthForDate", () => {
+    test("締め日以内の日付はその月の精算期間", () => {
+      // 締め日25日、12月10日 → 12月分
+      expect(getSettlementYearMonthForDate("2024-12-10", 25)).toEqual({
+        year: 2024,
+        month: 12,
+      });
+    });
+
+    test("締め日当日はその月の精算期間", () => {
+      // 締め日25日、12月25日 → 12月分
+      expect(getSettlementYearMonthForDate("2024-12-25", 25)).toEqual({
+        year: 2024,
+        month: 12,
+      });
+    });
+
+    test("締め日を過ぎた日付は翌月の精算期間", () => {
+      // 締め日25日、12月26日 → 1月分
+      expect(getSettlementYearMonthForDate("2024-12-26", 25)).toEqual({
+        year: 2025,
+        month: 1,
+      });
+    });
+
+    test("月初の日付でも正しく計算される", () => {
+      // 締め日25日、12月1日 → 12月分（前月26日〜当月25日）
+      expect(getSettlementYearMonthForDate("2024-12-01", 25)).toEqual({
+        year: 2024,
+        month: 12,
+      });
+    });
+
+    test("年をまたぐ場合（1月の日付）", () => {
+      // 締め日25日、1月10日 → 1月分
+      expect(getSettlementYearMonthForDate("2024-01-10", 25)).toEqual({
+        year: 2024,
+        month: 1,
+      });
+    });
+
+    test("締め日1日の場合", () => {
+      // 締め日1日、1月1日 → 1月分
+      expect(getSettlementYearMonthForDate("2024-01-01", 1)).toEqual({
+        year: 2024,
+        month: 1,
+      });
+      // 締め日1日、1月2日 → 2月分
+      expect(getSettlementYearMonthForDate("2024-01-02", 1)).toEqual({
+        year: 2024,
+        month: 2,
+      });
+    });
+
+    test("締め日末日（28日）の場合", () => {
+      // 締め日28日、3月28日 → 3月分
+      expect(getSettlementYearMonthForDate("2024-03-28", 28)).toEqual({
+        year: 2024,
+        month: 3,
+      });
+      // 締め日28日、3月29日 → 4月分
+      expect(getSettlementYearMonthForDate("2024-03-29", 28)).toEqual({
+        year: 2024,
+        month: 4,
+      });
     });
   });
 });

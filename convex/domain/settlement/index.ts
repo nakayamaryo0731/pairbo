@@ -22,6 +22,7 @@ export {
   isDateInPeriod,
   getSettlementLabel,
   getCurrentSettlementYearMonth,
+  getSettlementYearMonthForDate,
 } from "./calculator";
 
 // Rules

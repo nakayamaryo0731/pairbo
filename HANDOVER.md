@@ -1,7 +1,7 @@
 # Oaiko - セッション引き継ぎ書
 
-> 最終更新: 2024-12-30
-> ステータス: DBスキーマ実装完了
+> 最終更新: 2024-12-31
+> ステータス: 支出編集・削除機能実装完了
 
 ---
 
@@ -16,26 +16,36 @@
 - Convexアカウント連携・開発環境セットアップ
 - デプロイフロー確立（Vercel + Convex）
 - GitHub Actions CI/CD構築
-  - CI: lint, format, typecheck, build（並列実行）
-  - Deploy: Convex → Vercel Deploy Hook
 - pnpmへ移行
-- ドメインモデル設計（`docs/design-domain-model.md`）
+- ドメインモデル設計
 - 認証方式決定・実装（Clerk）
-  - Clerk + Convex連携
-  - 認証ミドルウェア（authQuery, authMutation）
-  - サインイン・サインアップページ
-- DBスキーマ実装（`convex/schema.ts`）
-  - 全9テーブル定義完了
-  - 共通バリデータ作成
-  - プリセットカテゴリ定義
+- DBスキーマ実装
+- グループ機能実装（作成、一覧、詳細、招待）
+- 支出機能実装（登録、一覧、期間別表示、編集、削除）
+- 精算機能実装（プレビュー、確定、履歴）
+- 招待機能実装（トークン生成、受け入れ）
+- シードデータ機能
+- テスト実装（ユニットテスト）
+- 構造化ロガー
 
-**次にやること**
+**今回完了した機能: 支出編集・削除**
 
-- 基本的なCRUD mutation/query の実装
-  - グループ作成・参加
-  - 支出登録・一覧
-  - カテゴリ管理
-- UI実装（モバイルファースト）
+- ドメイン層: `getSettlementYearMonthForDate`（日付から精算期間を逆引き）
+- API: `expenses.update` / `expenses.remove` mutation
+- API: `expenses.getById` に `isSettled` フラグ追加
+- UI: `ExpenseDetail` コンポーネント（詳細表示）
+- UI: `DeleteExpenseDialog` コンポーネント（削除確認）
+- UI: `ExpenseForm` 編集モード対応
+- ページ: 支出詳細ページ `/groups/[groupId]/expenses/[expenseId]`
+- ページ: 支出編集ページ `/groups/[groupId]/expenses/[expenseId]/edit`
+- テスト: update/remove mutation のユニットテスト追加
+
+**次にやること（MVP残タスク）**
+
+1. 分析機能（カテゴリ別円グラフ、月別推移）
+2. 買い物リスト機能
+3. PWA対応
+4. UIブラッシュアップ
 
 ---
 
@@ -58,91 +68,9 @@ Frontend: Next.js 16 (App Router) + React 19
 Backend: Convex 1.31 (DB + API + リアルタイム)
 Styling: Tailwind CSS 4
 Language: TypeScript 5
-Auth: Clerk（決定済み）
+Auth: Clerk
 Deploy: Vercel + Convex
 ```
-
-### 技術選定の経緯
-
-1. **案A（Next.js + tRPC + Drizzle + Neon）** - 型安全だが自分で実装が必要
-2. **案B（Remix + Drizzle + Turso）** - Web標準でシンプル
-3. **案F（Next.js + Convex）** ← **採用**
-
-**Convexを選んだ理由**
-
-- リアルタイム同期が組み込み（共有家計簿に最適）
-- Optimistic UIがデフォルト（サクサク動作）
-- IaC不要でアプリコードに集中できる
-- 無料枠が個人開発に十分（DB 0.5GB、関数100万回/月）
-
-**許容したトレードオフ**
-
-- Convexへのベンダーロックイン
-- 独自クエリ言語の学習
-
-**Next.jsを選んだ理由**
-
-- 将来の拡張性（LP追加、SEO、OGP生成など）
-- 情報量が多く、困った時の解決策が豊富
-- Vite + Reactでも良かったが、規模拡大を見越して採用
-
----
-
-## MVP機能仕様
-
-### 機能一覧
-
-| 機能             | 詳細                                          |
-| ---------------- | --------------------------------------------- |
-| **支出記録**     | 金額、カテゴリ、支払者、日付、メモ            |
-| **負担方法**     | 均等 / 傾斜（割合） / 傾斜（金額） / 全額負担 |
-| **グループ**     | Nグループ対応（ユーザーは複数グループ所属可） |
-| **メンバー**     | M人対応（グループごと）                       |
-| **カテゴリ**     | プリセット（食費、日用品等） + カスタム追加   |
-| **精算**         | 月ごと表示、精算済み/未精算ステータス管理     |
-| **分析**         | カテゴリ別円グラフ、月別推移グラフ            |
-| **買い物リスト** | グループ共有、支出連携、履歴表示              |
-
-### 負担方法の詳細
-
-```
-例: 1000円の支出、Aさんが支払い、A・B・Cの3人グループ
-
-均等:       A:334, B:333, C:333
-傾斜(割合): A:50%, B:30%, C:20% → A:500, B:300, C:200
-傾斜(金額): A:500, B:300, C:200（直接指定）
-全額負担:   Aが全額 or Bが全額 etc
-```
-
-### 買い物リスト連携
-
-```
-1. 買い物リストに登録（グループ共有）
-   - 牛乳、パン、洗剤...
-
-2. 買い物完了 → 支出登録
-   - チェックしたアイテム → 合計金額入力 → 支出として記録
-   - 購入済みアイテムはリストから自動削除
-   - 履歴モードで過去の購入済みを確認可能
-```
-
-### MVP外（将来検討）
-
-- レシートOCR
-- 通知機能
-- 収入記録
-- 買い物リストの個別金額入力
-
----
-
-## UX指針
-
-1. **モバイルファースト徹底**（デスクトップは後回し）
-2. **入力UX最優先**（目標: 3タップ以内で記録完了）
-3. **PWA対応必須**
-4. **パフォーマンス重視**（初期ロード3秒以内、Optimistic UI）
-5. **オフライン対応は段階的に**
-6. **将来のネイティブ化**（Capacitor等）を視野に
 
 ---
 
@@ -151,53 +79,67 @@ Deploy: Vercel + Convex
 ```
 /Users/ron/Dev/oaiko/
 ├── app/                    # Next.js App Router
-│   ├── layout.tsx          # ルートレイアウト
-│   ├── page.tsx            # ホームページ（認証状態表示）
-│   ├── globals.css
-│   ├── sign-in/            # サインインページ
-│   └── sign-up/            # サインアップページ
-├── convex/                 # Convex バックエンド
-│   ├── schema.ts           # DBスキーマ（全テーブル定義済み）
-│   ├── auth.config.ts      # Clerk認証設定
-│   ├── lib/
-│   │   ├── auth.ts         # 認証ミドルウェア（authQuery, authMutation）
-│   │   ├── validators.ts   # 共通バリデータ
-│   │   └── presetCategories.ts  # プリセットカテゴリ
-│   └── _generated/         # 自動生成（触らない）
+│   ├── groups/[groupId]/   # グループ詳細
+│   │   ├── page.tsx
+│   │   ├── expenses/       # 支出関連
+│   │   │   ├── new/        # 支出登録
+│   │   │   └── [expenseId]/
+│   │   │       ├── page.tsx    # 支出詳細
+│   │   │       └── edit/       # 支出編集
+│   │   └── settlements/    # 精算関連
+│   ├── invite/[token]/     # 招待受け入れ
+│   ├── sign-in/            # サインイン
+│   └── sign-up/            # サインアップ
 ├── components/
-│   └── ConvexClientProvider.tsx  # Convex + Clerk プロバイダ
-├── docs/
-│   ├── tech-selection.md   # 技術選定ドキュメント
-│   ├── mvp-features.md     # MVP機能仕様
-│   ├── design-domain-model.md     # ドメインモデル設計書
-│   └── design-authentication.md   # 認証設計書
-├── middleware.ts           # Clerk認証ミドルウェア
-├── CLAUDE.md               # プロジェクト概要（Claude Code用）
-├── HANDOVER.md             # この引き継ぎ書
-├── package.json
-└── tsconfig.json
+│   ├── expenses/           # 支出コンポーネント
+│   │   ├── ExpenseCard.tsx
+│   │   ├── ExpenseDetail.tsx
+│   │   ├── ExpenseForm.tsx
+│   │   ├── ExpenseList.tsx
+│   │   ├── DeleteExpenseDialog.tsx
+│   │   └── SplitMethodSelector.tsx
+│   ├── groups/             # グループコンポーネント
+│   ├── settlements/        # 精算コンポーネント
+│   └── invite/             # 招待コンポーネント
+├── convex/                 # Convex バックエンド
+│   ├── schema.ts           # DBスキーマ
+│   ├── expenses.ts         # 支出API
+│   ├── groups.ts           # グループAPI
+│   ├── settlements.ts      # 精算API
+│   ├── invitations.ts      # 招待API
+│   ├── users.ts            # ユーザーAPI
+│   ├── domain/             # ドメインロジック
+│   │   ├── expense/        # 支出ドメイン
+│   │   ├── group/          # グループドメイン
+│   │   ├── settlement/     # 精算ドメイン
+│   │   ├── invitation/     # 招待ドメイン
+│   │   └── shared/         # 共通ロジック
+│   ├── lib/
+│   │   ├── auth.ts         # 認証ミドルウェア
+│   │   ├── logger.ts       # 構造化ロガー
+│   │   ├── seedData.ts     # シードデータ
+│   │   └── validators.ts   # バリデータ
+│   └── __tests__/          # ユニットテスト
+├── docs/                   # 設計ドキュメント
+│   ├── design-*.md         # 各機能の設計書
+│   └── mvp-features.md
+├── CLAUDE.md               # プロジェクト概要
+└── HANDOVER.md             # この引き継ぎ書
 ```
 
 ---
 
-## DBスキーマ
+## 実装済み機能
 
-### テーブル一覧
+### 支出機能
 
-| テーブル           | 用途             | 主要インデックス           |
-| ------------------ | ---------------- | -------------------------- |
-| users              | ユーザー         | by_clerk_id                |
-| groups             | グループ         | -                          |
-| groupMembers       | グループメンバー | by_user, by_group_and_user |
-| groupInvitations   | 招待リンク       | by_token                   |
-| categories         | カテゴリ         | by_group                   |
-| expenses           | 支出             | by_group_and_date          |
-| expenseSplits      | 支出分割         | by_expense                 |
-| settlements        | 精算             | by_group_and_period        |
-| settlementPayments | 精算支払い       | by_settlement              |
-| shoppingItems      | 買い物リスト     | by_group_and_purchased     |
+- **登録**: 金額、カテゴリ、支払者、日付、メモ、負担方法
+- **一覧**: 期間別表示（精算期間ナビゲーション付き）
+- **詳細**: 負担配分、精算状態表示
+- **編集**: フォーム再利用、精算済み支出は編集不可
+- **削除**: 確認ダイアログ付き、精算済み支出は削除不可
 
-### 負担方法（splitMethod）
+### 負担方法
 
 | 値     | 説明                 |
 | ------ | -------------------- |
@@ -205,6 +147,12 @@ Deploy: Vercel + Convex
 | ratio  | 傾斜分割（割合指定） |
 | amount | 傾斜分割（金額指定） |
 | full   | 全額負担             |
+
+### 精算機能
+
+- **プレビュー**: 精算額計算、最小送金数アルゴリズム
+- **確定**: オーナーのみ実行可能
+- **履歴**: 過去の精算一覧・詳細
 
 ---
 
@@ -214,70 +162,51 @@ Deploy: Vercel + Convex
 | -------------- | ---------------------------------------- |
 | 本番（Vercel） | https://oaiko.vercel.app                 |
 | Convex本番     | https://hip-moose-165.convex.cloud       |
-| Convex開発     | https://proper-guanaco-454.convex.cloud  |
 | GitHub         | https://github.com/nakayamaryo0731/oaiko |
+
+---
+
+## 開発コマンド
+
+```bash
+# 開発サーバー起動
+pnpm dev
+
+# テスト実行
+pnpm test:run
+
+# 型チェック・lint・フォーマット
+pnpm typecheck && pnpm lint && pnpm format:check
+
+# シードデータ投入
+npx convex run seed:seedTestData
+```
 
 ---
 
 ## 次のセッションでやること
 
-### 1. グループ機能の実装
+### 1. 分析機能
 
-- グループ作成 mutation（プリセットカテゴリ自動追加）
-- グループ一覧 query
-- グループ招待・参加機能
+- カテゴリ別円グラフ
+- 月別推移グラフ
 
-### 2. 支出機能の実装
+### 2. 買い物リスト機能
 
-- 支出登録 mutation（負担配分計算含む）
-- 支出一覧 query
-- 支出編集・削除
+- アイテム追加・チェック
+- 支出連携
+- 履歴表示
 
-### 3. UI実装
+### 3. PWA対応
 
-- グループ一覧画面
-- 支出入力フォーム
-- 支出一覧画面
-
----
-
-## 参考情報
-
-### Convex公式ドキュメント
-
-- https://docs.convex.dev
-- スキーマ定義: https://docs.convex.dev/database/schemas
-- 認証: https://docs.convex.dev/auth
-
-### 競合アプリ（参考）
-
-- Shareroo - 共有家計簿No.1（参考元）
-- Warikani - 2人専用割り勘
-- Splitwise - 海外の定番割り勘アプリ
-
-### 費用感
-
-| サービス | 無料枠                   |
-| -------- | ------------------------ |
-| Convex   | DB 0.5GB, 関数100万回/月 |
-| Vercel   | 十分                     |
-| Clerk    | MAU 10,000               |
-
----
-
-## 決定事項ログ
-
-| 日付       | 決定事項                       | 理由                                                 |
-| ---------- | ------------------------------ | ---------------------------------------------------- |
-| 2024-12-30 | 技術スタック: Next.js + Convex | リアルタイム同期、Optimistic UI、開発速度            |
-| 2024-12-30 | プロダクト名: Oaiko            | 「おあいこ」= 精算して貸し借りなし。被りなし確認済み |
-| 2024-12-30 | フロントエンド: Next.js        | 将来の拡張性（LP、SEO等）を考慮                      |
-| 2024-12-30 | 認証方式: Clerk                | DX良い、UIコンポーネント付き、Convex連携実績あり     |
+- Service Worker
+- オフライン対応
 
 ---
 
 ## 注意事項
 
 - `convex/_generated/` は自動生成なので編集しない
-- 認証ミドルウェア: `authQuery` はユーザー必須（エラー）、`authMutation` はユーザー自動作成
-- 環境変数: Convex本番には `CLERK_ISSUER_URL` 設定済み
+- PRマージ前にローカルで `pnpm typecheck && pnpm lint && pnpm format:check` を実行
+- 機能実装後は必ずテストを追加
+- シードデータの更新要否を確認
