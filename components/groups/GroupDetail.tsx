@@ -176,10 +176,12 @@ export function GroupDetail({ group }: GroupDetailProps) {
         </div>
 
         {/* タブ */}
-        <div className="flex mt-4">
+        <div className="flex mt-4" role="tablist">
           <button
+            role="tab"
+            aria-selected={activeTab === "expenses"}
             onClick={() => setActiveTab("expenses")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               activeTab === "expenses"
                 ? "text-slate-800 border-b-2 border-slate-800"
                 : "text-slate-500 hover:text-slate-700"
@@ -188,8 +190,10 @@ export function GroupDetail({ group }: GroupDetailProps) {
             支出
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === "settlement"}
             onClick={() => setActiveTab("settlement")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               activeTab === "settlement"
                 ? "text-slate-800 border-b-2 border-slate-800"
                 : "text-slate-500 hover:text-slate-700"
@@ -198,8 +202,10 @@ export function GroupDetail({ group }: GroupDetailProps) {
             精算
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === "analytics"}
             onClick={() => setActiveTab("analytics")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               activeTab === "analytics"
                 ? "text-slate-800 border-b-2 border-slate-800"
                 : "text-slate-500 hover:text-slate-700"
@@ -253,6 +259,7 @@ export function GroupDetail({ group }: GroupDetailProps) {
         <Link
           href={`/groups/${group._id}/expenses/new`}
           className="w-14 h-14 bg-slate-800 text-white rounded-full shadow-lg hover:bg-slate-700 transition-colors flex items-center justify-center"
+          aria-label="支出を記録"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -264,6 +271,7 @@ export function GroupDetail({ group }: GroupDetailProps) {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
             <path d="M12 5v14" />
             <path d="M5 12h14" />

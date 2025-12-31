@@ -8,6 +8,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import {
   SplitMethodSelector,
   type SplitMethod,
@@ -391,11 +392,10 @@ export function ExpenseForm({
       {/* カテゴリ */}
       <div className="space-y-2">
         <Label htmlFor="category">カテゴリ</Label>
-        <select
+        <Select
           id="category"
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value as Id<"categories">)}
-          className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
           required
         >
           {categories.map((category) => (
@@ -403,17 +403,16 @@ export function ExpenseForm({
               {category.icon} {category.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* 支払者 */}
       <div className="space-y-2">
         <Label htmlFor="paidBy">支払者</Label>
-        <select
+        <Select
           id="paidBy"
           value={paidBy}
           onChange={(e) => setPaidBy(e.target.value as Id<"users">)}
-          className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
           required
         >
           {members.map((member) => (
@@ -422,7 +421,7 @@ export function ExpenseForm({
               {member.isMe && " (自分)"}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* 日付 */}
