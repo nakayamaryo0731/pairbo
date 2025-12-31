@@ -194,7 +194,7 @@ describe("settlements", () => {
           year: 2024,
           month: 12,
         }),
-      ).rejects.toThrow("精算を確定する権限がありません");
+      ).rejects.toThrow("この操作にはオーナー権限が必要です");
     });
 
     test("同じ期間の精算は重複作成できない", async () => {
@@ -423,7 +423,7 @@ describe("settlements", () => {
         t
           .withIdentity(userBIdentity)
           .query(api.settlements.getById, { settlementId }),
-      ).rejects.toThrow("この精算にアクセスする権限がありません");
+      ).rejects.toThrow("このグループにアクセスする権限がありません");
     });
   });
 });

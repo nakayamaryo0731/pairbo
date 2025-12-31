@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
+import { requireGroupMember, requireGroupOwner } from "./lib/authorization";
 import { PRESET_CATEGORIES } from "./lib/presetCategories";
 import {
   validateGroupInput,
@@ -121,16 +122,8 @@ export const getDetail = authQuery({
       throw new Error("グループが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    const myMembership = await requireGroupMember(ctx, args.groupId);
 
     const memberships = await ctx.db
       .query("groupMembers")
@@ -190,20 +183,8 @@ export const createInvitation = authMutation({
       throw new Error("グループが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership || myMembership.role !== "owner") {
-      ctx.logger.warn("GROUP", "invitation_create_failed", {
-        groupId: args.groupId,
-        reason: "unauthorized",
-      });
-      throw new Error("招待リンクを作成する権限がありません");
-    }
+    // オーナー権限チェック
+    await requireGroupOwner(ctx, args.groupId);
 
     const token = crypto.randomUUID();
     const now = Date.now();

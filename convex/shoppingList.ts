@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
+import { requireGroupMember } from "./lib/authorization";
 import {
   validateShoppingItemName,
   ShoppingItemValidationError,
@@ -14,16 +15,8 @@ export const list = authQuery({
     groupId: v.id("groups"),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     // 全アイテムを取得
     const allItems = await ctx.db
@@ -50,16 +43,8 @@ export const listPurchasedByMonth = authQuery({
     month: v.number(),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     // 月の開始・終了タイムスタンプを計算
     const startOfMonth = new Date(args.year, args.month - 1, 1).getTime();
@@ -119,16 +104,8 @@ export const listPending = authQuery({
     groupId: v.id("groups"),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     // 未購入アイテムのみ取得（purchasedAt = undefined）
     const allItems = await ctx.db
@@ -152,16 +129,8 @@ export const add = authMutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     let validatedName: string;
     try {
@@ -205,16 +174,8 @@ export const remove = authMutation({
       throw new Error("アイテムが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", item.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, item.groupId);
 
     if (item.purchasedAt !== undefined) {
       throw new Error("購入済みのアイテムは削除できません");
@@ -243,16 +204,8 @@ export const markPurchased = authMutation({
       throw new Error("アイテムが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", item.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, item.groupId);
 
     if (item.purchasedAt !== undefined) {
       throw new Error("既に購入済みです");
@@ -284,16 +237,8 @@ export const unmarkPurchased = authMutation({
       throw new Error("アイテムが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", item.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, item.groupId);
 
     if (item.purchasedAt === undefined) {
       throw new Error("このアイテムは未購入です");

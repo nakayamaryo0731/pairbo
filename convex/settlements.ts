@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
+import { requireGroupMember, requireGroupOwner } from "./lib/authorization";
 import {
   calculateBalances,
   minimizeTransfers,
@@ -32,16 +33,8 @@ export const getPreview = authQuery({
       throw new Error("グループが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     const period = getSettlementPeriod(group.closingDay, args.year, args.month);
 
@@ -145,20 +138,8 @@ export const create = authMutation({
       throw new Error("グループが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership || myMembership.role !== "owner") {
-      ctx.logger.warn("SETTLEMENT", "create_failed", {
-        groupId: args.groupId,
-        reason: "unauthorized",
-      });
-      throw new Error("精算を確定する権限がありません");
-    }
+    // オーナー権限チェック
+    await requireGroupOwner(ctx, args.groupId);
 
     const period = getSettlementPeriod(group.closingDay, args.year, args.month);
 
@@ -311,16 +292,8 @@ export const listByGroup = authQuery({
     groupId: v.id("groups"),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     const settlements = await ctx.db
       .query("settlements")
@@ -370,16 +343,8 @@ export const getById = authQuery({
       throw new Error("精算情報が見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", settlement.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("この精算にアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, settlement.groupId);
 
     const group = await ctx.db.get(settlement.groupId);
 

@@ -36,6 +36,7 @@ import type * as expenses from "../expenses.js";
 import type * as groups from "../groups.js";
 import type * as invitations from "../invitations.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_authorization from "../lib/authorization.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as lib_presetCategories from "../lib/presetCategories.js";
 import type * as lib_seedData from "../lib/seedData.js";
@@ -80,6 +81,7 @@ declare const fullApi: ApiFromModules<{
   groups: typeof groups;
   invitations: typeof invitations;
   "lib/auth": typeof lib_auth;
+  "lib/authorization": typeof lib_authorization;
   "lib/logger": typeof lib_logger;
   "lib/presetCategories": typeof lib_presetCategories;
   "lib/seedData": typeof lib_seedData;

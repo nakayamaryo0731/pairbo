@@ -479,7 +479,7 @@ describe("expenses", () => {
         t
           .withIdentity(userBIdentity)
           .query(api.expenses.getById, { expenseId }),
-      ).rejects.toThrow("この支出にアクセスする権限がありません");
+      ).rejects.toThrow("このグループにアクセスする権限がありません");
     });
 
     test("isSettledフラグが返される", async () => {
