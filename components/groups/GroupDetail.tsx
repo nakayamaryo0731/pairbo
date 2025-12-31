@@ -183,7 +183,7 @@ export function GroupDetail({ group }: GroupDetailProps) {
             onClick={() => setActiveTab("expenses")}
             className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               activeTab === "expenses"
-                ? "text-slate-800 border-b-2 border-slate-800"
+                ? "text-blue-600 border-b-2 border-blue-500"
                 : "text-slate-500 hover:text-slate-700"
             }`}
           >
@@ -195,7 +195,7 @@ export function GroupDetail({ group }: GroupDetailProps) {
             onClick={() => setActiveTab("settlement")}
             className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               activeTab === "settlement"
-                ? "text-slate-800 border-b-2 border-slate-800"
+                ? "text-blue-600 border-b-2 border-blue-500"
                 : "text-slate-500 hover:text-slate-700"
             }`}
           >
@@ -207,7 +207,7 @@ export function GroupDetail({ group }: GroupDetailProps) {
             onClick={() => setActiveTab("analytics")}
             className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               activeTab === "analytics"
-                ? "text-slate-800 border-b-2 border-slate-800"
+                ? "text-blue-600 border-b-2 border-blue-500"
                 : "text-slate-500 hover:text-slate-700"
             }`}
           >
@@ -258,7 +258,7 @@ export function GroupDetail({ group }: GroupDetailProps) {
       <div className="fixed bottom-6 right-6">
         <Link
           href={`/groups/${group._id}/expenses/new`}
-          className="w-14 h-14 bg-slate-800 text-white rounded-full shadow-lg hover:bg-slate-700 transition-colors flex items-center justify-center"
+          className="w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
           aria-label="支出を記録"
         >
           <svg
