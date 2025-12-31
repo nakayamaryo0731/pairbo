@@ -188,6 +188,36 @@ export function ExpenseForm({
     router.push(`/groups/${groupId}`);
   };
 
+  const isSplitValid = (): boolean => {
+    if (splitMethod === "ratio") {
+      const totalRatio = Array.from(ratios.values()).reduce(
+        (sum, v) => sum + v,
+        0,
+      );
+      return totalRatio === 100;
+    }
+    if (splitMethod === "amount") {
+      const amountNum = parseInt(amount, 10) || 0;
+      const totalAmounts = Array.from(amounts.values()).reduce(
+        (sum, v) => sum + v,
+        0,
+      );
+      return totalAmounts === amountNum && amountNum > 0;
+    }
+    if (splitMethod === "full") {
+      return bearerId !== null;
+    }
+    return true;
+  };
+
+  const isFormValid =
+    amount !== "" &&
+    parseInt(amount, 10) >= 1 &&
+    categoryId !== "" &&
+    paidBy &&
+    date !== "" &&
+    isSplitValid();
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* 金額 */}
@@ -301,7 +331,12 @@ export function ExpenseForm({
 
       {/* ボタン */}
       <div className="space-y-3 pt-4">
-        <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={isLoading || !isFormValid}
+        >
           {isLoading ? "登録中..." : "記録する"}
         </Button>
         <button
