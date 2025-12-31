@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { query } from "./_generated/server";
 import { authMutation } from "./lib/auth";
 import { getGroupMemberIds } from "./lib/groupHelper";
@@ -69,7 +69,7 @@ export const accept = authMutation({
       ctx.logger.warn("GROUP", "invitation_accept_failed", {
         reason: "invalid_token",
       });
-      throw new Error(getInvitationErrorMessage("invalid_token"));
+      throw new ConvexError(getInvitationErrorMessage("invalid_token"));
     }
 
     if (isInvitationExpired(invitation.expiresAt)) {
@@ -77,7 +77,7 @@ export const accept = authMutation({
         reason: "expired",
         groupId: invitation.groupId,
       });
-      throw new Error(getInvitationErrorMessage("expired"));
+      throw new ConvexError(getInvitationErrorMessage("expired"));
     }
 
     if (isInvitationUsed(invitation.usedAt)) {
@@ -85,7 +85,7 @@ export const accept = authMutation({
         reason: "already_used",
         groupId: invitation.groupId,
       });
-      throw new Error(getInvitationErrorMessage("already_used"));
+      throw new ConvexError(getInvitationErrorMessage("already_used"));
     }
 
     const existingMember = await ctx.db

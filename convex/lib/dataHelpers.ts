@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { DatabaseReader } from "../_generated/server";
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 
@@ -8,7 +9,7 @@ import type { Doc, Id, TableNames } from "../_generated/dataModel";
  * @param id - 取得するエンティティのID
  * @param errorMessage - エンティティが存在しない場合のエラーメッセージ
  * @returns エンティティ
- * @throws Error - エンティティが存在しない場合
+ * @throws ConvexError - エンティティが存在しない場合
  */
 export async function getOrThrow<T extends TableNames>(
   ctx: { db: DatabaseReader },
@@ -17,7 +18,7 @@ export async function getOrThrow<T extends TableNames>(
 ): Promise<Doc<T>> {
   const entity = await ctx.db.get(id);
   if (!entity) {
-    throw new Error(errorMessage);
+    throw new ConvexError(errorMessage);
   }
   return entity;
 }
