@@ -1,7 +1,7 @@
 # Oaiko - セッション引き継ぎ書
 
-> 最終更新: 2024-12-31
-> ステータス: 支出編集・削除機能実装完了
+> 最終更新: 2025-12-31
+> ステータス: MVP機能ほぼ完了
 
 ---
 
@@ -22,30 +22,26 @@
 - DBスキーマ実装
 - グループ機能実装（作成、一覧、詳細、招待）
 - 支出機能実装（登録、一覧、期間別表示、編集、削除）
-- 精算機能実装（プレビュー、確定、履歴）
-- 招待機能実装（トークン生成、受け入れ）
+- 精算機能実装（プレビュー、確定、履歴、支払いマーク）
+- 招待機能実装（トークン生成、受け入れ、エラーハンドリング）
+- 分析機能実装（カテゴリ別円グラフ、月別推移棒グラフ）
+- 買い物リスト機能実装（リスト、履歴、支出連携）
+- カテゴリ管理機能（作成、編集、削除）
+- PWA対応（Service Worker、オフラインページ、アイコン）
 - シードデータ機能
-- テスト実装（ユニットテスト）
+- テスト実装（ユニットテスト 276件）
 - 構造化ロガー
 
-**今回完了した機能: 支出編集・削除**
+**直近の改善: バックエンドリファクタリング**
 
-- ドメイン層: `getSettlementYearMonthForDate`（日付から精算期間を逆引き）
-- API: `expenses.update` / `expenses.remove` mutation
-- API: `expenses.getById` に `isSettled` フラグ追加
-- UI: `ExpenseDetail` コンポーネント（詳細表示）
-- UI: `DeleteExpenseDialog` コンポーネント（削除確認）
-- UI: `ExpenseForm` 編集モード対応
-- ページ: 支出詳細ページ `/groups/[groupId]/expenses/[expenseId]`
-- ページ: 支出編集ページ `/groups/[groupId]/expenses/[expenseId]/edit`
-- テスト: update/remove mutation のユニットテスト追加
+- PR #31: 認可ヘルパー関数の共通化
+- PR #32: クエリヘルパー関数の共通化
+- PR #33: データヘルパー関数の共通化（getOrThrow, enrichment helpers）
 
-**次にやること（MVP残タスク）**
+**残タスク（オプション）**
 
-1. 分析機能（カテゴリ別円グラフ、月別推移）
-2. 買い物リスト機能
-3. PWA対応
-4. UIブラッシュアップ
+1. UIブラッシュアップ
+2. 統合テスト追加
 
 ---
 
@@ -69,6 +65,7 @@ Backend: Convex 1.31 (DB + API + リアルタイム)
 Styling: Tailwind CSS 4
 Language: TypeScript 5
 Auth: Clerk
+PWA: Serwist
 Deploy: Vercel + Convex
 ```
 
@@ -79,50 +76,60 @@ Deploy: Vercel + Convex
 ```
 /Users/ron/Dev/oaiko/
 ├── app/                    # Next.js App Router
+│   ├── manifest.ts         # PWA マニフェスト
+│   ├── sw.ts               # Service Worker
 │   ├── groups/[groupId]/   # グループ詳細
-│   │   ├── page.tsx
+│   │   ├── page.tsx        # タブUI（支出/精算/分析）
+│   │   ├── settings/       # グループ設定
+│   │   ├── shopping/       # 買い物リスト
 │   │   ├── expenses/       # 支出関連
 │   │   │   ├── new/        # 支出登録
 │   │   │   └── [expenseId]/
 │   │   │       ├── page.tsx    # 支出詳細
 │   │   │       └── edit/       # 支出編集
 │   │   └── settlements/    # 精算関連
+│   │       └── [settlementId]/ # 精算詳細
 │   ├── invite/[token]/     # 招待受け入れ
+│   ├── offline/            # オフラインページ
 │   ├── sign-in/            # サインイン
 │   └── sign-up/            # サインアップ
 ├── components/
+│   ├── analytics/          # 分析コンポーネント
+│   │   ├── AnalyticsSection.tsx
+│   │   ├── CategoryPieChart.tsx
+│   │   └── MonthlyTrendChart.tsx
+│   ├── categories/         # カテゴリコンポーネント
 │   ├── expenses/           # 支出コンポーネント
-│   │   ├── ExpenseCard.tsx
-│   │   ├── ExpenseDetail.tsx
-│   │   ├── ExpenseForm.tsx
-│   │   ├── ExpenseList.tsx
-│   │   ├── DeleteExpenseDialog.tsx
-│   │   └── SplitMethodSelector.tsx
 │   ├── groups/             # グループコンポーネント
+│   ├── invite/             # 招待コンポーネント
 │   ├── settlements/        # 精算コンポーネント
-│   └── invite/             # 招待コンポーネント
+│   ├── shopping/           # 買い物リストコンポーネント
+│   └── ui/                 # UIコンポーネント
 ├── convex/                 # Convex バックエンド
 │   ├── schema.ts           # DBスキーマ
+│   ├── analytics.ts        # 分析API
+│   ├── categories.ts       # カテゴリAPI
 │   ├── expenses.ts         # 支出API
 │   ├── groups.ts           # グループAPI
-│   ├── settlements.ts      # 精算API
 │   ├── invitations.ts      # 招待API
+│   ├── settlements.ts      # 精算API
+│   ├── shoppingList.ts     # 買い物リストAPI
 │   ├── users.ts            # ユーザーAPI
 │   ├── domain/             # ドメインロジック
-│   │   ├── expense/        # 支出ドメイン
-│   │   ├── group/          # グループドメイン
-│   │   ├── settlement/     # 精算ドメイン
-│   │   ├── invitation/     # 招待ドメイン
-│   │   └── shared/         # 共通ロジック
 │   ├── lib/
 │   │   ├── auth.ts         # 認証ミドルウェア
+│   │   ├── authorization.ts # 認可ヘルパー
+│   │   ├── dataHelpers.ts  # データ取得ヘルパー
+│   │   ├── enrichment.ts   # エンリッチメントヘルパー
+│   │   ├── expenseHelper.ts # 支出ヘルパー
+│   │   ├── groupHelper.ts  # グループヘルパー
 │   │   ├── logger.ts       # 構造化ロガー
-│   │   ├── seedData.ts     # シードデータ
-│   │   └── validators.ts   # バリデータ
+│   │   └── seedData.ts     # シードデータ
 │   └── __tests__/          # ユニットテスト
+├── public/
+│   ├── icons/              # PWAアイコン
+│   └── sw.js               # 生成されたService Worker
 ├── docs/                   # 設計ドキュメント
-│   ├── design-*.md         # 各機能の設計書
-│   └── mvp-features.md
 ├── CLAUDE.md               # プロジェクト概要
 └── HANDOVER.md             # この引き継ぎ書
 ```
@@ -133,7 +140,7 @@ Deploy: Vercel + Convex
 
 ### 支出機能
 
-- **登録**: 金額、カテゴリ、支払者、日付、メモ、負担方法
+- **登録**: 金額、カテゴリ、支払者、日付、メモ、負担方法、買い物リスト連携
 - **一覧**: 期間別表示（精算期間ナビゲーション付き）
 - **詳細**: 負担配分、精算状態表示
 - **編集**: フォーム再利用、精算済み支出は編集不可
@@ -153,6 +160,30 @@ Deploy: Vercel + Convex
 - **プレビュー**: 精算額計算、最小送金数アルゴリズム
 - **確定**: オーナーのみ実行可能
 - **履歴**: 過去の精算一覧・詳細
+- **支払いマーク**: 受取人が支払い完了をマーク
+
+### 分析機能
+
+- **カテゴリ別**: 円グラフで支出内訳を表示
+- **月別推移**: 棒グラフで過去6ヶ月の推移を表示
+
+### 買い物リスト機能
+
+- **リスト**: アイテム追加・削除・購入マーク
+- **履歴**: 月別の購入履歴表示
+- **支出連携**: 買い物リストから支出記録へ連携
+
+### 招待機能
+
+- **トークン生成**: オーナーが招待リンクを生成
+- **受け入れ**: トークン検証、グループ参加
+- **エラー対応**: 期限切れ、使用済み、無効トークン
+
+### PWA機能
+
+- **インストール可能**: ホーム画面に追加可能
+- **オフライン対応**: オフラインページ表示
+- **キャッシュ**: Serwistによるランタイムキャッシュ
 
 ---
 
@@ -180,27 +211,10 @@ pnpm typecheck && pnpm lint && pnpm format:check
 
 # シードデータ投入
 npx convex run seed:seedTestData
+
+# シードデータクリア
+npx convex run seed:clearTestData
 ```
-
----
-
-## 次のセッションでやること
-
-### 1. 分析機能
-
-- カテゴリ別円グラフ
-- 月別推移グラフ
-
-### 2. 買い物リスト機能
-
-- アイテム追加・チェック
-- 支出連携
-- 履歴表示
-
-### 3. PWA対応
-
-- Service Worker
-- オフライン対応
 
 ---
 
