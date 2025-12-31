@@ -7,12 +7,7 @@ import {
 import { getGroupMemberIds } from "./lib/groupHelper";
 import { getExpensesByPeriod } from "./lib/expenseHelper";
 import { getOrThrow } from "./lib/dataHelpers";
-import {
-  createUserMap,
-  createCategoryMap,
-  extendUserMap,
-  FALLBACK,
-} from "./lib/enrichment";
+import { enrichExpenseList, FALLBACK } from "./lib/enrichment";
 import {
   calculateEqualSplit,
   calculateRatioSplit,
@@ -224,55 +219,7 @@ export const listByGroup = authQuery({
       ? await expensesQuery.take(args.limit)
       : await expensesQuery.collect();
 
-    if (expenses.length === 0) {
-      return [];
-    }
-
-    const categoryIds = expenses.map((e) => e.categoryId);
-    const payerIds = expenses.map((e) => e.paidBy);
-
-    const [categoryMap, userMap] = await Promise.all([
-      createCategoryMap(ctx, categoryIds),
-      createUserMap(ctx, payerIds),
-    ]);
-
-    const allSplits = await Promise.all(
-      expenses.map((expense) =>
-        ctx.db
-          .query("expenseSplits")
-          .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
-          .collect(),
-      ),
-    );
-
-    const splitUserIds = allSplits.flat().map((s) => s.userId);
-    await extendUserMap(ctx, userMap, splitUserIds);
-
-    return expenses.map((expense, index) => {
-      const category = categoryMap.get(expense.categoryId);
-      const payer = userMap.get(expense.paidBy);
-      const splits = allSplits[index];
-
-      return {
-        _id: expense._id,
-        amount: expense.amount,
-        date: expense.date,
-        title: expense.title,
-        memo: expense.memo,
-        splitMethod: expense.splitMethod,
-        category: category ?? null,
-        payer: payer ?? null,
-        splits: splits.map((split) => {
-          const user = userMap.get(split.userId);
-          return {
-            userId: split.userId,
-            displayName: user?.displayName ?? FALLBACK.USER_NAME,
-            amount: split.amount,
-          };
-        }),
-        createdAt: expense.createdAt,
-      };
-    });
+    return enrichExpenseList(ctx, expenses);
   },
 });
 
@@ -390,64 +337,11 @@ export const listByPeriod = authQuery({
       await getExpensesByPeriod(ctx, args.groupId, period)
     ).sort((a, b) => b.date.localeCompare(a.date));
 
-    if (expenses.length === 0) {
-      return {
-        period,
-        expenses: [],
-        totalCount: 0,
-        totalAmount: 0,
-      };
-    }
-
-    const categoryIds = expenses.map((e) => e.categoryId);
-    const payerIds = expenses.map((e) => e.paidBy);
-
-    const [categoryMap, userMap] = await Promise.all([
-      createCategoryMap(ctx, categoryIds),
-      createUserMap(ctx, payerIds),
-    ]);
-
-    const allSplits = await Promise.all(
-      expenses.map((expense) =>
-        ctx.db
-          .query("expenseSplits")
-          .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
-          .collect(),
-      ),
-    );
-
-    const splitUserIds = allSplits.flat().map((s) => s.userId);
-    await extendUserMap(ctx, userMap, splitUserIds);
-
-    const mappedExpenses = expenses.map((expense, index) => {
-      const category = categoryMap.get(expense.categoryId);
-      const payer = userMap.get(expense.paidBy);
-      const splits = allSplits[index];
-
-      return {
-        _id: expense._id,
-        amount: expense.amount,
-        date: expense.date,
-        title: expense.title,
-        memo: expense.memo,
-        splitMethod: expense.splitMethod,
-        category: category ?? null,
-        payer: payer ?? null,
-        splits: splits.map((split) => {
-          const user = userMap.get(split.userId);
-          return {
-            userId: split.userId,
-            displayName: user?.displayName ?? FALLBACK.USER_NAME,
-            amount: split.amount,
-          };
-        }),
-        createdAt: expense.createdAt,
-      };
-    });
+    const enrichedExpenses = await enrichExpenseList(ctx, expenses);
 
     return {
       period,
-      expenses: mappedExpenses,
+      expenses: enrichedExpenses,
       totalCount: expenses.length,
       totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0),
     };

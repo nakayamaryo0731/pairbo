@@ -144,3 +144,85 @@ export async function extendUserMap(
     }
   }
 }
+
+/**
+ * エンリッチされた支出アイテムの型
+ */
+export interface EnrichedExpenseItem {
+  _id: Id<"expenses">;
+  amount: number;
+  date: string;
+  title?: string;
+  memo?: string;
+  splitMethod: string;
+  category: CategoryInfo | null;
+  payer: UserInfo | null;
+  splits: {
+    userId: Id<"users">;
+    displayName: string;
+    amount: number;
+  }[];
+  createdAt: number;
+}
+
+/**
+ * 支出リストをエンリッチ（ユーザー・カテゴリ情報を付加）
+ *
+ * @param ctx - データベースコンテキスト
+ * @param expenses - 支出ドキュメント配列
+ * @returns エンリッチされた支出アイテム配列
+ */
+export async function enrichExpenseList(
+  ctx: { db: DatabaseReader },
+  expenses: Doc<"expenses">[],
+): Promise<EnrichedExpenseItem[]> {
+  if (expenses.length === 0) {
+    return [];
+  }
+
+  const categoryIds = expenses.map((e) => e.categoryId);
+  const payerIds = expenses.map((e) => e.paidBy);
+
+  const [categoryMap, userMap] = await Promise.all([
+    createCategoryMap(ctx, categoryIds),
+    createUserMap(ctx, payerIds),
+  ]);
+
+  const allSplits = await Promise.all(
+    expenses.map((expense) =>
+      ctx.db
+        .query("expenseSplits")
+        .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
+        .collect(),
+    ),
+  );
+
+  const splitUserIds = allSplits.flat().map((s) => s.userId);
+  await extendUserMap(ctx, userMap, splitUserIds);
+
+  return expenses.map((expense, index) => {
+    const category = categoryMap.get(expense.categoryId);
+    const payer = userMap.get(expense.paidBy);
+    const splits = allSplits[index];
+
+    return {
+      _id: expense._id,
+      amount: expense.amount,
+      date: expense.date,
+      title: expense.title,
+      memo: expense.memo,
+      splitMethod: expense.splitMethod,
+      category: category ?? null,
+      payer: payer ?? null,
+      splits: splits.map((split) => {
+        const user = userMap.get(split.userId);
+        return {
+          userId: split.userId,
+          displayName: user?.displayName ?? FALLBACK.USER_NAME,
+          amount: split.amount,
+        };
+      }),
+      createdAt: expense.createdAt,
+    };
+  });
+}
