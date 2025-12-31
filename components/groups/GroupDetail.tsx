@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Id } from "@/convex/_generated/dataModel";
 import { MemberList } from "./MemberList";
 import { InviteDialog } from "./InviteDialog";
@@ -78,6 +79,8 @@ function getSettlementPeriod(
 }
 
 export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
+  const router = useRouter();
+
   // 今期の年月を初期値として設定
   const initialPeriod = useMemo(
     () => getCurrentSettlementYearMonth(group.closingDay),
@@ -194,6 +197,9 @@ export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
           groupId={group._id}
           year={displayYear}
           month={displayMonth}
+          onExpenseClick={(expenseId) =>
+            router.push(`/groups/${group._id}/expenses/${expenseId}`)
+          }
         />
       </div>
 
