@@ -15,6 +15,9 @@ import {
   SettlementHistory,
   PeriodNavigator,
 } from "@/components/settlements";
+import { AnalyticsSection } from "@/components/analytics";
+
+type TabType = "expenses" | "settlement" | "analytics";
 
 type GroupDetailProps = {
   group: {
@@ -101,6 +104,7 @@ export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
 
   const [displayYear, setDisplayYear] = useState(initialPeriod.year);
   const [displayMonth, setDisplayMonth] = useState(initialPeriod.month);
+  const [activeTab, setActiveTab] = useState<TabType>("expenses");
 
   // 削除ダイアログ用の状態
   const [expenseToDelete, setExpenseToDelete] =
@@ -207,45 +211,89 @@ export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
         <MemberList members={members} />
       </div>
 
-      {/* 今期の精算（主役） */}
-      <div>
-        <h2 className="font-medium text-slate-800 mb-3">今期の精算</h2>
-        <div className="space-y-3">
-          <PeriodNavigator
-            year={displayYear}
-            month={displayMonth}
-            startDate={period.startDate}
-            endDate={period.endDate}
-            onPrevious={goToPreviousMonth}
-            onNext={goToNextMonth}
-            canGoNext={canGoNext}
-          />
-          <SettlementPreview
+      {/* タブ */}
+      <div className="flex border-b border-slate-200">
+        <button
+          onClick={() => setActiveTab("expenses")}
+          className={`flex-1 py-2 text-sm font-medium transition-colors ${
+            activeTab === "expenses"
+              ? "text-slate-800 border-b-2 border-slate-800"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          支出
+        </button>
+        <button
+          onClick={() => setActiveTab("settlement")}
+          className={`flex-1 py-2 text-sm font-medium transition-colors ${
+            activeTab === "settlement"
+              ? "text-slate-800 border-b-2 border-slate-800"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          精算
+        </button>
+        <button
+          onClick={() => setActiveTab("analytics")}
+          className={`flex-1 py-2 text-sm font-medium transition-colors ${
+            activeTab === "analytics"
+              ? "text-slate-800 border-b-2 border-slate-800"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          分析
+        </button>
+      </div>
+
+      {/* 期間ナビゲーター（全タブ共通） */}
+      <PeriodNavigator
+        year={displayYear}
+        month={displayMonth}
+        startDate={period.startDate}
+        endDate={period.endDate}
+        onPrevious={goToPreviousMonth}
+        onNext={goToNextMonth}
+        canGoNext={canGoNext}
+      />
+
+      {/* タブコンテンツ */}
+      {activeTab === "expenses" && (
+        <div>
+          <PeriodExpenseList
             groupId={group._id}
             year={displayYear}
             month={displayMonth}
-            isOwner={myRole === "owner"}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
         </div>
-      </div>
+      )}
 
-      {/* この期間の支出 */}
-      <div>
-        <h2 className="font-medium text-slate-800 mb-3">この期間の支出</h2>
-        <PeriodExpenseList
+      {activeTab === "settlement" && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="font-medium text-slate-800 mb-3">今期の精算</h2>
+            <SettlementPreview
+              groupId={group._id}
+              year={displayYear}
+              month={displayMonth}
+              isOwner={myRole === "owner"}
+            />
+          </div>
+          <div>
+            <h2 className="font-medium text-slate-800 mb-3">過去の精算</h2>
+            <SettlementHistory groupId={group._id} />
+          </div>
+        </div>
+      )}
+
+      {activeTab === "analytics" && (
+        <AnalyticsSection
           groupId={group._id}
           year={displayYear}
           month={displayMonth}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
         />
-      </div>
-
-      {/* 過去の精算 */}
-      <div>
-        <h2 className="font-medium text-slate-800 mb-3">過去の精算</h2>
-        <SettlementHistory groupId={group._id} />
-      </div>
+      )}
 
       {/* 支出記録ボタン */}
       <div className="fixed bottom-6 right-6">

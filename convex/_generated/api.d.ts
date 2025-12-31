@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as analytics from "../analytics.js";
 import type * as domain_expense_index from "../domain/expense/index.js";
 import type * as domain_expense_rules from "../domain/expense/rules.js";
 import type * as domain_expense_splitCalculator from "../domain/expense/splitCalculator.js";
@@ -43,6 +44,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  analytics: typeof analytics;
   "domain/expense/index": typeof domain_expense_index;
   "domain/expense/rules": typeof domain_expense_rules;
   "domain/expense/splitCalculator": typeof domain_expense_splitCalculator;
