@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
+import { requireGroupMember } from "./lib/authorization";
 import {
   validateCategoryName,
   validateCategoryIcon,
@@ -16,16 +17,8 @@ export const create = authMutation({
     icon: v.string(),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     let validatedName: string;
     let validatedIcon: string;
@@ -92,16 +85,8 @@ export const update = authMutation({
       throw new Error("カテゴリが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", category.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, category.groupId);
 
     if (category.isPreset) {
       throw new Error("プリセットカテゴリは編集できません");
@@ -161,16 +146,8 @@ export const remove = authMutation({
       throw new Error("カテゴリが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", category.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, category.groupId);
 
     if (category.isPreset) {
       throw new Error("プリセットカテゴリは削除できません");
@@ -211,16 +188,8 @@ export const canDelete = authQuery({
       throw new Error("カテゴリが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", category.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, category.groupId);
 
     if (category.isPreset) {
       return { canDelete: false, reason: "preset", usageCount: 0 };

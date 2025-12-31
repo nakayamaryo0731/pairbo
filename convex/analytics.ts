@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { authQuery } from "./lib/auth";
+import { requireGroupMember } from "./lib/authorization";
 import { getSettlementPeriod, getSettlementLabel } from "./domain/settlement";
 import type { Id } from "./_generated/dataModel";
 
@@ -13,16 +14,8 @@ export const getCategoryBreakdown = authQuery({
     month: v.number(),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     const group = await ctx.db.get(args.groupId);
     if (!group) {
@@ -106,16 +99,8 @@ export const getMonthlyTrend = authQuery({
     months: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     const group = await ctx.db.get(args.groupId);
     if (!group) {

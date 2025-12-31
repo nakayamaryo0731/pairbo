@@ -2,6 +2,10 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { authMutation, authQuery } from "./lib/auth";
 import {
+  requireGroupMember,
+  requireUserIsGroupMember,
+} from "./lib/authorization";
+import {
   calculateEqualSplit,
   calculateRatioSplit,
   calculateAmountSplit,
@@ -60,32 +64,21 @@ export const create = authMutation({
       throw new Error("グループが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     const category = await ctx.db.get(args.categoryId);
     if (!category || category.groupId !== args.groupId) {
       throw new Error("カテゴリが見つかりません");
     }
 
-    const payerMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", args.paidBy),
-      )
-      .unique();
-
-    if (!payerMembership) {
-      throw new Error("支払者がグループメンバーではありません");
-    }
+    // 支払者がグループメンバーであることを確認
+    await requireUserIsGroupMember(
+      ctx,
+      args.groupId,
+      args.paidBy,
+      "支払者がグループメンバーではありません",
+    );
 
     const memberships = await ctx.db
       .query("groupMembers")
@@ -237,16 +230,8 @@ export const listByGroup = authQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     const expensesQuery = ctx.db
       .query("expenses")
@@ -355,16 +340,8 @@ export const getById = authQuery({
       throw new Error("グループが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", expense.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("この支出にアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, expense.groupId);
 
     const [category, payer, createdByUser, splits] = await Promise.all([
       ctx.db.get(expense.categoryId),
@@ -444,16 +421,8 @@ export const listByPeriod = authQuery({
     month: v.number(),
   },
   handler: async (ctx, args) => {
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", args.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
 
     const group = await ctx.db.get(args.groupId);
     if (!group) {
@@ -616,16 +585,8 @@ export const update = authMutation({
       throw new Error("グループが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", expense.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, expense.groupId);
 
     // 精算済みチェック
     const isSettled = await isExpenseSettled(
@@ -653,16 +614,13 @@ export const update = authMutation({
       throw new Error("カテゴリが見つかりません");
     }
 
-    const payerMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", expense.groupId).eq("userId", args.paidBy),
-      )
-      .unique();
-
-    if (!payerMembership) {
-      throw new Error("支払者がグループメンバーではありません");
-    }
+    // 支払者がグループメンバーであることを確認
+    await requireUserIsGroupMember(
+      ctx,
+      expense.groupId,
+      args.paidBy,
+      "支払者がグループメンバーではありません",
+    );
 
     const memberships = await ctx.db
       .query("groupMembers")
@@ -767,16 +725,8 @@ export const remove = authMutation({
       throw new Error("グループが見つかりません");
     }
 
-    const myMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) =>
-        q.eq("groupId", expense.groupId).eq("userId", ctx.user._id),
-      )
-      .unique();
-
-    if (!myMembership) {
-      throw new Error("このグループにアクセスする権限がありません");
-    }
+    // 認可チェック
+    await requireGroupMember(ctx, expense.groupId);
 
     // 精算済みチェック
     const isSettled = await isExpenseSettled(
