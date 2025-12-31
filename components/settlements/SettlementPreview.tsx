@@ -42,25 +42,10 @@ export function SettlementPreview({
     }
   };
 
-  const formatPeriod = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
-  };
-
   const isAlreadySettled = preview.existingSettlementId !== null;
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-slate-800">
-          {year}年{month}月分
-        </h3>
-        <span className="text-sm text-slate-500">
-          {formatPeriod(preview.period.startDate, preview.period.endDate)}
-        </span>
-      </div>
-
       {/* 統計 */}
       <div className="flex gap-4 mb-4 text-sm">
         <div className="flex items-center gap-1">

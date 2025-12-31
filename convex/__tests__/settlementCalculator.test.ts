@@ -6,6 +6,7 @@ import {
   getSettlementPeriod,
   isDateInPeriod,
   getSettlementLabel,
+  getCurrentSettlementYearMonth,
 } from "../domain/settlement";
 
 // テスト用のモックID生成
@@ -275,6 +276,128 @@ describe("settlement/calculator", () => {
     test("表示ラベルを生成", () => {
       expect(getSettlementLabel(2024, 12)).toBe("2024年12月分");
       expect(getSettlementLabel(2025, 1)).toBe("2025年1月分");
+    });
+  });
+
+  describe("getCurrentSettlementYearMonth", () => {
+    test("締め日より前の日付は今月分", () => {
+      // 例: 締め日25日、今日が12月10日 → 12月分
+      const mockDate = new Date(2024, 11, 10); // 2024-12-10
+      const originalDate = global.Date;
+      global.Date = class extends originalDate {
+        constructor(...args: unknown[]) {
+          if (args.length === 0) {
+            super(mockDate.getTime());
+          } else {
+            // @ts-expect-error - constructor signature
+            super(...args);
+          }
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      } as DateConstructor;
+
+      const result = getCurrentSettlementYearMonth(25);
+      expect(result).toEqual({ year: 2024, month: 12 });
+
+      global.Date = originalDate;
+    });
+
+    test("締め日と同日は今月分", () => {
+      // 例: 締め日25日、今日が12月25日 → 12月分
+      const mockDate = new Date(2024, 11, 25); // 2024-12-25
+      const originalDate = global.Date;
+      global.Date = class extends originalDate {
+        constructor(...args: unknown[]) {
+          if (args.length === 0) {
+            super(mockDate.getTime());
+          } else {
+            // @ts-expect-error - constructor signature
+            super(...args);
+          }
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      } as DateConstructor;
+
+      const result = getCurrentSettlementYearMonth(25);
+      expect(result).toEqual({ year: 2024, month: 12 });
+
+      global.Date = originalDate;
+    });
+
+    test("締め日より後の日付は翌月分", () => {
+      // 例: 締め日25日、今日が12月26日 → 1月分（翌年）
+      const mockDate = new Date(2024, 11, 26); // 2024-12-26
+      const originalDate = global.Date;
+      global.Date = class extends originalDate {
+        constructor(...args: unknown[]) {
+          if (args.length === 0) {
+            super(mockDate.getTime());
+          } else {
+            // @ts-expect-error - constructor signature
+            super(...args);
+          }
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      } as DateConstructor;
+
+      const result = getCurrentSettlementYearMonth(25);
+      expect(result).toEqual({ year: 2025, month: 1 });
+
+      global.Date = originalDate;
+    });
+
+    test("年末に翌月分になる場合は年が繰り上がる", () => {
+      // 例: 締め日15日、今日が12月20日 → 2025年1月分
+      const mockDate = new Date(2024, 11, 20); // 2024-12-20
+      const originalDate = global.Date;
+      global.Date = class extends originalDate {
+        constructor(...args: unknown[]) {
+          if (args.length === 0) {
+            super(mockDate.getTime());
+          } else {
+            // @ts-expect-error - constructor signature
+            super(...args);
+          }
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      } as DateConstructor;
+
+      const result = getCurrentSettlementYearMonth(15);
+      expect(result).toEqual({ year: 2025, month: 1 });
+
+      global.Date = originalDate;
+    });
+
+    test("締め日より後でも12月でなければ同年の翌月", () => {
+      // 例: 締め日10日、今日が6月15日 → 7月分
+      const mockDate = new Date(2024, 5, 15); // 2024-06-15
+      const originalDate = global.Date;
+      global.Date = class extends originalDate {
+        constructor(...args: unknown[]) {
+          if (args.length === 0) {
+            super(mockDate.getTime());
+          } else {
+            // @ts-expect-error - constructor signature
+            super(...args);
+          }
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      } as DateConstructor;
+
+      const result = getCurrentSettlementYearMonth(10);
+      expect(result).toEqual({ year: 2024, month: 7 });
+
+      global.Date = originalDate;
     });
   });
 });

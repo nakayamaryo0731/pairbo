@@ -186,3 +186,39 @@ export function isDateInPeriod(
 export function getSettlementLabel(year: number, month: number): string {
   return `${year}年${month}月分`;
 }
+
+/**
+ * 今日が含まれる精算期間の年月を取得
+ *
+ * @param closingDay 締め日（1-28）
+ * @returns 精算期間の年月
+ *
+ * @example
+ * // 締め日25日、今日が12/31の場合
+ * getCurrentSettlementYearMonth(25)
+ * // → { year: 2025, month: 1 }（12/26〜1/25の期間 = 1月分）
+ *
+ * // 締め日25日、今日が12/20の場合
+ * getCurrentSettlementYearMonth(25)
+ * // → { year: 2024, month: 12 }（11/26〜12/25の期間 = 12月分）
+ */
+export function getCurrentSettlementYearMonth(closingDay: number): {
+  year: number;
+  month: number;
+} {
+  const now = new Date();
+  const today = now.getDate();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  // 締め日を過ぎている場合は翌月分
+  if (today > closingDay) {
+    if (currentMonth === 12) {
+      return { year: currentYear + 1, month: 1 };
+    }
+    return { year: currentYear, month: currentMonth + 1 };
+  }
+
+  // 締め日以前の場合は今月分
+  return { year: currentYear, month: currentMonth };
+}

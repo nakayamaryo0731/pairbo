@@ -1,13 +1,16 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { MemberList } from "./MemberList";
 import { InviteDialog } from "./InviteDialog";
-import { ExpenseList } from "@/components/expenses/ExpenseList";
-import { SettlementPreview, SettlementHistory } from "@/components/settlements";
+import { PeriodExpenseList } from "@/components/expenses/PeriodExpenseList";
+import {
+  SettlementPreview,
+  SettlementHistory,
+  PeriodNavigator,
+} from "@/components/settlements";
 
 type GroupDetailProps = {
   group: {
@@ -28,13 +31,99 @@ type GroupDetailProps = {
   myRole: "owner" | "member";
 };
 
-export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
-  const expenses = useQuery(api.expenses.listByGroup, { groupId: group._id });
-
-  // 現在の年月を取得（精算プレビュー用）
+/**
+ * 今日が含まれる精算期間の年月を計算
+ */
+function getCurrentSettlementYearMonth(closingDay: number): {
+  year: number;
+  month: number;
+} {
   const now = new Date();
-  const currentYear = now.getFullYear();
+  const today = now.getDate();
   const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  if (today > closingDay) {
+    if (currentMonth === 12) {
+      return { year: currentYear + 1, month: 1 };
+    }
+    return { year: currentYear, month: currentMonth + 1 };
+  }
+
+  return { year: currentYear, month: currentMonth };
+}
+
+/**
+ * 精算期間を計算
+ */
+function getSettlementPeriod(
+  closingDay: number,
+  year: number,
+  month: number,
+): { startDate: string; endDate: string } {
+  const formatDate = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const endDate = new Date(year, month - 1, closingDay);
+  const startDate = new Date(year, month - 2, closingDay + 1);
+
+  return {
+    startDate: formatDate(startDate),
+    endDate: formatDate(endDate),
+  };
+}
+
+export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
+  // 今期の年月を初期値として設定
+  const initialPeriod = useMemo(
+    () => getCurrentSettlementYearMonth(group.closingDay),
+    [group.closingDay],
+  );
+
+  const [displayYear, setDisplayYear] = useState(initialPeriod.year);
+  const [displayMonth, setDisplayMonth] = useState(initialPeriod.month);
+
+  // 現在の精算期間
+  const currentPeriod = useMemo(
+    () => getCurrentSettlementYearMonth(group.closingDay),
+    [group.closingDay],
+  );
+
+  // 表示中の期間
+  const period = useMemo(
+    () => getSettlementPeriod(group.closingDay, displayYear, displayMonth),
+    [group.closingDay, displayYear, displayMonth],
+  );
+
+  // 翌月へ移動可能かどうか（今期より先には進めない）
+  const canGoNext =
+    displayYear < currentPeriod.year ||
+    (displayYear === currentPeriod.year &&
+      displayMonth < currentPeriod.month);
+
+  const goToPreviousMonth = () => {
+    if (displayMonth === 1) {
+      setDisplayYear(displayYear - 1);
+      setDisplayMonth(12);
+    } else {
+      setDisplayMonth(displayMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (!canGoNext) return;
+
+    if (displayMonth === 12) {
+      setDisplayYear(displayYear + 1);
+      setDisplayMonth(1);
+    } else {
+      setDisplayMonth(displayMonth + 1);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -77,35 +166,39 @@ export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
         <MemberList members={members} />
       </div>
 
-      {/* 支出一覧 */}
+      {/* 今期の精算（主役） */}
       <div>
-        <h2 className="font-medium text-slate-800 mb-3">支出履歴</h2>
-        {expenses === undefined ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-24 bg-slate-100 rounded-lg animate-pulse"
-              />
-            ))}
-          </div>
-        ) : (
-          <ExpenseList expenses={expenses} />
-        )}
+        <h2 className="font-medium text-slate-800 mb-3">今期の精算</h2>
+        <div className="space-y-3">
+          <PeriodNavigator
+            year={displayYear}
+            month={displayMonth}
+            startDate={period.startDate}
+            endDate={period.endDate}
+            onPrevious={goToPreviousMonth}
+            onNext={goToNextMonth}
+            canGoNext={canGoNext}
+          />
+          <SettlementPreview
+            groupId={group._id}
+            year={displayYear}
+            month={displayMonth}
+            isOwner={myRole === "owner"}
+          />
+        </div>
       </div>
 
-      {/* 精算 */}
+      {/* この期間の支出 */}
       <div>
-        <h2 className="font-medium text-slate-800 mb-3">今月の精算</h2>
-        <SettlementPreview
+        <h2 className="font-medium text-slate-800 mb-3">この期間の支出</h2>
+        <PeriodExpenseList
           groupId={group._id}
-          year={currentYear}
-          month={currentMonth}
-          isOwner={myRole === "owner"}
+          year={displayYear}
+          month={displayMonth}
         />
       </div>
 
-      {/* 精算履歴 */}
+      {/* 過去の精算 */}
       <div>
         <h2 className="font-medium text-slate-800 mb-3">過去の精算</h2>
         <SettlementHistory groupId={group._id} />
