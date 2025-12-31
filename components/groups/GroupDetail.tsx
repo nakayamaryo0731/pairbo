@@ -16,8 +16,16 @@ import {
   PeriodNavigator,
 } from "@/components/settlements";
 import { AnalyticsSection } from "@/components/analytics";
+import { CategoryManager } from "@/components/categories";
 
 type TabType = "expenses" | "settlement" | "analytics";
+
+type Category = {
+  _id: Id<"categories">;
+  name: string;
+  icon: string;
+  isPreset: boolean;
+};
 
 type GroupDetailProps = {
   group: {
@@ -35,6 +43,7 @@ type GroupDetailProps = {
     joinedAt: number;
     isMe: boolean;
   }[];
+  categories: Category[];
   myRole: "owner" | "member";
 };
 
@@ -92,7 +101,12 @@ function getSettlementPeriod(
   };
 }
 
-export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
+export function GroupDetail({
+  group,
+  members,
+  categories,
+  myRole,
+}: GroupDetailProps) {
   const router = useRouter();
   const removeExpense = useMutation(api.expenses.remove);
 
@@ -196,6 +210,9 @@ export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
         {group.description && (
           <p className="mt-2 text-sm text-slate-500">{group.description}</p>
         )}
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <CategoryManager groupId={group._id} categories={categories} />
+        </div>
       </div>
 
       {/* メンバー一覧 */}

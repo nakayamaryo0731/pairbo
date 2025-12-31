@@ -82,6 +82,7 @@ export default function GroupDetailPage({ params }: PageProps) {
           <GroupDetail
             group={detail.group}
             members={detail.members}
+            categories={detail.categories}
             myRole={detail.myRole}
           />
         </div>
