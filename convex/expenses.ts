@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { authMutation, authQuery } from "./lib/auth";
 import {
   requireGroupMember,
