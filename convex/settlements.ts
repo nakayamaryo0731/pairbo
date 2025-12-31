@@ -256,6 +256,55 @@ export const markPaid = authMutation({
   },
 });
 
+
+/**
+ * 精算を再オープン（未精算に戻す）
+ */
+export const reopen = authMutation({
+  args: {
+    settlementId: v.id("settlements"),
+  },
+  handler: async (ctx, args) => {
+    const settlement = await getOrThrow(
+      ctx,
+      args.settlementId,
+      "精算情報が見つかりません",
+    );
+
+    await requireGroupOwner(ctx, settlement.groupId);
+
+    if (settlement.status !== "settled") {
+      throw new ConvexError("この精算は既に未精算状態です");
+    }
+
+    await ctx.db.patch(args.settlementId, {
+      status: "pending",
+      settledAt: undefined,
+    });
+
+    const payments = await ctx.db
+      .query("settlementPayments")
+      .withIndex("by_settlement", (q) =>
+        q.eq("settlementId", args.settlementId),
+      )
+      .collect();
+
+    for (const payment of payments) {
+      await ctx.db.patch(payment._id, {
+        isPaid: false,
+        paidAt: undefined,
+      });
+    }
+
+    ctx.logger.audit("SETTLEMENT", "reopened", {
+      settlementId: args.settlementId,
+      groupId: settlement.groupId,
+    });
+
+    return { success: true };
+  },
+});
+
 /**
  * 精算一覧取得
  */
@@ -317,7 +366,8 @@ export const getById = authQuery({
     );
 
     // 認可チェック
-    await requireGroupMember(ctx, settlement.groupId);
+    const membership = await requireGroupMember(ctx, settlement.groupId);
+    const isOwner = membership.role === "owner";
 
     const group = await ctx.db.get(settlement.groupId);
 
@@ -361,6 +411,7 @@ export const getById = authQuery({
         userMap.get(settlement.createdBy)?.displayName ?? FALLBACK.USER_NAME,
       createdAt: settlement.createdAt,
       payments: paymentsWithUsers,
+      isOwner,
     };
   },
 });

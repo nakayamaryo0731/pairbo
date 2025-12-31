@@ -1,10 +1,12 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { PaymentCard } from "./PaymentCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RotateCcw } from "lucide-react";
 
 type SettlementDetailProps = {
   settlementId: Id<"settlements">;
@@ -12,6 +14,8 @@ type SettlementDetailProps = {
 
 export function SettlementDetail({ settlementId }: SettlementDetailProps) {
   const settlement = useQuery(api.settlements.getById, { settlementId });
+  const reopenMutation = useMutation(api.settlements.reopen);
+  const [isReopening, setIsReopening] = useState(false);
 
   if (settlement === undefined) {
     return <SettlementDetailSkeleton />;
@@ -28,6 +32,21 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
   };
 
   const isSettled = settlement.status === "settled";
+
+  const handleReopen = async () => {
+    if (!confirm("精算を未精算に戻しますか？すべての支払い完了状態がリセットされます。")) {
+      return;
+    }
+
+    setIsReopening(true);
+    try {
+      await reopenMutation({ settlementId });
+    } catch (error) {
+      console.error("再オープンエラー:", error);
+    } finally {
+      setIsReopening(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -82,6 +101,18 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
           <div>グループ: {settlement.groupName}</div>
           <div>確定者: {settlement.creatorName}</div>
         </div>
+
+        {/* 精算完了時のオーナー向け再オープンボタン */}
+        {isSettled && settlement.isOwner && (
+          <button
+            onClick={handleReopen}
+            disabled={isReopening}
+            className="mt-4 w-full flex items-center justify-center gap-2 py-2 text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <RotateCcw className="h-4 w-4" />
+            {isReopening ? "処理中..." : "未精算に戻す"}
+          </button>
+        )}
       </div>
 
       {/* 支払い一覧 */}
