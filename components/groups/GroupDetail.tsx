@@ -31,22 +31,10 @@ type GroupDetailProps = {
 export function GroupDetail({ group, members, myRole }: GroupDetailProps) {
   const expenses = useQuery(api.expenses.listByGroup, { groupId: group._id });
 
-  // 今日の日付に基づいて精算期間を決定
-  // 締め日を過ぎている場合は翌月分を表示
+  // 現在の年月を取得（精算プレビュー用）
   const now = new Date();
-  const today = now.getDate();
-  const isAfterClosingDay = today > group.closingDay;
-
-  let currentYear = now.getFullYear();
-  let currentMonth = now.getMonth() + 1;
-
-  if (isAfterClosingDay) {
-    currentMonth += 1;
-    if (currentMonth > 12) {
-      currentMonth = 1;
-      currentYear += 1;
-    }
-  }
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
 
   return (
     <div className="space-y-6">
