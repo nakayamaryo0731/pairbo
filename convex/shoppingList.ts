@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
 import { getOrThrow } from "./lib/dataHelpers";
@@ -176,7 +176,7 @@ export const remove = authMutation({
     await requireGroupMember(ctx, item.groupId);
 
     if (item.purchasedAt !== undefined) {
-      throw new Error("購入済みのアイテムは削除できません");
+      throw new ConvexError("購入済みのアイテムは削除できません");
     }
 
     await ctx.db.delete(args.itemId);
@@ -203,7 +203,7 @@ export const markPurchased = authMutation({
     await requireGroupMember(ctx, item.groupId);
 
     if (item.purchasedAt !== undefined) {
-      throw new Error("既に購入済みです");
+      throw new ConvexError("既に購入済みです");
     }
 
     await ctx.db.patch(args.itemId, {
@@ -233,11 +233,11 @@ export const unmarkPurchased = authMutation({
     await requireGroupMember(ctx, item.groupId);
 
     if (item.purchasedAt === undefined) {
-      throw new Error("このアイテムは未購入です");
+      throw new ConvexError("このアイテムは未購入です");
     }
 
     if (item.linkedExpenseId !== undefined) {
-      throw new Error("支出と連携済みのため購入解除できません");
+      throw new ConvexError("支出と連携済みのため購入解除できません");
     }
 
     await ctx.db.patch(args.itemId, {

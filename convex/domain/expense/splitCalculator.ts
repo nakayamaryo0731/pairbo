@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import type { SplitResult, RatioSplitInput, AmountSplitInput } from "./types";
 
@@ -20,11 +21,11 @@ export function calculateEqualSplit(
   payerId: Id<"users">,
 ): SplitResult[] {
   if (memberIds.length === 0) {
-    throw new Error("メンバーが指定されていません");
+    throw new ConvexError("メンバーが指定されていません");
   }
 
   if (amount <= 0) {
-    throw new Error("金額は1円以上である必要があります");
+    throw new ConvexError("金額は1円以上である必要があります");
   }
 
   const count = memberIds.length;
@@ -46,16 +47,16 @@ export function calculateRatioSplit(
   payerId: Id<"users">,
 ): SplitResult[] {
   if (ratios.length === 0) {
-    throw new Error("割合が指定されていません");
+    throw new ConvexError("割合が指定されていません");
   }
 
   if (amount <= 0) {
-    throw new Error("金額は1円以上である必要があります");
+    throw new ConvexError("金額は1円以上である必要があります");
   }
 
   const totalRatio = ratios.reduce((sum, r) => sum + r.ratio, 0);
   if (totalRatio !== 100) {
-    throw new Error("割合の合計は100%である必要があります");
+    throw new ConvexError("割合の合計は100%である必要があります");
   }
 
   const results: SplitResult[] = ratios.map((r) => ({
@@ -85,7 +86,7 @@ export function calculateAmountSplit(
   amounts: AmountSplitInput[],
 ): SplitResult[] {
   if (amounts.length === 0) {
-    throw new Error("金額が指定されていません");
+    throw new ConvexError("金額が指定されていません");
   }
 
   return amounts.map((a) => ({
@@ -103,15 +104,15 @@ export function calculateFullSplit(
   bearerId: Id<"users">,
 ): SplitResult[] {
   if (memberIds.length === 0) {
-    throw new Error("メンバーが指定されていません");
+    throw new ConvexError("メンバーが指定されていません");
   }
 
   if (amount <= 0) {
-    throw new Error("金額は1円以上である必要があります");
+    throw new ConvexError("金額は1円以上である必要があります");
   }
 
   if (!memberIds.includes(bearerId)) {
-    throw new Error("負担者はメンバーに含まれている必要があります");
+    throw new ConvexError("負担者はメンバーに含まれている必要があります");
   }
 
   return memberIds.map((userId) => ({

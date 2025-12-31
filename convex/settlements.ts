@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember, requireGroupOwner } from "./lib/authorization";
 import { getGroupMemberIds } from "./lib/groupHelper";
@@ -27,7 +27,7 @@ export const getPreview = authQuery({
       validateSettlementPeriodInput(args.year, args.month);
     } catch (error) {
       if (error instanceof SettlementValidationError) {
-        throw new Error(error.message);
+        throw new ConvexError(error.message);
       }
       throw error;
     }
@@ -113,7 +113,7 @@ export const create = authMutation({
         ctx.logger.warn("SETTLEMENT", "create_validation_failed", {
           reason: error.message,
         });
-        throw new Error(error.message);
+        throw new ConvexError(error.message);
       }
       throw error;
     }
@@ -142,7 +142,7 @@ export const create = authMutation({
         reason: "already_exists",
         period,
       });
-      throw new Error("この期間の精算は既に確定されています");
+      throw new ConvexError("この期間の精算は既に確定されています");
     }
 
     const memberIds = await getGroupMemberIds(ctx, args.groupId);
@@ -215,7 +215,7 @@ export const markPaid = authMutation({
         paymentId: args.paymentId,
         reason: "unauthorized",
       });
-      throw new Error("支払い完了をマークする権限がありません");
+      throw new ConvexError("支払い完了をマークする権限がありません");
     }
 
     if (payment.isPaid) {

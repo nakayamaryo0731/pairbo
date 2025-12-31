@@ -3,7 +3,15 @@
 import { useState } from "react";
 
 type StylePattern = "minimal" | "card" | "modern";
-type ColorTheme = "slate" | "violet" | "emerald" | "blue" | "skyblue" | "indigo" | "amber" | "rose";
+type ColorTheme =
+  | "slate"
+  | "violet"
+  | "emerald"
+  | "blue"
+  | "skyblue"
+  | "indigo"
+  | "amber"
+  | "rose";
 
 const COLOR_THEMES: Record<
   ColorTheme,
