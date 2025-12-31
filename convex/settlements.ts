@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember, requireGroupOwner } from "./lib/authorization";
+import { getGroupMemberIds } from "./lib/groupHelper";
+import { getExpensesByPeriod } from "./lib/expenseHelper";
 import {
   calculateBalances,
   minimizeTransfers,
@@ -38,20 +40,8 @@ export const getPreview = authQuery({
 
     const period = getSettlementPeriod(group.closingDay, args.year, args.month);
 
-    const memberships = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) => q.eq("groupId", args.groupId))
-      .collect();
-    const memberIds = memberships.map((m) => m.userId);
-
-    const allExpenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
-      .collect();
-
-    const expenses = allExpenses.filter(
-      (e) => e.date >= period.startDate && e.date <= period.endDate,
-    );
+    const memberIds = await getGroupMemberIds(ctx, args.groupId);
+    const expenses = await getExpensesByPeriod(ctx, args.groupId, period);
 
     const expenseIds = expenses.map((e) => e._id);
     const allSplits = await Promise.all(
@@ -159,20 +149,8 @@ export const create = authMutation({
       throw new Error("この期間の精算は既に確定されています");
     }
 
-    const memberships = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_and_user", (q) => q.eq("groupId", args.groupId))
-      .collect();
-    const memberIds = memberships.map((m) => m.userId);
-
-    const allExpenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
-      .collect();
-
-    const expenses = allExpenses.filter(
-      (e) => e.date >= period.startDate && e.date <= period.endDate,
-    );
+    const memberIds = await getGroupMemberIds(ctx, args.groupId);
+    const expenses = await getExpensesByPeriod(ctx, args.groupId, period);
 
     const expenseIds = expenses.map((e) => e._id);
     const allSplits = await Promise.all(

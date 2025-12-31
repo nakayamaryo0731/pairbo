@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { authQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
 import { getSettlementPeriod, getSettlementLabel } from "./domain/settlement";
+import { getExpensesByPeriod } from "./lib/expenseHelper";
 import type { Id } from "./_generated/dataModel";
 
 /**
@@ -24,15 +25,7 @@ export const getCategoryBreakdown = authQuery({
 
     const period = getSettlementPeriod(group.closingDay, args.year, args.month);
 
-    const allExpenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
-      .collect();
-
-    const expenses = allExpenses.filter(
-      (e) => e.date >= period.startDate && e.date <= period.endDate,
-    );
-
+    const expenses = await getExpensesByPeriod(ctx, args.groupId, period);
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
 
     if (expenses.length === 0) {

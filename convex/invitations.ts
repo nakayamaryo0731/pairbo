@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { authMutation } from "./lib/auth";
+import { getGroupMemberIds } from "./lib/groupHelper";
 import {
   isInvitationExpired,
   isInvitationUsed,
@@ -37,14 +38,8 @@ export const getByToken = query({
     }
 
     const inviter = await ctx.db.get(invitation.createdBy);
-    const memberCount = (
-      await ctx.db
-        .query("groupMembers")
-        .withIndex("by_group_and_user", (q) =>
-          q.eq("groupId", invitation.groupId),
-        )
-        .collect()
-    ).length;
+    const memberIds = await getGroupMemberIds(ctx, invitation.groupId);
+    const memberCount = memberIds.length;
 
     return {
       invitation: {
