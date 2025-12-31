@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember, requireGroupOwner } from "./lib/authorization";
 import { PRESET_CATEGORIES } from "./lib/presetCategories";
+import { getOrThrow } from "./lib/dataHelpers";
 import {
   validateGroupInput,
   GROUP_RULES,
@@ -117,10 +118,11 @@ export const listMyGroups = authQuery({
 export const getDetail = authQuery({
   args: { groupId: v.id("groups") },
   handler: async (ctx, args) => {
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
 
     // 認可チェック
     const myMembership = await requireGroupMember(ctx, args.groupId);
@@ -174,14 +176,11 @@ export const getDetail = authQuery({
 export const createInvitation = authMutation({
   args: { groupId: v.id("groups") },
   handler: async (ctx, args) => {
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      ctx.logger.warn("GROUP", "invitation_create_failed", {
-        groupId: args.groupId,
-        reason: "group_not_found",
-      });
-      throw new Error("グループが見つかりません");
-    }
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
 
     // オーナー権限チェック
     await requireGroupOwner(ctx, args.groupId);

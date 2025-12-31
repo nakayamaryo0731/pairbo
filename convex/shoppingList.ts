@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
+import { getOrThrow } from "./lib/dataHelpers";
 import {
   validateShoppingItemName,
   ShoppingItemValidationError,
@@ -169,10 +170,7 @@ export const remove = authMutation({
     itemId: v.id("shoppingItems"),
   },
   handler: async (ctx, args) => {
-    const item = await ctx.db.get(args.itemId);
-    if (!item) {
-      throw new Error("アイテムが見つかりません");
-    }
+    const item = await getOrThrow(ctx, args.itemId, "アイテムが見つかりません");
 
     // 認可チェック
     await requireGroupMember(ctx, item.groupId);
@@ -199,10 +197,7 @@ export const markPurchased = authMutation({
     itemId: v.id("shoppingItems"),
   },
   handler: async (ctx, args) => {
-    const item = await ctx.db.get(args.itemId);
-    if (!item) {
-      throw new Error("アイテムが見つかりません");
-    }
+    const item = await getOrThrow(ctx, args.itemId, "アイテムが見つかりません");
 
     // 認可チェック
     await requireGroupMember(ctx, item.groupId);
@@ -232,10 +227,7 @@ export const unmarkPurchased = authMutation({
     itemId: v.id("shoppingItems"),
   },
   handler: async (ctx, args) => {
-    const item = await ctx.db.get(args.itemId);
-    if (!item) {
-      throw new Error("アイテムが見つかりません");
-    }
+    const item = await getOrThrow(ctx, args.itemId, "アイテムが見つかりません");
 
     // 認可チェック
     await requireGroupMember(ctx, item.groupId);

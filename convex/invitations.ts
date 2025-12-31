@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { authMutation } from "./lib/auth";
 import { getGroupMemberIds } from "./lib/groupHelper";
+import { FALLBACK } from "./lib/enrichment";
 import {
   isInvitationExpired,
   isInvitationUsed,
@@ -45,7 +46,7 @@ export const getByToken = query({
       invitation: {
         groupId: invitation.groupId,
         groupName: group.name,
-        inviterName: inviter?.displayName ?? "不明なユーザー",
+        inviterName: inviter?.displayName ?? FALLBACK.USER_NAME,
         memberCount,
         expiresAt: invitation.expiresAt,
       },

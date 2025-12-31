@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
+import { getOrThrow } from "./lib/dataHelpers";
 import {
   validateCategoryName,
   validateCategoryIcon,
@@ -80,10 +81,11 @@ export const update = authMutation({
     icon: v.string(),
   },
   handler: async (ctx, args) => {
-    const category = await ctx.db.get(args.categoryId);
-    if (!category) {
-      throw new Error("カテゴリが見つかりません");
-    }
+    const category = await getOrThrow(
+      ctx,
+      args.categoryId,
+      "カテゴリが見つかりません",
+    );
 
     // 認可チェック
     await requireGroupMember(ctx, category.groupId);
@@ -141,10 +143,11 @@ export const remove = authMutation({
     categoryId: v.id("categories"),
   },
   handler: async (ctx, args) => {
-    const category = await ctx.db.get(args.categoryId);
-    if (!category) {
-      throw new Error("カテゴリが見つかりません");
-    }
+    const category = await getOrThrow(
+      ctx,
+      args.categoryId,
+      "カテゴリが見つかりません",
+    );
 
     // 認可チェック
     await requireGroupMember(ctx, category.groupId);
@@ -183,10 +186,11 @@ export const canDelete = authQuery({
     categoryId: v.id("categories"),
   },
   handler: async (ctx, args) => {
-    const category = await ctx.db.get(args.categoryId);
-    if (!category) {
-      throw new Error("カテゴリが見つかりません");
-    }
+    const category = await getOrThrow(
+      ctx,
+      args.categoryId,
+      "カテゴリが見つかりません",
+    );
 
     // 認可チェック
     await requireGroupMember(ctx, category.groupId);

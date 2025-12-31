@@ -6,6 +6,8 @@ import {
 } from "./lib/authorization";
 import { getGroupMemberIds } from "./lib/groupHelper";
 import { getExpensesByPeriod } from "./lib/expenseHelper";
+import { getOrThrow } from "./lib/dataHelpers";
+import { enrichExpenseList, FALLBACK } from "./lib/enrichment";
 import {
   calculateEqualSplit,
   calculateRatioSplit,
@@ -61,10 +63,8 @@ export const create = authMutation({
     // タイトルのバリデーション
     const validatedTitle = validateTitle(args.title);
 
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    // グループ存在確認
+    await getOrThrow(ctx, args.groupId, "グループが見つかりません");
 
     // 認可チェック
     await requireGroupMember(ctx, args.groupId);
@@ -219,85 +219,7 @@ export const listByGroup = authQuery({
       ? await expensesQuery.take(args.limit)
       : await expensesQuery.collect();
 
-    if (expenses.length === 0) {
-      return [];
-    }
-
-    const categoryIds = [...new Set(expenses.map((e) => e.categoryId))];
-    const payerIds = [...new Set(expenses.map((e) => e.paidBy))];
-
-    const [categories, payers] = await Promise.all([
-      Promise.all(categoryIds.map((id) => ctx.db.get(id))),
-      Promise.all(payerIds.map((id) => ctx.db.get(id))),
-    ]);
-
-    const categoryMap = new Map(
-      categories
-        .filter((c) => c !== null)
-        .map((c) => [c._id, { _id: c._id, name: c.name, icon: c.icon }]),
-    );
-    const userMap = new Map(
-      payers
-        .filter((u) => u !== null)
-        .map((u) => [
-          u._id,
-          { _id: u._id, displayName: u.displayName, avatarUrl: u.avatarUrl },
-        ]),
-    );
-
-    const allSplits = await Promise.all(
-      expenses.map((expense) =>
-        ctx.db
-          .query("expenseSplits")
-          .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
-          .collect(),
-      ),
-    );
-
-    const splitUserIds = [
-      ...new Set(allSplits.flat().map((s) => s.userId)),
-    ].filter((id) => !userMap.has(id));
-
-    if (splitUserIds.length > 0) {
-      const splitUsers = await Promise.all(
-        splitUserIds.map((id) => ctx.db.get(id)),
-      );
-      for (const user of splitUsers) {
-        if (user) {
-          userMap.set(user._id, {
-            _id: user._id,
-            displayName: user.displayName,
-            avatarUrl: user.avatarUrl,
-          });
-        }
-      }
-    }
-
-    return expenses.map((expense, index) => {
-      const category = categoryMap.get(expense.categoryId);
-      const payer = userMap.get(expense.paidBy);
-      const splits = allSplits[index];
-
-      return {
-        _id: expense._id,
-        amount: expense.amount,
-        date: expense.date,
-        title: expense.title,
-        memo: expense.memo,
-        splitMethod: expense.splitMethod,
-        category: category ?? null,
-        payer: payer ?? null,
-        splits: splits.map((split) => {
-          const user = userMap.get(split.userId);
-          return {
-            userId: split.userId,
-            displayName: user?.displayName ?? "不明なユーザー",
-            amount: split.amount,
-          };
-        }),
-        createdAt: expense.createdAt,
-      };
-    });
+    return enrichExpenseList(ctx, expenses);
   },
 });
 
@@ -307,15 +229,16 @@ export const listByGroup = authQuery({
 export const getById = authQuery({
   args: { expenseId: v.id("expenses") },
   handler: async (ctx, args) => {
-    const expense = await ctx.db.get(args.expenseId);
-    if (!expense) {
-      throw new Error("支出が見つかりません");
-    }
-
-    const group = await ctx.db.get(expense.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    const expense = await getOrThrow(
+      ctx,
+      args.expenseId,
+      "支出が見つかりません",
+    );
+    const group = await getOrThrow(
+      ctx,
+      expense.groupId,
+      "グループが見つかりません",
+    );
 
     // 認可チェック
     await requireGroupMember(ctx, expense.groupId);
@@ -374,7 +297,7 @@ export const getById = authQuery({
         const user = userMap.get(split.userId);
         return {
           userId: split.userId,
-          displayName: user?.displayName ?? "不明なユーザー",
+          displayName: user?.displayName ?? FALLBACK.USER_NAME,
           avatarUrl: user?.avatarUrl,
           amount: split.amount,
         };
@@ -401,10 +324,11 @@ export const listByPeriod = authQuery({
     // 認可チェック
     await requireGroupMember(ctx, args.groupId);
 
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
 
     const period = getSettlementPeriod(group.closingDay, args.year, args.month);
 
@@ -413,94 +337,11 @@ export const listByPeriod = authQuery({
       await getExpensesByPeriod(ctx, args.groupId, period)
     ).sort((a, b) => b.date.localeCompare(a.date));
 
-    if (expenses.length === 0) {
-      return {
-        period,
-        expenses: [],
-        totalCount: 0,
-        totalAmount: 0,
-      };
-    }
-
-    const categoryIds = [...new Set(expenses.map((e) => e.categoryId))];
-    const payerIds = [...new Set(expenses.map((e) => e.paidBy))];
-
-    const [categories, payers] = await Promise.all([
-      Promise.all(categoryIds.map((id) => ctx.db.get(id))),
-      Promise.all(payerIds.map((id) => ctx.db.get(id))),
-    ]);
-
-    const categoryMap = new Map(
-      categories
-        .filter((c) => c !== null)
-        .map((c) => [c._id, { _id: c._id, name: c.name, icon: c.icon }]),
-    );
-    const userMap = new Map(
-      payers
-        .filter((u) => u !== null)
-        .map((u) => [
-          u._id,
-          { _id: u._id, displayName: u.displayName, avatarUrl: u.avatarUrl },
-        ]),
-    );
-
-    const allSplits = await Promise.all(
-      expenses.map((expense) =>
-        ctx.db
-          .query("expenseSplits")
-          .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
-          .collect(),
-      ),
-    );
-
-    const splitUserIds = [
-      ...new Set(allSplits.flat().map((s) => s.userId)),
-    ].filter((id) => !userMap.has(id));
-
-    if (splitUserIds.length > 0) {
-      const splitUsers = await Promise.all(
-        splitUserIds.map((id) => ctx.db.get(id)),
-      );
-      for (const user of splitUsers) {
-        if (user) {
-          userMap.set(user._id, {
-            _id: user._id,
-            displayName: user.displayName,
-            avatarUrl: user.avatarUrl,
-          });
-        }
-      }
-    }
-
-    const mappedExpenses = expenses.map((expense, index) => {
-      const category = categoryMap.get(expense.categoryId);
-      const payer = userMap.get(expense.paidBy);
-      const splits = allSplits[index];
-
-      return {
-        _id: expense._id,
-        amount: expense.amount,
-        date: expense.date,
-        title: expense.title,
-        memo: expense.memo,
-        splitMethod: expense.splitMethod,
-        category: category ?? null,
-        payer: payer ?? null,
-        splits: splits.map((split) => {
-          const user = userMap.get(split.userId);
-          return {
-            userId: split.userId,
-            displayName: user?.displayName ?? "不明なユーザー",
-            amount: split.amount,
-          };
-        }),
-        createdAt: expense.createdAt,
-      };
-    });
+    const enrichedExpenses = await enrichExpenseList(ctx, expenses);
 
     return {
       period,
-      expenses: mappedExpenses,
+      expenses: enrichedExpenses,
       totalCount: expenses.length,
       totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0),
     };
@@ -547,15 +388,16 @@ export const update = authMutation({
     splitDetails: v.optional(splitDetailsValidator),
   },
   handler: async (ctx, args) => {
-    const expense = await ctx.db.get(args.expenseId);
-    if (!expense) {
-      throw new Error("支出が見つかりません");
-    }
-
-    const group = await ctx.db.get(expense.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    const expense = await getOrThrow(
+      ctx,
+      args.expenseId,
+      "支出が見つかりません",
+    );
+    const group = await getOrThrow(
+      ctx,
+      expense.groupId,
+      "グループが見つかりません",
+    );
 
     // 認可チェック
     await requireGroupMember(ctx, expense.groupId);
@@ -662,15 +504,16 @@ export const remove = authMutation({
     expenseId: v.id("expenses"),
   },
   handler: async (ctx, args) => {
-    const expense = await ctx.db.get(args.expenseId);
-    if (!expense) {
-      throw new Error("支出が見つかりません");
-    }
-
-    const group = await ctx.db.get(expense.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    const expense = await getOrThrow(
+      ctx,
+      args.expenseId,
+      "支出が見つかりません",
+    );
+    const group = await getOrThrow(
+      ctx,
+      expense.groupId,
+      "グループが見つかりません",
+    );
 
     // 認可チェック
     await requireGroupMember(ctx, expense.groupId);

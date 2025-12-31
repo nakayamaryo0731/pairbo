@@ -3,6 +3,8 @@ import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember, requireGroupOwner } from "./lib/authorization";
 import { getGroupMemberIds } from "./lib/groupHelper";
 import { getExpensesByPeriod } from "./lib/expenseHelper";
+import { getOrThrow } from "./lib/dataHelpers";
+import { createUserMap, FALLBACK } from "./lib/enrichment";
 import {
   calculateBalances,
   minimizeTransfers,
@@ -30,10 +32,11 @@ export const getPreview = authQuery({
       throw error;
     }
 
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
 
     // 認可チェック
     await requireGroupMember(ctx, args.groupId);
@@ -64,27 +67,23 @@ export const getPreview = authQuery({
       )
       .unique();
 
-    const balancesWithUsers = await Promise.all(
-      balances.map(async (b) => {
-        const user = await ctx.db.get(b.userId);
-        return {
-          ...b,
-          displayName: user?.displayName ?? "不明なユーザー",
-        };
-      }),
-    );
+    const allUserIds = [
+      ...balances.map((b) => b.userId),
+      ...payments.flatMap((p) => [p.fromUserId, p.toUserId]),
+    ];
+    const userMap = await createUserMap(ctx, allUserIds);
 
-    const paymentsWithUsers = await Promise.all(
-      payments.map(async (p) => {
-        const fromUser = await ctx.db.get(p.fromUserId);
-        const toUser = await ctx.db.get(p.toUserId);
-        return {
-          ...p,
-          fromUserName: fromUser?.displayName ?? "不明なユーザー",
-          toUserName: toUser?.displayName ?? "不明なユーザー",
-        };
-      }),
-    );
+    const balancesWithUsers = balances.map((b) => ({
+      ...b,
+      displayName: userMap.get(b.userId)?.displayName ?? FALLBACK.USER_NAME,
+    }));
+
+    const paymentsWithUsers = payments.map((p) => ({
+      ...p,
+      fromUserName:
+        userMap.get(p.fromUserId)?.displayName ?? FALLBACK.USER_NAME,
+      toUserName: userMap.get(p.toUserId)?.displayName ?? FALLBACK.USER_NAME,
+    }));
 
     return {
       period,
@@ -119,14 +118,11 @@ export const create = authMutation({
       throw error;
     }
 
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      ctx.logger.warn("SETTLEMENT", "create_failed", {
-        groupId: args.groupId,
-        reason: "group_not_found",
-      });
-      throw new Error("グループが見つかりません");
-    }
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
 
     // オーナー権限チェック
     await requireGroupOwner(ctx, args.groupId);
@@ -206,15 +202,13 @@ export const markPaid = authMutation({
     paymentId: v.id("settlementPayments"),
   },
   handler: async (ctx, args) => {
-    const payment = await ctx.db.get(args.paymentId);
-    if (!payment) {
-      throw new Error("支払い情報が見つかりません");
-    }
-
-    const settlement = await ctx.db.get(payment.settlementId);
-    if (!settlement) {
-      throw new Error("精算情報が見つかりません");
-    }
+    const payment = await getOrThrow(
+      ctx,
+      args.paymentId,
+      "支払い情報が見つかりません",
+    );
+    // 精算存在確認
+    await getOrThrow(ctx, payment.settlementId, "精算情報が見つかりません");
 
     if (payment.toUserId !== ctx.user._id) {
       ctx.logger.warn("SETTLEMENT", "mark_paid_failed", {
@@ -316,10 +310,11 @@ export const getById = authQuery({
     settlementId: v.id("settlements"),
   },
   handler: async (ctx, args) => {
-    const settlement = await ctx.db.get(args.settlementId);
-    if (!settlement) {
-      throw new Error("精算情報が見つかりません");
-    }
+    const settlement = await getOrThrow(
+      ctx,
+      args.settlementId,
+      "精算情報が見つかりません",
+    );
 
     // 認可チェック
     await requireGroupMember(ctx, settlement.groupId);
@@ -333,36 +328,37 @@ export const getById = authQuery({
       )
       .collect();
 
-    const paymentsWithUsers = await Promise.all(
-      payments.map(async (payment) => {
-        const fromUser = await ctx.db.get(payment.fromUserId);
-        const toUser = await ctx.db.get(payment.toUserId);
-        return {
-          _id: payment._id,
-          fromUserId: payment.fromUserId,
-          fromUserName: fromUser?.displayName ?? "不明なユーザー",
-          toUserId: payment.toUserId,
-          toUserName: toUser?.displayName ?? "不明なユーザー",
-          amount: payment.amount,
-          isPaid: payment.isPaid,
-          paidAt: payment.paidAt,
-          canMarkPaid: payment.toUserId === ctx.user._id && !payment.isPaid,
-        };
-      }),
-    );
+    const userIds = [
+      ...payments.flatMap((p) => [p.fromUserId, p.toUserId]),
+      settlement.createdBy,
+    ];
+    const userMap = await createUserMap(ctx, userIds);
 
-    const creator = await ctx.db.get(settlement.createdBy);
+    const paymentsWithUsers = payments.map((payment) => ({
+      _id: payment._id,
+      fromUserId: payment.fromUserId,
+      fromUserName:
+        userMap.get(payment.fromUserId)?.displayName ?? FALLBACK.USER_NAME,
+      toUserId: payment.toUserId,
+      toUserName:
+        userMap.get(payment.toUserId)?.displayName ?? FALLBACK.USER_NAME,
+      amount: payment.amount,
+      isPaid: payment.isPaid,
+      paidAt: payment.paidAt,
+      canMarkPaid: payment.toUserId === ctx.user._id && !payment.isPaid,
+    }));
 
     return {
       _id: settlement._id,
       groupId: settlement.groupId,
-      groupName: group?.name ?? "不明なグループ",
+      groupName: group?.name ?? FALLBACK.GROUP_NAME,
       periodStart: settlement.periodStart,
       periodEnd: settlement.periodEnd,
       status: settlement.status,
       settledAt: settlement.settledAt,
       createdBy: settlement.createdBy,
-      creatorName: creator?.displayName ?? "不明なユーザー",
+      creatorName:
+        userMap.get(settlement.createdBy)?.displayName ?? FALLBACK.USER_NAME,
       createdAt: settlement.createdAt,
       payments: paymentsWithUsers,
     };

@@ -3,6 +3,7 @@ import { authQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
 import { getSettlementPeriod, getSettlementLabel } from "./domain/settlement";
 import { getExpensesByPeriod } from "./lib/expenseHelper";
+import { getOrThrow } from "./lib/dataHelpers";
 import type { Id } from "./_generated/dataModel";
 
 /**
@@ -18,10 +19,11 @@ export const getCategoryBreakdown = authQuery({
     // 認可チェック
     await requireGroupMember(ctx, args.groupId);
 
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
 
     const period = getSettlementPeriod(group.closingDay, args.year, args.month);
 
@@ -95,10 +97,11 @@ export const getMonthlyTrend = authQuery({
     // 認可チェック
     await requireGroupMember(ctx, args.groupId);
 
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      throw new Error("グループが見つかりません");
-    }
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
 
     const monthsToFetch = args.months ?? 6;
     const trend: {
