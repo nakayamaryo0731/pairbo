@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
+
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV !== "production",
+});
 
 const nextConfig: NextConfig = {
   images: {
@@ -9,6 +16,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Turbopack config (Serwist uses webpack, so we build with webpack)
+  turbopack: {},
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);
