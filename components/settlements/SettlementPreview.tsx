@@ -42,7 +42,10 @@ export function SettlementPreview({
     }
   };
 
-  const isAlreadySettled = preview.existingSettlementId !== null;
+  // reopened状態の精算は「精算済み」として扱わない（再精算可能）
+  const isAlreadySettled =
+    preview.existingSettlementId !== null &&
+    preview.existingSettlementStatus !== "reopened";
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-4">

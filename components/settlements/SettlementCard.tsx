@@ -10,7 +10,7 @@ type SettlementCardProps = {
     _id: Id<"settlements">;
     periodStart: string;
     periodEnd: string;
-    status: "pending" | "settled";
+    status: "pending" | "settled" | "reopened";
     settledAt?: number;
     createdAt: number;
     paymentCount: number;
@@ -20,7 +20,32 @@ type SettlementCardProps = {
 };
 
 export function SettlementCard({ settlement, groupId }: SettlementCardProps) {
-  const isSettled = settlement.status === "settled";
+  const statusLabel = () => {
+    switch (settlement.status) {
+      case "settled":
+        return (
+          <span className="flex items-center gap-1 text-green-600 text-sm">
+            <CircleCheck className="h-4 w-4" />
+            精算完了
+          </span>
+        );
+      case "reopened":
+        return (
+          <span className="flex items-center gap-1 text-blue-600 text-sm">
+            <Clock className="h-4 w-4" />
+            再オープン
+          </span>
+        );
+      case "pending":
+      default:
+        return (
+          <span className="flex items-center gap-1 text-amber-600 text-sm">
+            <Clock className="h-4 w-4" />
+            精算中 ({settlement.paidCount}/{settlement.paymentCount})
+          </span>
+        );
+    }
+  };
 
   return (
     <Link
@@ -37,17 +62,7 @@ export function SettlementCard({ settlement, groupId }: SettlementCardProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isSettled ? (
-            <span className="flex items-center gap-1 text-green-600 text-sm">
-              <CircleCheck className="h-4 w-4" />
-              精算完了
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-amber-600 text-sm">
-              <Clock className="h-4 w-4" />
-              精算中 ({settlement.paidCount}/{settlement.paymentCount})
-            </span>
-          )}
+          {statusLabel()}
           <ChevronRight className="h-4 w-4 text-slate-400" />
         </div>
       </div>

@@ -370,7 +370,12 @@ async function isExpenseSettled(
     )
     .unique();
 
-  return existingSettlement !== null;
+  // 精算レコードが存在し、かつstatus="reopened"でない場合は精算済みとみなす
+  // "pending"（支払い待ち）や"settled"（完了）は編集不可
+  // "reopened"（再オープン）の場合のみ編集・削除が可能
+  return (
+    existingSettlement !== null && existingSettlement.status !== "reopened"
+  );
 }
 
 /**
@@ -411,6 +416,19 @@ export const update = authMutation({
     );
     if (isSettled) {
       throw new ConvexError("精算済みの期間の支出は編集できません");
+    }
+
+    // 日付が変更される場合、変更先の期間も精算済みかチェック
+    if (args.date !== expense.date) {
+      const isNewDateSettled = await isExpenseSettled(
+        ctx,
+        args.date,
+        expense.groupId,
+        group.closingDay,
+      );
+      if (isNewDateSettled) {
+        throw new ConvexError("精算済みの期間への日付変更はできません");
+      }
     }
 
     // バリデーション

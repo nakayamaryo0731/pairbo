@@ -26,12 +26,14 @@ export const memberRoleValidator = v.union(
 
 /**
  * 精算ステータス
- * - pending: 未精算
- * - settled: 精算完了
+ * - pending: 支払い待ち（精算確定後、支払い完了前）
+ * - settled: 精算完了（全支払い完了）
+ * - reopened: 再オープン（修正可能状態）
  */
 export const settlementStatusValidator = v.union(
   v.literal("pending"),
   v.literal("settled"),
+  v.literal("reopened"),
 );
 
 /**
