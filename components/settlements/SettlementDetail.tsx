@@ -34,7 +34,11 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
   const isSettled = settlement.status === "settled";
 
   const handleReopen = async () => {
-    if (!confirm("精算を未精算に戻しますか？すべての支払い完了状態がリセットされます。")) {
+    if (
+      !confirm(
+        "精算を未精算に戻しますか？すべての支払い完了状態がリセットされます。",
+      )
+    ) {
       return;
     }
 

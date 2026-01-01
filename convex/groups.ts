@@ -208,7 +208,6 @@ export const createInvitation = authMutation({
   },
 });
 
-
 /**
  * グループ名更新
  */
@@ -250,7 +249,6 @@ export const updateName = authMutation({
     });
   },
 });
-
 
 /**
  * 締め日更新

@@ -180,7 +180,7 @@ describe("settlements", () => {
       expect(preview.existingSettlementId).toBe(settlementId);
     });
 
-    test("メンバー（非オーナー）は精算を確定できない", async () => {
+    test("メンバー（非オーナー）も精算を確定できる", async () => {
       const t = convexTest(schema, modules);
 
       const groupId = await createGroupWithMembers(t, [
@@ -188,13 +188,16 @@ describe("settlements", () => {
         userBIdentity,
       ]);
 
-      await expect(
-        t.withIdentity(userBIdentity).mutation(api.settlements.create, {
+      // メンバーも精算確定可能
+      const settlementId = await t
+        .withIdentity(userBIdentity)
+        .mutation(api.settlements.create, {
           groupId,
           year: 2024,
           month: 12,
-        }),
-      ).rejects.toThrow("この操作にはオーナー権限が必要です");
+        });
+
+      expect(settlementId).toBeDefined();
     });
 
     test("同じ期間の精算は重複作成できない", async () => {

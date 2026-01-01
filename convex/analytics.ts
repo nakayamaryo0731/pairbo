@@ -106,7 +106,7 @@ export const getYearlyCategoryBreakdown = authQuery({
       .collect();
 
     const expenses = allExpenses.filter(
-      (e) => e.date >= startDate && e.date <= endDate
+      (e) => e.date >= startDate && e.date <= endDate,
     );
 
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -130,7 +130,7 @@ export const getYearlyCategoryBreakdown = authQuery({
     // カテゴリ情報を取得
     const categoryIds = [...categoryTotals.keys()];
     const categories = await Promise.all(
-      categoryIds.map((id) => ctx.db.get(id))
+      categoryIds.map((id) => ctx.db.get(id)),
     );
 
     const breakdown = categoryIds

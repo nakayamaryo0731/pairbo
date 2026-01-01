@@ -114,6 +114,11 @@ pnpm dev
 
 **重要: デプロイはPRマージで行う**
 
+**絶対禁止: mainブランチへの直接push**
+
+- ユーザーが明示的に許可した場合を除き、mainへの直接pushは禁止
+- 必ずfeatureブランチを作成してPRを経由すること
+
 1. featureブランチを作成して作業
 2. **PR作成前に必ずローカルでチェックを実行**（下記参照）
 3. PRを作成 → CI（lint, format, typecheck, build）が自動実行

@@ -256,7 +256,6 @@ export const markPaid = authMutation({
   },
 });
 
-
 /**
  * 精算を再オープン（未精算に戻す）
  */
