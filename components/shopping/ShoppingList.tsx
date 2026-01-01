@@ -128,16 +128,13 @@ export function ShoppingList({ groupId }: ShoppingListProps) {
           </>
         ) : (
           <>
-            {/* アイテム追加 */}
-            <ShoppingItemInput groupId={groupId} />
-
             {/* アイテム一覧 */}
             {pending.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
                 <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-slate-300" />
                 <p>買い物リストは空です</p>
                 <p className="text-sm mt-1">
-                  上の入力欄からアイテムを追加しましょう
+                  下の入力欄からアイテムを追加しましょう
                 </p>
               </div>
             ) : (
@@ -150,13 +147,25 @@ export function ShoppingList({ groupId }: ShoppingListProps) {
 
             {/* アイテム数 */}
             {pending.length > 0 && (
-              <p className="text-sm text-slate-500 text-center">
+              <p className="text-sm text-slate-500 text-center pb-16">
                 {pending.length}件のアイテム
               </p>
             )}
+
+            {/* 下部スペーサー（入力欄が隠れないように） */}
+            {pending.length === 0 && <div className="h-16" />}
           </>
         )}
       </main>
+
+      {/* 下部固定の入力欄（リスト表示時のみ） */}
+      {!showHistory && (
+        <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-slate-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div className="max-w-lg mx-auto">
+            <ShoppingItemInput groupId={groupId} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
