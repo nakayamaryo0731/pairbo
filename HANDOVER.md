@@ -33,26 +33,30 @@
 - 構造化ロガー
 - バックエンドリファクタリング（認可・クエリ・データヘルパー共通化）
 
-**直近の実装: Stripeサブスクリプション（PR #58 + 後続）**
+**直近の実装: マネタイズ機能**
 
-- subscriptionsテーブル追加
-- Stripe Checkout Session API実装
-- Stripe Customer Portal連携
-- Webhook処理（checkout完了、サブスク更新、解約、決済失敗）
-- サブスクリプション状態管理（active, canceled, past_due, trialing）
-- Pro判定ヘルパー関数（isPro, getUserPlan）
+- Stripeサブスクリプション基盤（PR #58）
+  - subscriptionsテーブル追加
+  - Stripe Checkout Session / Customer Portal
+  - Webhook処理（checkout完了、サブスク更新、解約、決済失敗）
+  - サブスクリプション状態管理
+  - Pro判定ヘルパー関数
 - 料金ページ（/pricing）- 月払い/年払い切り替え、FAQ付き
+- 広告バナー（Freeユーザー向け）
+  - Proプランへの誘導バナー
+  - グループ詳細ページでは非表示（TabNavigationと競合回避）
+  - Proユーザーは広告非表示
 
 **プラン設計**
 
-- Free: 基本機能（広告表示予定）
-- Pro: ¥300/月 or ¥2,400/年（詳細分析、データエクスポート予定）
+- Free: 基本機能 + 広告表示
+- Pro: ¥300/月 or ¥2,400/年（広告非表示、詳細分析、データエクスポート予定）
 - 注: グループ・メンバー数制限は廃止（同棲カップル向けアプリのため不要）
 
 **次のステップ**
 
-1. Pro限定機能の実装（詳細分析、エクスポート）
-2. Free向け広告表示の検討
+1. Pro限定機能の実装（詳細分析、データエクスポート）
+2. 広告のA/Bテスト・文言最適化
 
 ---
 
@@ -106,6 +110,7 @@ Deploy: Vercel + Convex
 │   ├── sign-up/            # サインアップ
 │   └── pricing/            # 料金プランページ
 ├── components/
+│   ├── ads/                # 広告コンポーネント
 │   ├── analytics/          # 分析コンポーネント
 │   │   ├── AnalyticsSection.tsx
 │   │   ├── CategoryPieChart.tsx
