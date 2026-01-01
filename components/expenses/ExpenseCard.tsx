@@ -62,9 +62,16 @@ export function ExpenseCard({ expense, onEdit, onDelete }: ExpenseCardProps) {
   };
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={handleCardClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
       className="w-full text-left p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
     >
       <div className="flex items-start justify-between">
@@ -142,6 +149,6 @@ export function ExpenseCard({ expense, onEdit, onDelete }: ExpenseCardProps) {
           {remainingCount > 0 && <span> 他{remainingCount}人</span>})
         </div>
       </div>
-    </button>
+    </div>
   );
 }
