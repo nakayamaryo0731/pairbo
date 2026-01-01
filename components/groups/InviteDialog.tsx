@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 
 type InviteDialogProps = {
   groupId: Id<"groups">;
@@ -97,22 +98,7 @@ export function InviteDialog({ groupId, groupName }: InviteDialogProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <button className="text-sm text-slate-600 hover:text-slate-800 flex items-center gap-1 transition-colors">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <line x1="19" x2="19" y1="8" y2="14" />
-            <line x1="22" x2="16" y1="11" y2="11" />
-          </svg>
+          <UserPlus className="h-4 w-4" />
           招待
         </button>
       </DialogTrigger>

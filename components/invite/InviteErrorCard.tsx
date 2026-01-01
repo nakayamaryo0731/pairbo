@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { TriangleAlert } from "lucide-react";
 
 export type InviteError = "invalid_token" | "expired" | "already_used";
 
@@ -39,22 +40,7 @@ export function InviteErrorCard({ error }: InviteErrorCardProps) {
       {/* アイコン */}
       <div className="flex justify-center mb-4">
         <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-amber-500"
-          >
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-            <path d="M12 9v4" />
-            <path d="M12 17h.01" />
-          </svg>
+          <TriangleAlert className="h-8 w-8 text-amber-500" />
         </div>
       </div>
 

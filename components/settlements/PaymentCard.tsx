@@ -6,6 +6,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { formatTimestamp, formatAmount } from "@/lib/formatters";
+import { CircleCheck, Circle } from "lucide-react";
 
 type PaymentCardProps = {
   payment: {
@@ -45,20 +46,7 @@ export function PaymentCard({ payment }: PaymentCardProps) {
 
       {payment.isPaid ? (
         <div className="flex items-center gap-2 text-green-600 text-sm">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
+          <CircleCheck className="h-4 w-4" />
           <span>支払い済み</span>
           {payment.paidAt && (
             <span className="text-slate-400">
@@ -69,19 +57,7 @@ export function PaymentCard({ payment }: PaymentCardProps) {
       ) : (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-500 text-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-            </svg>
+            <Circle className="h-4 w-4" />
             <span>未払い</span>
           </div>
           {payment.canMarkPaid && (

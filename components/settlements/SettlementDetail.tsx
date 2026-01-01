@@ -6,7 +6,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { PaymentCard } from "./PaymentCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, CircleCheck, Clock } from "lucide-react";
 import { formatDateSlash, formatPeriodLabel } from "@/lib/formatters";
 
 type SettlementDetailProps = {
@@ -53,38 +53,12 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
           </h2>
           {isSettled ? (
             <span className="flex items-center gap-1 text-green-600 text-sm bg-green-50 px-2 py-1 rounded">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
+              <CircleCheck className="h-3.5 w-3.5" />
               精算完了
             </span>
           ) : (
             <span className="flex items-center gap-1 text-amber-600 text-sm bg-amber-50 px-2 py-1 rounded">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+              <Clock className="h-3.5 w-3.5" />
               精算中
             </span>
           )}
