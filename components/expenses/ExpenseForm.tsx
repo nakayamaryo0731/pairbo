@@ -473,14 +473,6 @@ export function ExpenseForm({
       {/* ボタン */}
       <div className="flex gap-3 pt-2">
         <button
-          type="button"
-          className="px-6 py-4 text-sm text-slate-500 hover:text-slate-700 transition-colors rounded-2xl bg-slate-100 hover:bg-slate-200"
-          onClick={handleCancel}
-          disabled={isLoading}
-        >
-          キャンセル
-        </button>
-        <button
           type="submit"
           disabled={isLoading || !isFormValid}
           className="flex-1 py-4 bg-blue-500 text-white font-medium rounded-2xl hover:bg-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -492,6 +484,14 @@ export function ExpenseForm({
             : isEditMode
               ? "更新する"
               : "記録する"}
+        </button>
+        <button
+          type="button"
+          className="px-6 py-4 text-sm text-slate-500 hover:text-slate-700 transition-colors rounded-2xl bg-slate-100 hover:bg-slate-200"
+          onClick={handleCancel}
+          disabled={isLoading}
+        >
+          キャンセル
         </button>
       </div>
     </form>
