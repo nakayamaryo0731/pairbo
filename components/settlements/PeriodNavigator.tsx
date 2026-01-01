@@ -1,5 +1,7 @@
 "use client";
 
+import { formatPeriod } from "@/lib/formatters";
+
 type PeriodNavigatorProps = {
   year: number;
   month: number;
@@ -9,12 +11,6 @@ type PeriodNavigatorProps = {
   onNext: () => void;
   canGoNext: boolean;
 };
-
-function formatPeriod(startDate: string, endDate: string): string {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
-}
 
 export function PeriodNavigator({
   year,

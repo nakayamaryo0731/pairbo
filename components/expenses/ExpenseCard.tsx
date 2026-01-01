@@ -2,6 +2,7 @@
 
 import type { Id } from "@/convex/_generated/dataModel";
 import { Trash2 } from "lucide-react";
+import { formatDateShort, formatAmount } from "@/lib/formatters";
 
 type ExpenseCardProps = {
   expense: {
@@ -30,21 +31,6 @@ type ExpenseCardProps = {
   onEdit?: () => void;
   onDelete?: () => void;
 };
-
-/**
- * 日付を表示用にフォーマット（MM/DD）
- */
-function formatDate(dateString: string): string {
-  const [, month, day] = dateString.split("-");
-  return `${parseInt(month)}/${parseInt(day)}`;
-}
-
-/**
- * 金額を表示用にフォーマット（カンマ区切り）
- */
-function formatAmount(amount: number): string {
-  return amount.toLocaleString("ja-JP");
-}
 
 /**
  * コンパクト支出カード
@@ -95,7 +81,7 @@ export function ExpenseCard({ expense, onEdit, onDelete }: ExpenseCardProps) {
             {displayTitle}
           </div>
           <div className="text-xs text-slate-500">
-            {formatDate(date)} · {payer?.displayName ?? "不明"}が支払い
+            {formatDateShort(date)} · {payer?.displayName ?? "不明"}が支払い
           </div>
         </div>
 

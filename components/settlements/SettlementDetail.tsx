@@ -7,6 +7,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { PaymentCard } from "./PaymentCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RotateCcw } from "lucide-react";
+import { formatDateSlash, formatPeriodLabel } from "@/lib/formatters";
 
 type SettlementDetailProps = {
   settlementId: Id<"settlements">;
@@ -20,16 +21,6 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
   if (settlement === undefined) {
     return <SettlementDetailSkeleton />;
   }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-  };
-
-  const formatPeriodLabel = () => {
-    const end = new Date(settlement.periodEnd);
-    return `${end.getFullYear()}年${end.getMonth() + 1}月分`;
-  };
 
   const isSettled = settlement.status === "settled";
 
@@ -57,7 +48,9 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
       {/* ヘッダー情報 */}
       <div className="bg-white border border-slate-200 rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="font-medium text-slate-800">{formatPeriodLabel()}</h2>
+          <h2 className="font-medium text-slate-800">
+            {formatPeriodLabel(settlement.periodEnd)}
+          </h2>
           {isSettled ? (
             <span className="flex items-center gap-1 text-green-600 text-sm bg-green-50 px-2 py-1 rounded">
               <svg
@@ -99,8 +92,8 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
 
         <div className="text-sm text-slate-500 space-y-1">
           <div>
-            期間: {formatDate(settlement.periodStart)} 〜{" "}
-            {formatDate(settlement.periodEnd)}
+            期間: {formatDateSlash(settlement.periodStart)} 〜{" "}
+            {formatDateSlash(settlement.periodEnd)}
           </div>
           <div>グループ: {settlement.groupName}</div>
           <div>確定者: {settlement.creatorName}</div>

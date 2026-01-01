@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { formatDateJapanese, formatAmount } from "@/lib/formatters";
 
 type DeleteExpenseDialogProps = {
   open: boolean;
@@ -22,15 +23,6 @@ type DeleteExpenseDialogProps = {
   onConfirm: () => void;
   isDeleting: boolean;
 };
-
-function formatDate(dateString: string): string {
-  const [year, month, day] = dateString.split("-");
-  return `${year}年${parseInt(month)}月${parseInt(day)}日`;
-}
-
-function formatAmount(amount: number): string {
-  return amount.toLocaleString("ja-JP");
-}
 
 export function DeleteExpenseDialog({
   open,
@@ -59,7 +51,7 @@ export function DeleteExpenseDialog({
                 {expense.categoryName}
               </div>
               <div className="text-sm text-slate-500">
-                {formatDate(expense.date)}
+                {formatDateJapanese(expense.date)}
               </div>
             </div>
             <div className="ml-auto font-semibold text-slate-800">

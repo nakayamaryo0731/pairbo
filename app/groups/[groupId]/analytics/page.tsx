@@ -9,6 +9,7 @@ import { CategoryPieChart } from "@/components/analytics/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/analytics/MonthlyTrendChart";
 import { ChartSkeleton } from "@/components/analytics/ChartSkeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { formatDateISO, formatPeriod } from "@/lib/formatters";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -46,26 +47,13 @@ function getSettlementPeriod(
   year: number,
   month: number,
 ): { startDate: string; endDate: string } {
-  const formatDate = (date: Date): string => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
-
   const endDate = new Date(year, month - 1, closingDay);
   const startDate = new Date(year, month - 2, closingDay + 1);
 
   return {
-    startDate: formatDate(startDate),
-    endDate: formatDate(endDate),
+    startDate: formatDateISO(startDate),
+    endDate: formatDateISO(endDate),
   };
-}
-
-function formatPeriod(startDate: string, endDate: string): string {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
 }
 
 export default function AnalyticsPage({ params }: PageProps) {

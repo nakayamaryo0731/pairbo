@@ -3,6 +3,12 @@
 import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import {
+  formatDateJapanese,
+  formatAmount,
+  formatTimestamp,
+  getSplitMethodLabel,
+} from "@/lib/formatters";
 
 type ExpenseDetailProps = {
   expense: {
@@ -41,35 +47,6 @@ type ExpenseDetailProps = {
   isDeleting: boolean;
 };
 
-function formatDate(dateString: string): string {
-  const [year, month, day] = dateString.split("-");
-  return `${year}年${parseInt(month)}月${parseInt(day)}日`;
-}
-
-function formatAmount(amount: number): string {
-  return amount.toLocaleString("ja-JP");
-}
-
-function formatTimestamp(timestamp: number): string {
-  const date = new Date(timestamp);
-  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
-}
-
-function getSplitMethodLabel(method: string): string {
-  switch (method) {
-    case "equal":
-      return "均等分割";
-    case "ratio":
-      return "割合指定";
-    case "amount":
-      return "金額指定";
-    case "full":
-      return "全額負担";
-    default:
-      return method;
-  }
-}
-
 export function ExpenseDetail({
   expense,
   isSettled,
@@ -102,7 +79,9 @@ export function ExpenseDetail({
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-500">日付</span>
-            <span className="text-slate-800">{formatDate(expense.date)}</span>
+            <span className="text-slate-800">
+              {formatDateJapanese(expense.date)}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">支払者</span>

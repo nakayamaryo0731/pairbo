@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { formatTimestamp, formatAmount } from "@/lib/formatters";
 
 type PaymentCardProps = {
   payment: {
@@ -33,18 +34,13 @@ export function PaymentCard({ payment }: PaymentCardProps) {
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
-  };
-
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-slate-600">
           {payment.fromUserName} → {payment.toUserName}
         </span>
-        <span className="font-medium">¥{payment.amount.toLocaleString()}</span>
+        <span className="font-medium">¥{formatAmount(payment.amount)}</span>
       </div>
 
       {payment.isPaid ? (
@@ -66,7 +62,7 @@ export function PaymentCard({ payment }: PaymentCardProps) {
           <span>支払い済み</span>
           {payment.paidAt && (
             <span className="text-slate-400">
-              ({formatDate(payment.paidAt)})
+              ({formatTimestamp(payment.paidAt)})
             </span>
           )}
         </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
+import { formatPeriodLabel, formatPeriod } from "@/lib/formatters";
 
 type SettlementCardProps = {
   settlement: {
@@ -18,18 +19,6 @@ type SettlementCardProps = {
 };
 
 export function SettlementCard({ settlement, groupId }: SettlementCardProps) {
-  const formatPeriodLabel = (startDate: string, endDate: string) => {
-    // periodEndから年月を取得
-    const end = new Date(endDate);
-    return `${end.getFullYear()}年${end.getMonth() + 1}月分`;
-  };
-
-  const formatPeriod = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
-  };
-
   const isSettled = settlement.status === "settled";
 
   return (
@@ -40,7 +29,7 @@ export function SettlementCard({ settlement, groupId }: SettlementCardProps) {
       <div className="flex items-center justify-between">
         <div>
           <div className="font-medium text-slate-800">
-            {formatPeriodLabel(settlement.periodStart, settlement.periodEnd)}
+            {formatPeriodLabel(settlement.periodEnd)}
           </div>
           <div className="text-sm text-slate-500">
             {formatPeriod(settlement.periodStart, settlement.periodEnd)}
