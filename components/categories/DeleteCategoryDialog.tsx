@@ -17,8 +17,8 @@ type DeleteCategoryDialogProps = {
     icon: string;
     name: string;
   };
-  onConfirm: () => Promise<void>;
-  isDeleting?: boolean;
+  onConfirm: () => void;
+  isDeleting: boolean;
 };
 
 export function DeleteCategoryDialog({
@@ -26,16 +26,11 @@ export function DeleteCategoryDialog({
   onOpenChange,
   category,
   onConfirm,
-  isDeleting = false,
+  isDeleting,
 }: DeleteCategoryDialogProps) {
-  const handleConfirm = async () => {
-    await onConfirm();
-    onOpenChange(false);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>カテゴリを削除</DialogTitle>
           <DialogDescription>
@@ -50,7 +45,7 @@ export function DeleteCategoryDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -60,7 +55,7 @@ export function DeleteCategoryDialog({
           </Button>
           <Button
             variant="destructive"
-            onClick={handleConfirm}
+            onClick={onConfirm}
             disabled={isDeleting}
           >
             {isDeleting ? "削除中..." : "削除する"}
