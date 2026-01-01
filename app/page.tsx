@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { useConvexAuth, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -70,9 +71,15 @@ export default function Home() {
               <p className="text-slate-600 mb-6">
                 割り勘・傾斜折半ができる共有家計簿
               </p>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
                 <p className="text-slate-600">ログインしてください。</p>
               </div>
+              <Link
+                href="/pricing"
+                className="text-sm text-slate-500 hover:text-slate-700"
+              >
+                料金プランを見る →
+              </Link>
             </div>
           )}
         </div>

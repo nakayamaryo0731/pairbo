@@ -1,7 +1,7 @@
 # Oaiko - セッション引き継ぎ書
 
-> 最終更新: 2025-12-31
-> ステータス: MVP機能ほぼ完了
+> 最終更新: 2026-01-01
+> ステータス: MVP完了、マネタイズ機能実装中
 
 ---
 
@@ -31,17 +31,28 @@
 - シードデータ機能
 - テスト実装（ユニットテスト 276件）
 - 構造化ロガー
+- バックエンドリファクタリング（認可・クエリ・データヘルパー共通化）
 
-**直近の改善: バックエンドリファクタリング**
+**直近の実装: Stripeサブスクリプション（PR #58 + 後続）**
 
-- PR #31: 認可ヘルパー関数の共通化
-- PR #32: クエリヘルパー関数の共通化
-- PR #33: データヘルパー関数の共通化（getOrThrow, enrichment helpers）
+- subscriptionsテーブル追加
+- Stripe Checkout Session API実装
+- Stripe Customer Portal連携
+- Webhook処理（checkout完了、サブスク更新、解約、決済失敗）
+- サブスクリプション状態管理（active, canceled, past_due, trialing）
+- Pro判定ヘルパー関数（isPro, getUserPlan）
+- 料金ページ（/pricing）- 月払い/年払い切り替え、FAQ付き
 
-**残タスク（オプション）**
+**プラン設計**
 
-1. UIブラッシュアップ
-2. 統合テスト追加
+- Free: 基本機能（広告表示予定）
+- Pro: ¥300/月 or ¥2,400/年（詳細分析、データエクスポート予定）
+- 注: グループ・メンバー数制限は廃止（同棲カップル向けアプリのため不要）
+
+**次のステップ**
+
+1. Pro限定機能の実装（詳細分析、エクスポート）
+2. Free向け広告表示の検討
 
 ---
 
@@ -92,7 +103,8 @@ Deploy: Vercel + Convex
 │   ├── invite/[token]/     # 招待受け入れ
 │   ├── offline/            # オフラインページ
 │   ├── sign-in/            # サインイン
-│   └── sign-up/            # サインアップ
+│   ├── sign-up/            # サインアップ
+│   └── pricing/            # 料金プランページ
 ├── components/
 │   ├── analytics/          # 分析コンポーネント
 │   │   ├── AnalyticsSection.tsx
@@ -116,6 +128,8 @@ Deploy: Vercel + Convex
 │   ├── shoppingList.ts     # 買い物リストAPI
 │   ├── users.ts            # ユーザーAPI
 │   ├── domain/             # ドメインロジック
+│   ├── http.ts             # Stripe Webhook
+│   ├── subscriptions.ts    # サブスクリプションAPI
 │   ├── lib/
 │   │   ├── auth.ts         # 認証ミドルウェア
 │   │   ├── authorization.ts # 認可ヘルパー
@@ -124,7 +138,9 @@ Deploy: Vercel + Convex
 │   │   ├── expenseHelper.ts # 支出ヘルパー
 │   │   ├── groupHelper.ts  # グループヘルパー
 │   │   ├── logger.ts       # 構造化ロガー
-│   │   └── seedData.ts     # シードデータ
+│   │   ├── seedData.ts     # シードデータ
+│   │   ├── subscription.ts # Pro判定ヘルパー
+│   │   └── validators.ts   # 共通バリデータ
 │   └── __tests__/          # ユニットテスト
 ├── public/
 │   ├── icons/              # PWAアイコン
@@ -185,6 +201,14 @@ Deploy: Vercel + Convex
 - **オフライン対応**: オフラインページ表示
 - **キャッシュ**: Serwistによるランタイムキャッシュ
 
+### サブスクリプション機能
+
+- **プラン**: Free / Pro（¥300/月 or ¥2,400/年）
+- **決済**: Stripe Checkout
+- **管理**: Stripe Customer Portal
+- **状態管理**: active, canceled, past_due, trialing
+- **API**: `getMySubscription`, `createCheckoutSession`, `createPortalSession`
+
 ---
 
 ## デプロイ情報
@@ -194,6 +218,27 @@ Deploy: Vercel + Convex
 | 本番（Vercel） | https://oaiko.vercel.app                 |
 | Convex本番     | https://hip-moose-165.convex.cloud       |
 | GitHub         | https://github.com/nakayamaryo0731/oaiko |
+| Stripe         | https://dashboard.stripe.com             |
+
+### Stripe環境変数（Convexに設定済み）
+
+| 変数名                | 説明                          |
+| --------------------- | ----------------------------- |
+| STRIPE_SECRET_KEY     | Stripeシークレットキー        |
+| STRIPE_WEBHOOK_SECRET | Webhook署名検証用シークレット |
+| STRIPE_PRICE_MONTHLY  | 月額プランのPrice ID          |
+| STRIPE_PRICE_YEARLY   | 年額プランのPrice ID          |
+
+### Stripe Webhook
+
+エンドポイント: `https://hip-moose-165.convex.site/stripe/webhook`
+
+監視イベント:
+
+- `checkout.session.completed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_failed`
 
 ---
 

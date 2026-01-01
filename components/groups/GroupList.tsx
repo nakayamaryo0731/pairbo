@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -96,6 +97,16 @@ export function GroupList() {
             + グループを作成
           </button>
         </CreateGroupDialog>
+
+        {/* 料金プランへのリンク */}
+        <div className="text-center pt-4">
+          <Link
+            href="/pricing"
+            className="text-sm text-slate-500 hover:text-slate-700"
+          >
+            Proプラン・料金について →
+          </Link>
+        </div>
       </div>
 
       {editingGroup && (
