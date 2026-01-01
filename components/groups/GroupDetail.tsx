@@ -182,9 +182,9 @@ export function GroupDetail({ group }: GroupDetailProps) {
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="flex h-full flex-col">
       {/* 固定ナビゲーション（期間のみ） */}
-      <div className="sticky top-17.25 z-10 -mx-4 px-4 py-4 bg-white border-b border-slate-200">
+      <div className="shrink-0 px-4 py-4 bg-white border-b border-slate-200">
         <PeriodNavigator
           year={displayYear}
           month={displayMonth}
@@ -196,35 +196,38 @@ export function GroupDetail({ group }: GroupDetailProps) {
         />
       </div>
 
-      {/* タブコンテンツ */}
-      {activeTab === "expenses" && (
-        <div>
-          <PeriodExpenseList
-            groupId={group._id}
-            year={displayYear}
-            month={displayMonth}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        </div>
-      )}
-
-      {activeTab === "settlement" && (
-        <div className="space-y-6">
+      {/* スクロール可能なコンテンツ領域 */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 pb-24">
+        {/* タブコンテンツ */}
+        {activeTab === "expenses" && (
           <div>
-            <h2 className="font-medium text-slate-800 mb-3">今期の精算</h2>
-            <SettlementPreview
+            <PeriodExpenseList
               groupId={group._id}
               year={displayYear}
               month={displayMonth}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           </div>
-          <div>
-            <h2 className="font-medium text-slate-800 mb-3">過去の精算</h2>
-            <SettlementHistory groupId={group._id} />
+        )}
+
+        {activeTab === "settlement" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-medium text-slate-800 mb-3">今期の精算</h2>
+              <SettlementPreview
+                groupId={group._id}
+                year={displayYear}
+                month={displayMonth}
+              />
+            </div>
+            <div>
+              <h2 className="font-medium text-slate-800 mb-3">過去の精算</h2>
+              <SettlementHistory groupId={group._id} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 支出記録ボタン（FAB） */}
       <FAB

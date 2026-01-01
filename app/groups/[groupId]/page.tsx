@@ -63,14 +63,14 @@ export default function GroupDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
       <PageHeader
         backHref="/"
         title={detail.group.name}
         rightElement={rightIcons}
       />
-      <main className="flex-1 p-4">
-        <div className="max-w-lg mx-auto">
+      <main className="flex-1 overflow-hidden">
+        <div className="h-full max-w-lg mx-auto">
           <GroupDetail group={detail.group} />
         </div>
       </main>
