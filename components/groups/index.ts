@@ -1,4 +1,6 @@
 export { CreateGroupDialog } from "./CreateGroupDialog";
+export { DeleteGroupDialog } from "./DeleteGroupDialog";
+export { EditGroupDialog } from "./EditGroupDialog";
 export { GroupCard } from "./GroupCard";
 export { GroupDetail } from "./GroupDetail";
 export { GroupList } from "./GroupList";

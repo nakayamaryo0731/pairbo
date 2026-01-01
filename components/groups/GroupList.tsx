@@ -1,16 +1,56 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { GroupCard } from "./GroupCard";
 import { CreateGroupDialog } from "./CreateGroupDialog";
+import { EditGroupDialog } from "./EditGroupDialog";
+import { DeleteGroupDialog } from "./DeleteGroupDialog";
 import { Button } from "@/components/ui/button";
 import { GroupListSkeleton } from "@/components/ui/skeleton";
+
+type Group = {
+  _id: Id<"groups">;
+  name: string;
+  memberCount: number;
+  myRole: "owner" | "member";
+};
 
 export function GroupList() {
   const router = useRouter();
   const groups = useQuery(api.groups.listMyGroups);
+  const updateName = useMutation(api.groups.updateName);
+  const removeGroup = useMutation(api.groups.remove);
+
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleEdit = async (name: string) => {
+    if (!editingGroup) return;
+    setIsSaving(true);
+    try {
+      await updateName({ groupId: editingGroup._id, name });
+      setEditingGroup(null);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingGroup) return;
+    setIsDeleting(true);
+    try {
+      await removeGroup({ groupId: deletingGroup._id });
+      setDeletingGroup(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // ローディング中
   if (groups === undefined) {
@@ -37,21 +77,46 @@ export function GroupList() {
 
   // グループ一覧
   return (
-    <div className="space-y-3">
-      {groups.map((group) => (
-        <GroupCard
-          key={group._id}
-          name={group.name}
-          memberCount={group.memberCount}
-          myRole={group.myRole}
-          onClick={() => router.push(`/groups/${group._id}`)}
+    <>
+      <div className="space-y-3">
+        {groups.map((group) => (
+          <GroupCard
+            key={group._id}
+            name={group.name}
+            memberCount={group.memberCount}
+            myRole={group.myRole}
+            onClick={() => router.push(`/groups/${group._id}`)}
+            onEdit={() => setEditingGroup(group)}
+            onDelete={() => setDeletingGroup(group)}
+            onSettings={() => router.push(`/groups/${group._id}/settings`)}
+          />
+        ))}
+        <CreateGroupDialog>
+          <button className="w-full p-4 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:border-slate-300 hover:text-slate-600 transition-colors">
+            + グループを作成
+          </button>
+        </CreateGroupDialog>
+      </div>
+
+      {editingGroup && (
+        <EditGroupDialog
+          open={!!editingGroup}
+          onOpenChange={(open) => !open && setEditingGroup(null)}
+          group={editingGroup}
+          onSave={handleEdit}
+          isSaving={isSaving}
         />
-      ))}
-      <CreateGroupDialog>
-        <button className="w-full p-4 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:border-slate-300 hover:text-slate-600 transition-colors">
-          + グループを作成
-        </button>
-      </CreateGroupDialog>
-    </div>
+      )}
+
+      {deletingGroup && (
+        <DeleteGroupDialog
+          open={!!deletingGroup}
+          onOpenChange={(open) => !open && setDeletingGroup(null)}
+          group={deletingGroup}
+          onConfirm={handleDelete}
+          isDeleting={isDeleting}
+        />
+      )}
+    </>
   );
 }

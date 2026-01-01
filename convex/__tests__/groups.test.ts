@@ -305,4 +305,189 @@ describe("groups", () => {
       expect(groups).toEqual([]);
     });
   });
+
+  describe("updateName", () => {
+    test("メンバーがグループ名を更新できる", async () => {
+      const t = convexTest(schema, modules);
+
+      // オーナーがグループ作成
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "元のグループ名",
+        });
+
+      // メンバーを招待
+      const { token } = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.createInvitation, { groupId });
+
+      await t
+        .withIdentity(testIdentity2)
+        .mutation(api.invitations.accept, { token });
+
+      // メンバーがグループ名を更新
+      await t.withIdentity(testIdentity2).mutation(api.groups.updateName, {
+        groupId,
+        name: "新しいグループ名",
+      });
+
+      const group = await t.run(async (ctx) => {
+        return await ctx.db.get(groupId);
+      });
+
+      expect(group?.name).toBe("新しいグループ名");
+    });
+
+    test("非メンバーはグループ名を更新できない", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      // testIdentity2はメンバーではない
+      await t.withIdentity(testIdentity2).mutation(api.users.ensureUser, {});
+
+      await expect(
+        t.withIdentity(testIdentity2).mutation(api.groups.updateName, {
+          groupId,
+          name: "不正な更新",
+        }),
+      ).rejects.toThrow("このグループにアクセスする権限がありません");
+    });
+  });
+
+  describe("remove", () => {
+    test("オーナーがグループを削除できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "削除テスト",
+        });
+
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.remove, { groupId });
+
+      const group = await t.run(async (ctx) => {
+        return await ctx.db.get(groupId);
+      });
+
+      expect(group).toBeNull();
+    });
+
+    test("メンバーはグループを削除できない", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "削除不可テスト",
+        });
+
+      // メンバーを招待
+      const { token } = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.createInvitation, { groupId });
+
+      await t
+        .withIdentity(testIdentity2)
+        .mutation(api.invitations.accept, { token });
+
+      // メンバーは削除できない
+      await expect(
+        t.withIdentity(testIdentity2).mutation(api.groups.remove, { groupId }),
+      ).rejects.toThrow("この操作にはオーナー権限が必要です");
+    });
+
+    test("削除時に関連データが全て削除される", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "関連データ削除テスト",
+        });
+
+      // 支出を作成
+      const detail = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      await t.withIdentity(testIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 1000,
+        categoryId: detail.categories[0]._id,
+        paidBy: detail.members[0].userId,
+        date: "2024-12-01",
+      });
+
+      // 買い物リストアイテムを作成
+      await t.withIdentity(testIdentity).mutation(api.shoppingList.add, {
+        groupId,
+        name: "牛乳",
+      });
+
+      // グループを削除
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.remove, { groupId });
+
+      // 関連データが削除されていることを確認
+      const remainingData = await t.run(async (ctx) => {
+        const expenses = await ctx.db
+          .query("expenses")
+          .withIndex("by_group_and_date", (q) => q.eq("groupId", groupId))
+          .collect();
+        const categories = await ctx.db
+          .query("categories")
+          .withIndex("by_group", (q) => q.eq("groupId", groupId))
+          .collect();
+        const members = await ctx.db
+          .query("groupMembers")
+          .withIndex("by_group_and_user", (q) => q.eq("groupId", groupId))
+          .collect();
+        const shoppingItems = await ctx.db
+          .query("shoppingItems")
+          .withIndex("by_group_and_purchased", (q) => q.eq("groupId", groupId))
+          .collect();
+
+        return { expenses, categories, members, shoppingItems };
+      });
+
+      expect(remainingData.expenses).toHaveLength(0);
+      expect(remainingData.categories).toHaveLength(0);
+      expect(remainingData.members).toHaveLength(0);
+      expect(remainingData.shoppingItems).toHaveLength(0);
+    });
+
+    test("削除後はグループ一覧に表示されない", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "一覧テスト",
+        });
+
+      const beforeDelete = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.listMyGroups, {});
+      expect(beforeDelete).toHaveLength(1);
+
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.remove, { groupId });
+
+      const afterDelete = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.listMyGroups, {});
+      expect(afterDelete).toHaveLength(0);
+    });
+  });
 });

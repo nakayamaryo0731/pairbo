@@ -291,3 +291,107 @@ export const updateClosingDay = authMutation({
     });
   },
 });
+
+/**
+ * グループ削除
+ */
+export const remove = authMutation({
+  args: {
+    groupId: v.id("groups"),
+  },
+  handler: async (ctx, args) => {
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
+
+    // オーナー権限チェック
+    await requireGroupOwner(ctx, args.groupId);
+
+    // 関連データを削除（順序重要）
+
+    // 1. 支出分割を削除
+    const expenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
+      .collect();
+
+    for (const expense of expenses) {
+      const splits = await ctx.db
+        .query("expenseSplits")
+        .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
+        .collect();
+      await Promise.all(splits.map((split) => ctx.db.delete(split._id)));
+    }
+
+    // 2. 支出を削除
+    await Promise.all(expenses.map((expense) => ctx.db.delete(expense._id)));
+
+    // 3. 精算支払いを削除
+    const settlements = await ctx.db
+      .query("settlements")
+      .withIndex("by_group_and_period", (q) => q.eq("groupId", args.groupId))
+      .collect();
+
+    for (const settlement of settlements) {
+      const payments = await ctx.db
+        .query("settlementPayments")
+        .withIndex("by_settlement", (q) => q.eq("settlementId", settlement._id))
+        .collect();
+      await Promise.all(payments.map((payment) => ctx.db.delete(payment._id)));
+    }
+
+    // 4. 精算を削除
+    await Promise.all(
+      settlements.map((settlement) => ctx.db.delete(settlement._id)),
+    );
+
+    // 5. 買い物リストアイテムを削除
+    const shoppingItems = await ctx.db
+      .query("shoppingItems")
+      .withIndex("by_group_and_purchased", (q) => q.eq("groupId", args.groupId))
+      .collect();
+    await Promise.all(shoppingItems.map((item) => ctx.db.delete(item._id)));
+
+    // 6. カテゴリを削除
+    const categories = await ctx.db
+      .query("categories")
+      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .collect();
+    await Promise.all(
+      categories.map((category) => ctx.db.delete(category._id)),
+    );
+
+    // 7. 招待を削除
+    const invitations = await ctx.db
+      .query("groupInvitations")
+      .filter((q) => q.eq(q.field("groupId"), args.groupId))
+      .collect();
+    await Promise.all(
+      invitations.map((invitation) => ctx.db.delete(invitation._id)),
+    );
+
+    // 8. メンバーを削除
+    const members = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) => q.eq("groupId", args.groupId))
+      .collect();
+    await Promise.all(members.map((member) => ctx.db.delete(member._id)));
+
+    // 9. グループ本体を削除
+    await ctx.db.delete(args.groupId);
+
+    ctx.logger.audit("GROUP", "deleted", {
+      groupId: args.groupId,
+      groupName: group.name,
+      deletedData: {
+        expenses: expenses.length,
+        settlements: settlements.length,
+        shoppingItems: shoppingItems.length,
+        categories: categories.length,
+        members: members.length,
+      },
+    });
+  },
+});
