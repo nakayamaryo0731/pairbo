@@ -91,71 +91,73 @@ export function ShoppingList({ groupId }: ShoppingListProps) {
       />
 
       {/* メインコンテンツ */}
-      <main className="p-4 space-y-4">
-        {showHistory ? (
-          <>
-            {/* 月別ナビゲーター */}
-            <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 p-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goToPreviousMonth}
-                aria-label="前月"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <span className="font-medium">
-                {historyYear}年{historyMonth}月
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goToNextMonth}
-                disabled={!canGoNext}
-                aria-label="翌月"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {purchased === undefined ? (
-              <div className="text-center py-8 text-slate-500">
-                読み込み中...
+      <main className="p-4">
+        <div className="max-w-lg mx-auto space-y-4">
+          {showHistory ? (
+            <>
+              {/* 月別ナビゲーター */}
+              <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 p-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={goToPreviousMonth}
+                  aria-label="前月"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <span className="font-medium">
+                  {historyYear}年{historyMonth}月
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={goToNextMonth}
+                  disabled={!canGoNext}
+                  aria-label="翌月"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
               </div>
-            ) : (
-              <ShoppingHistory items={purchased} />
-            )}
-          </>
-        ) : (
-          <>
-            {/* アイテム一覧 */}
-            {pending.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                <p>買い物リストは空です</p>
-                <p className="text-sm mt-1">
-                  下の入力欄からアイテムを追加しましょう
+
+              {purchased === undefined ? (
+                <div className="text-center py-8 text-slate-500">
+                  読み込み中...
+                </div>
+              ) : (
+                <ShoppingHistory items={purchased} />
+              )}
+            </>
+          ) : (
+            <>
+              {/* アイテム一覧 */}
+              {pending.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                  <p>買い物リストは空です</p>
+                  <p className="text-sm mt-1">
+                    下の入力欄からアイテムを追加しましょう
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border border-slate-200">
+                  {pending.map((item) => (
+                    <ShoppingItem key={item._id} item={item} mode="pending" />
+                  ))}
+                </div>
+              )}
+
+              {/* アイテム数 */}
+              {pending.length > 0 && (
+                <p className="text-sm text-slate-500 text-center pb-16">
+                  {pending.length}件のアイテム
                 </p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg border border-slate-200">
-                {pending.map((item) => (
-                  <ShoppingItem key={item._id} item={item} mode="pending" />
-                ))}
-              </div>
-            )}
+              )}
 
-            {/* アイテム数 */}
-            {pending.length > 0 && (
-              <p className="text-sm text-slate-500 text-center pb-16">
-                {pending.length}件のアイテム
-              </p>
-            )}
-
-            {/* 下部スペーサー（入力欄が隠れないように） */}
-            {pending.length === 0 && <div className="h-16" />}
-          </>
-        )}
+              {/* 下部スペーサー（入力欄が隠れないように） */}
+              {pending.length === 0 && <div className="h-16" />}
+            </>
+          )}
+        </div>
       </main>
 
       {/* 下部固定の入力欄（リスト表示時のみ） */}
