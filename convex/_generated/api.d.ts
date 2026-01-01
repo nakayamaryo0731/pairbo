@@ -35,6 +35,7 @@ import type * as domain_shopping_rules from "../domain/shopping/rules.js";
 import type * as domain_shopping_types from "../domain/shopping/types.js";
 import type * as expenses from "../expenses.js";
 import type * as groups from "../groups.js";
+import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_authorization from "../lib/authorization.js";
@@ -45,10 +46,12 @@ import type * as lib_groupHelper from "../lib/groupHelper.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as lib_presetCategories from "../lib/presetCategories.js";
 import type * as lib_seedData from "../lib/seedData.js";
+import type * as lib_subscription from "../lib/subscription.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as seed from "../seed.js";
 import type * as settlements from "../settlements.js";
 import type * as shoppingList from "../shoppingList.js";
+import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
 
 import type {
@@ -85,6 +88,7 @@ declare const fullApi: ApiFromModules<{
   "domain/shopping/types": typeof domain_shopping_types;
   expenses: typeof expenses;
   groups: typeof groups;
+  http: typeof http;
   invitations: typeof invitations;
   "lib/auth": typeof lib_auth;
   "lib/authorization": typeof lib_authorization;
@@ -95,10 +99,12 @@ declare const fullApi: ApiFromModules<{
   "lib/logger": typeof lib_logger;
   "lib/presetCategories": typeof lib_presetCategories;
   "lib/seedData": typeof lib_seedData;
+  "lib/subscription": typeof lib_subscription;
   "lib/validators": typeof lib_validators;
   seed: typeof seed;
   settlements: typeof settlements;
   shoppingList: typeof shoppingList;
+  subscriptions: typeof subscriptions;
   users: typeof users;
 }>;
 
