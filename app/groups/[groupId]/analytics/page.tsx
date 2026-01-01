@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CategoryPieChart } from "@/components/analytics/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/analytics/MonthlyTrendChart";
 import { ChartSkeleton } from "@/components/analytics/ChartSkeleton";
@@ -38,6 +38,36 @@ function getCurrentSettlementYearMonth(closingDay: number): {
   return { year: currentYear, month: currentMonth };
 }
 
+/**
+ * 精算期間を計算
+ */
+function getSettlementPeriod(
+  closingDay: number,
+  year: number,
+  month: number
+): { startDate: string; endDate: string } {
+  const formatDate = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const endDate = new Date(year, month - 1, closingDay);
+  const startDate = new Date(year, month - 2, closingDay + 1);
+
+  return {
+    startDate: formatDate(startDate),
+    endDate: formatDate(endDate),
+  };
+}
+
+function formatPeriod(startDate: string, endDate: string): string {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
+}
+
 export default function AnalyticsPage({ params }: PageProps) {
   const { groupId } = use(params);
   const [viewType, setViewType] = useState<ViewType>("month");
@@ -46,10 +76,68 @@ export default function AnalyticsPage({ params }: PageProps) {
     groupId: groupId as Id<"groups">,
   });
 
+  // 現在の精算期間を計算
   const currentPeriod = useMemo(() => {
-    if (!group) return { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
+    if (!group)
+      return { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
     return getCurrentSettlementYearMonth(group.group.closingDay);
   }, [group]);
+
+  // 月次表示用の年月
+  const [displayYear, setDisplayYear] = useState<number | null>(null);
+  const [displayMonth, setDisplayMonth] = useState<number | null>(null);
+
+  // 年次表示用の年
+  const [displayYearForYearly, setDisplayYearForYearly] = useState<number | null>(null);
+
+  // 実際に使用する年月（初期値はcurrentPeriod）
+  const activeYear = displayYear ?? currentPeriod.year;
+  const activeMonth = displayMonth ?? currentPeriod.month;
+  const activeYearForYearly = displayYearForYearly ?? currentPeriod.year;
+
+  // 月次ナビゲーション
+  const canGoNextMonth =
+    activeYear < currentPeriod.year ||
+    (activeYear === currentPeriod.year && activeMonth < currentPeriod.month);
+
+  const goToPreviousMonth = () => {
+    if (activeMonth === 1) {
+      setDisplayYear(activeYear - 1);
+      setDisplayMonth(12);
+    } else {
+      setDisplayYear(activeYear);
+      setDisplayMonth(activeMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (!canGoNextMonth) return;
+    if (activeMonth === 12) {
+      setDisplayYear(activeYear + 1);
+      setDisplayMonth(1);
+    } else {
+      setDisplayYear(activeYear);
+      setDisplayMonth(activeMonth + 1);
+    }
+  };
+
+  // 年次ナビゲーション
+  const canGoNextYear = activeYearForYearly < currentPeriod.year;
+
+  const goToPreviousYear = () => {
+    setDisplayYearForYearly(activeYearForYearly - 1);
+  };
+
+  const goToNextYear = () => {
+    if (!canGoNextYear) return;
+    setDisplayYearForYearly(activeYearForYearly + 1);
+  };
+
+  // 表示中の期間
+  const period = useMemo(() => {
+    if (!group) return { startDate: "", endDate: "" };
+    return getSettlementPeriod(group.group.closingDay, activeYear, activeMonth);
+  }, [group, activeYear, activeMonth]);
 
   // 月次データ
   const monthlyCategory = useQuery(
@@ -57,8 +145,8 @@ export default function AnalyticsPage({ params }: PageProps) {
     group
       ? {
           groupId: groupId as Id<"groups">,
-          year: currentPeriod.year,
-          month: currentPeriod.month,
+          year: activeYear,
+          month: activeMonth,
         }
       : "skip"
   );
@@ -68,8 +156,8 @@ export default function AnalyticsPage({ params }: PageProps) {
     group
       ? {
           groupId: groupId as Id<"groups">,
-          year: currentPeriod.year,
-          month: currentPeriod.month,
+          year: activeYear,
+          month: activeMonth,
           months: 6,
         }
       : "skip"
@@ -81,7 +169,7 @@ export default function AnalyticsPage({ params }: PageProps) {
     group
       ? {
           groupId: groupId as Id<"groups">,
-          year: currentPeriod.year,
+          year: activeYearForYearly,
         }
       : "skip"
   );
@@ -91,8 +179,8 @@ export default function AnalyticsPage({ params }: PageProps) {
     group
       ? {
           groupId: groupId as Id<"groups">,
-          year: currentPeriod.year,
-          month: currentPeriod.month,
+          year: activeYearForYearly,
+          month: 12,
           months: 12,
         }
       : "skip"
@@ -147,7 +235,7 @@ export default function AnalyticsPage({ params }: PageProps) {
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              今月
+              月次
             </button>
             <button
               onClick={() => setViewType("year")}
@@ -157,9 +245,62 @@ export default function AnalyticsPage({ params }: PageProps) {
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              年間
+              年次
             </button>
           </div>
+
+          {/* 期間ナビゲーター */}
+          {viewType === "month" ? (
+            <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
+              <button
+                onClick={goToPreviousMonth}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                aria-label="前の月へ"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <div className="text-center">
+                <div className="font-medium text-slate-800">
+                  {activeYear}年{activeMonth}月分
+                </div>
+                <div className="text-sm text-slate-500">
+                  {formatPeriod(period.startDate, period.endDate)}
+                </div>
+              </div>
+              <button
+                onClick={goToNextMonth}
+                disabled={!canGoNextMonth}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="次の月へ"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
+              <button
+                onClick={goToPreviousYear}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                aria-label="前の年へ"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <div className="text-center">
+                <div className="font-medium text-slate-800">
+                  {activeYearForYearly}年
+                </div>
+                <div className="text-sm text-slate-500">1月〜12月</div>
+              </div>
+              <button
+                onClick={goToNextYear}
+                disabled={!canGoNextYear}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="次の年へ"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          )}
 
           {/* カテゴリ別円グラフ */}
           <section>
@@ -179,7 +320,7 @@ export default function AnalyticsPage({ params }: PageProps) {
           {/* 推移グラフ */}
           <section>
             <h3 className="text-sm font-medium text-slate-700 mb-3">
-              {viewType === "month" ? "月別推移（6ヶ月）" : "月別推移（12ヶ月）"}
+              月別推移
             </h3>
             {trendData === undefined ? (
               <ChartSkeleton type="bar" />
