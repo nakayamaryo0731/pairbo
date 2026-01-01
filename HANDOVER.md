@@ -1,7 +1,7 @@
 # Oaiko - セッション引き継ぎ書
 
 > 最終更新: 2026-01-01
-> ステータス: MVP完了、マネタイズ機能実装中
+> ステータス: MVP完了、マネタイズ基盤完了
 
 ---
 
@@ -33,30 +33,37 @@
 - 構造化ロガー
 - バックエンドリファクタリング（認可・クエリ・データヘルパー共通化）
 
-**直近の実装: マネタイズ機能**
+**直近の実装: マネタイズ機能 & LP・法的ページ**
 
 - Stripeサブスクリプション基盤（PR #58）
   - subscriptionsテーブル追加
   - Stripe Checkout Session / Customer Portal
   - Webhook処理（checkout完了、サブスク更新、解約、決済失敗）
   - サブスクリプション状態管理
-  - Pro判定ヘルパー関数
+  - Premium判定ヘルパー関数
 - 料金ページ（/pricing）- 月払い/年払い切り替え、FAQ付き
-- 広告バナー（Freeユーザー向け）
-  - Proプランへの誘導バナー
-  - グループ詳細ページでは非表示（TabNavigationと競合回避）
-  - Proユーザーは広告非表示
+- 広告バナー（Freeユーザー向け）（PR #59）
+  - Premiumプランへの誘導バナー
+  - グループ詳細ページにも表示（TabNavigationの上に配置）
+  - Premiumユーザーは広告非表示
+- ランディングページ（未ログイン時のトップページ）
+- 法的ページ
+  - /privacy - プライバシーポリシー
+  - /terms - 利用規約
+  - /legal/tokushoho - 特定商取引法に基づく表記
+- 設定ページに法的ページへのリンク追加
 
 **プラン設計**
 
 - Free: 基本機能 + 広告表示
-- Pro: ¥300/月 or ¥2,400/年（広告非表示、詳細分析、データエクスポート予定）
+- Premium: ¥300/月 or ¥2,400/年（広告非表示、詳細分析、データエクスポート予定）
 - 注: グループ・メンバー数制限は廃止（同棲カップル向けアプリのため不要）
 
 **次のステップ**
 
-1. Pro限定機能の実装（詳細分析、データエクスポート）
-2. 広告のA/Bテスト・文言最適化
+1. 特商法表記のプレースホルダーを実際の情報に置換（公開前）
+2. Premium限定機能の実装（詳細分析、データエクスポート）
+3. 広告のA/Bテスト・文言最適化
 
 ---
 
@@ -108,9 +115,13 @@ Deploy: Vercel + Convex
 │   ├── offline/            # オフラインページ
 │   ├── sign-in/            # サインイン
 │   ├── sign-up/            # サインアップ
-│   └── pricing/            # 料金プランページ
+│   ├── pricing/            # 料金プランページ
+│   ├── privacy/            # プライバシーポリシー
+│   ├── terms/              # 利用規約
+│   └── legal/tokushoho/    # 特定商取引法に基づく表記
 ├── components/
 │   ├── ads/                # 広告コンポーネント
+│   ├── landing/            # ランディングページ
 │   ├── analytics/          # 分析コンポーネント
 │   │   ├── AnalyticsSection.tsx
 │   │   ├── CategoryPieChart.tsx
@@ -144,7 +155,7 @@ Deploy: Vercel + Convex
 │   │   ├── groupHelper.ts  # グループヘルパー
 │   │   ├── logger.ts       # 構造化ロガー
 │   │   ├── seedData.ts     # シードデータ
-│   │   ├── subscription.ts # Pro判定ヘルパー
+│   │   ├── subscription.ts # Premium判定ヘルパー
 │   │   └── validators.ts   # 共通バリデータ
 │   └── __tests__/          # ユニットテスト
 ├── public/
@@ -208,11 +219,22 @@ Deploy: Vercel + Convex
 
 ### サブスクリプション機能
 
-- **プラン**: Free / Pro（¥300/月 or ¥2,400/年）
+- **プラン**: Free / Premium（¥300/月 or ¥2,400/年）
 - **決済**: Stripe Checkout
 - **管理**: Stripe Customer Portal
 - **状態管理**: active, canceled, past_due, trialing
 - **API**: `getMySubscription`, `createCheckoutSession`, `createPortalSession`
+
+### 法的ページ
+
+- **/privacy**: プライバシーポリシー（個人情報の取り扱い、外部サービス利用等）
+- **/terms**: 利用規約（11条、有料プラン・免責事項等）
+- **/legal/tokushoho**: 特定商取引法に基づく表記（事業者情報、返金ポリシー等）
+
+### ランディングページ
+
+- 未ログインユーザー向けのトップページ
+- Hero、機能紹介、使い方、料金CTA、フッター（法的ページリンク）
 
 ---
 
