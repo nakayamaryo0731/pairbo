@@ -265,7 +265,7 @@ export default function ExpensePage({ params }: PageProps) {
             <path d="m15 18-6-6 6-6" />
           </svg>
         </Link>
-        <h1 className="font-bold text-xl text-slate-800">支出を編集</h1>
+        <span className="text-slate-600">一覧に戻る</span>
         <button
           onClick={handleDelete}
           disabled={isDeleting}
