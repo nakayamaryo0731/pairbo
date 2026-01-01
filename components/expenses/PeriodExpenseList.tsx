@@ -46,7 +46,7 @@ export function PeriodExpenseList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* 支出リスト */}
       {data.expenses.map((expense) => (
         <ExpenseCard
@@ -73,9 +73,9 @@ export function PeriodExpenseList({
 
 function PeriodExpenseListSkeleton() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <Skeleton key={i} className="h-24 w-full" />
+    <div className="space-y-2">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Skeleton key={i} className="h-14 w-full rounded-lg" />
       ))}
     </div>
   );

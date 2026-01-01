@@ -1,6 +1,7 @@
 "use client";
 
 import type { Id } from "@/convex/_generated/dataModel";
+import { Trash2 } from "lucide-react";
 
 type ExpenseCardProps = {
   expense: {
@@ -45,19 +46,27 @@ function formatAmount(amount: number): string {
   return amount.toLocaleString("ja-JP");
 }
 
+/**
+ * コンパクト支出カード
+ * - 2行構成でスペース効率化
+ * - 負担配分は詳細画面で確認
+ */
 export function ExpenseCard({ expense, onEdit, onDelete }: ExpenseCardProps) {
-  const { category, payer, amount, date, title, memo, splits } = expense;
+  const { category, payer, amount, date, title } = expense;
 
   // タイトルがない場合はカテゴリ名をフォールバック
   const displayTitle = title || category?.name || "カテゴリなし";
 
-  // 負担配分の表示（最大3人まで）
-  const displaySplits = splits.slice(0, 3);
-  const remainingCount = splits.length - 3;
-
   const handleCardClick = () => {
     if (onEdit) {
       onEdit();
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete();
     }
   };
 
@@ -72,81 +81,39 @@ export function ExpenseCard({ expense, onEdit, onDelete }: ExpenseCardProps) {
           handleCardClick();
         }
       }}
-      className="w-full text-left p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+      className="w-full text-left px-3 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
     >
-      <div className="flex items-start justify-between">
-        {/* 左側: カテゴリアイコン + 情報 */}
-        <div className="flex gap-3">
-          {/* カテゴリアイコン */}
-          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-lg">{category?.icon ?? "📦"}</span>
-          </div>
+      <div className="flex items-center gap-3">
+        {/* カテゴリアイコン */}
+        <div className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
+          <span className="text-base">{category?.icon ?? "📦"}</span>
+        </div>
 
-          {/* 情報 */}
-          <div>
-            <div className="font-medium text-slate-800">{displayTitle}</div>
-            <div className="text-sm text-slate-500 mt-0.5">
-              {payer?.displayName ?? "不明"}が支払い
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              {formatDate(date)}
-              {title && category && <span> ・ {category.name}</span>}
-              {memo && <span> ・ {memo}</span>}
-            </div>
+        {/* 中央: タイトル + 詳細 */}
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-slate-800 truncate">
+            {displayTitle}
+          </div>
+          <div className="text-xs text-slate-500">
+            {formatDate(date)} · {payer?.displayName ?? "不明"}が支払い
           </div>
         </div>
 
-        {/* 右側: 金額 + 削除ボタン */}
-        <div className="flex items-start gap-2">
-          <div className="text-right">
-            <div className="font-semibold text-slate-800">
-              ¥{formatAmount(amount)}
-            </div>
+        {/* 右: 金額 + 削除ボタン */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="font-semibold text-slate-800">
+            ¥{formatAmount(amount)}
           </div>
-
-          {/* 削除ボタン */}
           {onDelete && (
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              onClick={handleDelete}
+              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
               aria-label="削除"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M3 6h18" />
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-              </svg>
+              <Trash2 className="w-4 h-4" />
             </button>
           )}
-        </div>
-      </div>
-
-      {/* 負担配分 */}
-      <div className="mt-3 pt-3 border-t border-slate-100">
-        <div className="text-xs text-slate-500">
-          均等分割 (
-          {displaySplits.map((split, index) => (
-            <span key={split.userId}>
-              {index > 0 && " "}
-              {split.displayName}:¥{formatAmount(split.amount)}
-            </span>
-          ))}
-          {remainingCount > 0 && <span> 他{remainingCount}人</span>})
         </div>
       </div>
     </div>
