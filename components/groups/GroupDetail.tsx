@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
@@ -96,6 +96,28 @@ export function GroupDetail({ group }: GroupDetailProps) {
   const [expenseToDelete, setExpenseToDelete] =
     useState<ExpenseToDelete | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // キーボードショートカット（左右矢印でタブ切り替え）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 入力中は無視
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      if (e.key === "ArrowLeft") {
+        setActiveTab("expenses");
+      } else if (e.key === "ArrowRight") {
+        setActiveTab("settlement");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // 現在の精算期間
   const currentPeriod = useMemo(
