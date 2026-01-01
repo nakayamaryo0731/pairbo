@@ -308,7 +308,7 @@ function CardForm() {
   return (
     <div className="space-y-4">
       {/* メインカード: 金額 + カテゴリ */}
-      <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+      <div className="bg-linear-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
         <div className="text-sm opacity-80 mb-2">支出金額</div>
         <div className="flex items-baseline gap-1 mb-6">
           <span className="text-2xl opacity-80">¥</span>
