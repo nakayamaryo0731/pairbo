@@ -21,24 +21,46 @@ export default function SettlementDetailPage({ params }: PageProps) {
 
   const settlement = useQuery(api.settlements.getById, { settlementId });
 
-  return (
-    <main className="min-h-screen bg-slate-50">
-      <PageHeader backHref={`/groups/${groupId}`} title="精算詳細" />
-
-      {/* コンテンツ */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {settlement === undefined ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-800 mx-auto" />
+  // ローディング中
+  if (settlement === undefined) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-50">
+        <PageHeader backHref={`/groups/${groupId}`} isLoading />
+        <main className="flex-1 p-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-800 mx-auto" />
+            </div>
           </div>
-        ) : settlement === null ? (
-          <div className="text-center py-12 text-slate-500">
-            精算が見つかりません
-          </div>
-        ) : (
-          <SettlementDetail settlementId={settlementId} />
-        )}
+        </main>
       </div>
-    </main>
+    );
+  }
+
+  // 精算が見つからない
+  if (settlement === null) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-50">
+        <PageHeader backHref={`/groups/${groupId}`} title="精算詳細" />
+        <main className="flex-1 p-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center py-12 text-slate-500">
+              精算が見つかりません
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <PageHeader backHref={`/groups/${groupId}`} title="精算詳細" />
+      <main className="flex-1 p-4">
+        <div className="max-w-2xl mx-auto">
+          <SettlementDetail settlementId={settlementId} />
+        </div>
+      </main>
+    </div>
   );
 }
