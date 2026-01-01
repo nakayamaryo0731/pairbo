@@ -197,13 +197,6 @@ export const getSubscriptionByStripeCustomerId = internalQuery({
   },
 });
 
-export const getUserById = internalQuery({
-  args: { userId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId as any);
-  },
-});
-
 // ========================================
 // 内部ミューテーション（Webhook用）
 // ========================================
