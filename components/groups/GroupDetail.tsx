@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { PeriodExpenseList } from "@/components/expenses/PeriodExpenseList";
@@ -95,6 +95,13 @@ export function GroupDetail({ group }: GroupDetailProps) {
   const [displayMonth, setDisplayMonth] = useState(initialPeriod.month);
   const [activeTab, setActiveTab] = useState<TabType>("expenses");
 
+  // 支出サマリー取得（固定表示用）
+  const expenseData = useQuery(api.expenses.listByPeriod, {
+    groupId: group._id,
+    year: displayYear,
+    month: displayMonth,
+  });
+
   // 削除ダイアログ用の状態
   const [expenseToDelete, setExpenseToDelete] =
     useState<ExpenseToDelete | null>(null);
@@ -183,17 +190,30 @@ export function GroupDetail({ group }: GroupDetailProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* 固定ナビゲーション（期間のみ） */}
-      <div className="shrink-0 px-4 py-4 bg-white border-b border-slate-200">
-        <PeriodNavigator
-          year={displayYear}
-          month={displayMonth}
-          startDate={period.startDate}
-          endDate={period.endDate}
-          onPrevious={goToPreviousMonth}
-          onNext={goToNextMonth}
-          canGoNext={canGoNext}
-        />
+      {/* 固定ヘッダー（期間ナビ + サマリー） */}
+      <div className="shrink-0 bg-white border-b border-slate-200">
+        <div className="px-4 py-4">
+          <PeriodNavigator
+            year={displayYear}
+            month={displayMonth}
+            startDate={period.startDate}
+            endDate={period.endDate}
+            onPrevious={goToPreviousMonth}
+            onNext={goToNextMonth}
+            canGoNext={canGoNext}
+          />
+        </div>
+        {/* 支出サマリー（支出タブ時のみ表示） */}
+        {activeTab === "expenses" && (
+          <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-t border-slate-100">
+            <span className="text-sm text-slate-600">
+              {expenseData?.totalCount ?? 0}件の支出
+            </span>
+            <span className="text-lg font-semibold text-slate-800">
+              ¥{(expenseData?.totalAmount ?? 0).toLocaleString()}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* スクロール可能なコンテンツ領域 */}

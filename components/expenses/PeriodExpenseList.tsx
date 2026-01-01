@@ -47,16 +47,6 @@ export function PeriodExpenseList({
 
   return (
     <div className="space-y-3">
-      {/* サマリー（上部に表示） */}
-      <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 px-4 py-3">
-        <span className="text-sm text-slate-600">
-          {data.totalCount}件の支出
-        </span>
-        <span className="text-lg font-semibold text-slate-800">
-          ¥{data.totalAmount.toLocaleString()}
-        </span>
-      </div>
-
       {/* 支出リスト */}
       {data.expenses.map((expense) => (
         <ExpenseCard
