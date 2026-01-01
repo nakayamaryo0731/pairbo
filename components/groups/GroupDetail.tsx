@@ -157,49 +157,18 @@ export function GroupDetail({ group }: GroupDetailProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 固定ナビゲーション（期間 + タブ） */}
-      <div className="sticky top-17.25 z-10 -mx-4 px-4 pb-2 bg-white border-b border-slate-200">
-        {/* 期間ナビゲーター */}
-        <div className="pt-4">
-          <PeriodNavigator
-            year={displayYear}
-            month={displayMonth}
-            startDate={period.startDate}
-            endDate={period.endDate}
-            onPrevious={goToPreviousMonth}
-            onNext={goToNextMonth}
-            canGoNext={canGoNext}
-          />
-        </div>
-
-        {/* タブ */}
-        <div className="flex mt-4" role="tablist">
-          <button
-            role="tab"
-            aria-selected={activeTab === "expenses"}
-            onClick={() => setActiveTab("expenses")}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === "expenses"
-                ? "text-blue-600 border-b-2 border-blue-500"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            支出
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === "settlement"}
-            onClick={() => setActiveTab("settlement")}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === "settlement"
-                ? "text-blue-600 border-b-2 border-blue-500"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            精算
-          </button>
-        </div>
+    <div className="space-y-6 pb-20">
+      {/* 固定ナビゲーション（期間のみ） */}
+      <div className="sticky top-17.25 z-10 -mx-4 px-4 py-4 bg-white border-b border-slate-200">
+        <PeriodNavigator
+          year={displayYear}
+          month={displayMonth}
+          startDate={period.startDate}
+          endDate={period.endDate}
+          onPrevious={goToPreviousMonth}
+          onNext={goToNextMonth}
+          canGoNext={canGoNext}
+        />
       </div>
 
       {/* タブコンテンツ */}
@@ -233,7 +202,7 @@ export function GroupDetail({ group }: GroupDetailProps) {
       )}
 
       {/* 支出記録ボタン */}
-      <div className="fixed bottom-6 right-6">
+      <div className="fixed bottom-20 right-4 z-20">
         <Link
           href={`/groups/${group._id}/expenses/new`}
           className="w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
@@ -255,6 +224,36 @@ export function GroupDetail({ group }: GroupDetailProps) {
             <path d="M5 12h14" />
           </svg>
         </Link>
+      </div>
+
+      {/* 下部タブナビゲーション */}
+      <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-slate-200">
+        <div className="max-w-lg mx-auto flex" role="tablist">
+          <button
+            role="tab"
+            aria-selected={activeTab === "expenses"}
+            onClick={() => setActiveTab("expenses")}
+            className={`flex-1 py-4 text-sm font-medium transition-colors ${
+              activeTab === "expenses"
+                ? "text-blue-600 border-t-2 border-blue-500 -mt-px"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            支出
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === "settlement"}
+            onClick={() => setActiveTab("settlement")}
+            className={`flex-1 py-4 text-sm font-medium transition-colors ${
+              activeTab === "settlement"
+                ? "text-blue-600 border-t-2 border-blue-500 -mt-px"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            精算
+          </button>
+        </div>
       </div>
 
       {/* 削除確認ダイアログ */}
