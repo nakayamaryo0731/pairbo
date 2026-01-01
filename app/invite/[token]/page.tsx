@@ -4,12 +4,12 @@ import { use } from "react";
 import { useQuery } from "convex/react";
 import { useAuth } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
-import { InviteAcceptCard } from "@/components/invite/InviteAcceptCard";
-import { InviteLoginCard } from "@/components/invite/InviteLoginCard";
 import {
+  InviteAcceptCard,
+  InviteLoginCard,
   InviteErrorCard,
   type InviteError,
-} from "@/components/invite/InviteErrorCard";
+} from "@/components/invite";
 
 type PageProps = {
   params: Promise<{ token: string }>;

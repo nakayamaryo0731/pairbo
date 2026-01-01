@@ -4,9 +4,11 @@ import { use, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { ExpenseForm } from "@/components/expenses/ExpenseForm";
-import { ExpenseDetail } from "@/components/expenses/ExpenseDetail";
-import { DeleteExpenseDialog } from "@/components/expenses/DeleteExpenseDialog";
+import {
+  ExpenseForm,
+  ExpenseDetail,
+  DeleteExpenseDialog,
+} from "@/components/expenses";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";

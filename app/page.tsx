@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { useConvexAuth, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { GroupList } from "@/components/groups/GroupList";
+import { GroupList } from "@/components/groups";
 import { GroupListSkeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/ui/AppHeader";
 

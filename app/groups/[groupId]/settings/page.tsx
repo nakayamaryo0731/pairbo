@@ -4,7 +4,7 @@ import { use } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { GroupSettings } from "@/components/groups/GroupSettings";
+import { GroupSettings } from "@/components/groups";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 type PageProps = {

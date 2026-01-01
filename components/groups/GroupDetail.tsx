@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { PeriodExpenseList } from "@/components/expenses/PeriodExpenseList";
-import { DeleteExpenseDialog } from "@/components/expenses/DeleteExpenseDialog";
+import { PeriodExpenseList, DeleteExpenseDialog } from "@/components/expenses";
 import {
   SettlementPreview,
   SettlementHistory,

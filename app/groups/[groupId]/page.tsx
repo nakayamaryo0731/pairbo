@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { GroupDetail } from "@/components/groups/GroupDetail";
+import { GroupDetail } from "@/components/groups";
 import { GroupDetailSkeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Settings, ShoppingCart, BarChart3 } from "lucide-react";
