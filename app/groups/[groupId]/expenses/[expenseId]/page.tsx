@@ -7,7 +7,8 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { ExpenseForm } from "@/components/expenses/ExpenseForm";
 import { ExpenseDetail } from "@/components/expenses/ExpenseDetail";
 import { DeleteExpenseDialog } from "@/components/expenses/DeleteExpenseDialog";
-import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type PageProps = {
@@ -92,27 +93,7 @@ export default function ExpensePage({ params }: PageProps) {
   if (expense === undefined || detail === undefined) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md p-4 border-b border-slate-200 flex items-center gap-3 shadow-sm">
-          <Link
-            href={`/groups/${groupId}`}
-            className="text-slate-600 hover:text-slate-800 transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </Link>
-          <div className="h-6 w-24 bg-slate-100 rounded animate-pulse" />
-        </header>
+        <PageHeader backHref={`/groups/${groupId}`} isLoading />
         <main className="flex-1 p-4">
           <div className="max-w-lg mx-auto bg-white rounded-2xl p-5">
             <ExpenseFormSkeleton />
@@ -126,27 +107,7 @@ export default function ExpensePage({ params }: PageProps) {
   if (expense === null) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md p-4 border-b border-slate-200 flex items-center gap-3 shadow-sm">
-          <Link
-            href={`/groups/${groupId}`}
-            className="text-slate-600 hover:text-slate-800 transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </Link>
-          <h1 className="font-bold text-xl text-slate-800">支出詳細</h1>
-        </header>
+        <PageHeader backHref={`/groups/${groupId}`} title="支出詳細" />
         <main className="flex-1 p-4">
           <div className="text-center py-12 text-slate-500">
             支出が見つかりません
@@ -160,30 +121,15 @@ export default function ExpensePage({ params }: PageProps) {
   if (expense.isSettled) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md p-4 border-b border-slate-200 flex items-center gap-3 shadow-sm">
-          <Link
-            href={`/groups/${groupId}`}
-            className="text-slate-600 hover:text-slate-800 transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </Link>
-          <h1 className="font-bold text-xl text-slate-800">支出詳細</h1>
-          <span className="ml-auto text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">
-            精算済み
-          </span>
-        </header>
+        <PageHeader
+          backHref={`/groups/${groupId}`}
+          title="支出詳細"
+          rightElement={
+            <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">
+              精算済み
+            </span>
+          }
+        />
         <main className="flex-1 p-4">
           <div className="max-w-lg mx-auto">
             <ExpenseDetail
@@ -246,51 +192,20 @@ export default function ExpensePage({ params }: PageProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="sticky top-0 z-10 bg-white border-b border-slate-200">
-        <div className="flex items-center justify-between px-4 h-14">
-          <Link
-            href={`/groups/${groupId}`}
-            className="text-slate-600 hover:text-slate-800 transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </Link>
-          <h1 className="text-lg font-semibold">支出を編集</h1>
+      <PageHeader
+        backHref={`/groups/${groupId}`}
+        title="支出を編集"
+        rightElement={
           <button
             onClick={handleDelete}
             disabled={isDeleting}
             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
             aria-label="削除"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 6h18" />
-              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-            </svg>
+            <Trash2 className="h-5 w-5" />
           </button>
-        </div>
-      </header>
+        }
+      />
 
       <main className="flex-1 p-4">
         <div className="max-w-lg mx-auto bg-white rounded-2xl p-5">

@@ -8,8 +8,8 @@ import { ShoppingItemInput } from "./ShoppingItemInput";
 import { ShoppingItem } from "./ShoppingItem";
 import { ShoppingHistory } from "./ShoppingHistory";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { History, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import Link from "next/link";
 
 type ShoppingListProps = {
   groupId: Id<"groups">;
@@ -70,19 +70,10 @@ export function ShoppingList({ groupId }: ShoppingListProps) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ヘッダー */}
-      <header className="sticky top-0 z-10 bg-white border-b border-slate-200">
-        <div className="flex items-center justify-between px-4 h-14">
-          <Link
-            href={`/groups/${groupId}`}
-            className="flex items-center gap-1 text-slate-600 hover:text-slate-900"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            <span className="sr-only">戻る</span>
-          </Link>
-          <h1 className="text-lg font-semibold">
-            {showHistory ? "購入履歴" : "買い物リスト"}
-          </h1>
+      <PageHeader
+        backHref={`/groups/${groupId}`}
+        title={showHistory ? "購入履歴" : "買い物リスト"}
+        rightElement={
           <Button
             variant="ghost"
             size="icon"
@@ -96,8 +87,8 @@ export function ShoppingList({ groupId }: ShoppingListProps) {
               <History className="h-5 w-5" />
             )}
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* メインコンテンツ */}
       <main className="p-4 space-y-4">

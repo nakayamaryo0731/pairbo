@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useState, useMemo, useEffect } from "react";
-import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -9,6 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CategoryPieChart } from "@/components/analytics/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/analytics/MonthlyTrendChart";
 import { ChartSkeleton } from "@/components/analytics/ChartSkeleton";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -204,15 +204,7 @@ export default function AnalyticsPage({ params }: PageProps) {
   if (group === undefined) {
     return (
       <div className="flex min-h-screen flex-col">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md p-4 border-b border-slate-200 flex items-center gap-3 shadow-sm">
-          <Link
-            href={`/groups/${groupId}`}
-            className="text-slate-600 hover:text-slate-800 transition-colors"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Link>
-          <div className="h-6 w-24 bg-slate-100 rounded animate-pulse" />
-        </header>
+        <PageHeader backHref={`/groups/${groupId}`} isLoading />
         <main className="flex-1 p-4">
           <div className="max-w-lg mx-auto space-y-6">
             <ChartSkeleton type="pie" />
@@ -227,15 +219,7 @@ export default function AnalyticsPage({ params }: PageProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md p-4 border-b border-slate-200 flex items-center gap-3 shadow-sm">
-        <Link
-          href={`/groups/${groupId}`}
-          className="text-slate-600 hover:text-slate-800 transition-colors"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </Link>
-        <h1 className="font-bold text-xl text-slate-800">分析</h1>
-      </header>
+      <PageHeader backHref={`/groups/${groupId}`} title="分析" />
 
       <main className="flex-1 p-4">
         <div className="max-w-lg mx-auto space-y-6">
