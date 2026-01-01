@@ -373,7 +373,9 @@ async function isExpenseSettled(
   // 精算レコードが存在し、かつstatus="reopened"でない場合は精算済みとみなす
   // "pending"（支払い待ち）や"settled"（完了）は編集不可
   // "reopened"（再オープン）の場合のみ編集・削除が可能
-  return existingSettlement !== null && existingSettlement.status !== "reopened";
+  return (
+    existingSettlement !== null && existingSettlement.status !== "reopened"
+  );
 }
 
 /**
