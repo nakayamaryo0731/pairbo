@@ -4,6 +4,8 @@ import {
   splitMethodValidator,
   memberRoleValidator,
   settlementStatusValidator,
+  subscriptionPlanValidator,
+  subscriptionStatusValidator,
 } from "./lib/validators";
 
 export default defineSchema({
@@ -140,4 +142,23 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_group_and_purchased", ["groupId", "purchasedAt"]),
   // 用途: グループの買い物リスト（未購入: purchasedAt=null、履歴: purchasedAt!=null）
+
+  // ========================================
+  // サブスクリプション
+  // ========================================
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+    stripeSubscriptionId: v.optional(v.string()),
+    plan: subscriptionPlanValidator,
+    status: subscriptionStatusValidator,
+    currentPeriodStart: v.optional(v.number()),
+    currentPeriodEnd: v.optional(v.number()),
+    cancelAtPeriodEnd: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_stripe_customer", ["stripeCustomerId"]),
+  // 用途: ユーザーのサブスク状態取得、Stripe Webhook処理
 });

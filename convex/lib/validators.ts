@@ -33,3 +33,27 @@ export const settlementStatusValidator = v.union(
   v.literal("pending"),
   v.literal("settled"),
 );
+
+/**
+ * サブスクリプションプラン
+ * - free: 無料プラン
+ * - pro: Proプラン
+ */
+export const subscriptionPlanValidator = v.union(
+  v.literal("free"),
+  v.literal("pro"),
+);
+
+/**
+ * サブスクリプションステータス
+ * - active: 有効
+ * - canceled: キャンセル済み（期間終了まで有効）
+ * - past_due: 支払い遅延
+ * - trialing: 試用期間中
+ */
+export const subscriptionStatusValidator = v.union(
+  v.literal("active"),
+  v.literal("canceled"),
+  v.literal("past_due"),
+  v.literal("trialing"),
+);

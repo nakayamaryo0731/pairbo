@@ -1,5 +1,3 @@
-import { SETTLEMENT_RULES } from "./types";
-
 /**
  * 精算バリデーションエラー
  */
