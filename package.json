@@ -17,7 +17,8 @@
     "test:run": "vitest run",
     "test:unit": "vitest run",
     "test:integration": "vitest run convex/**/*.integration.test.ts --passWithNoTests",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare": "husky"
   },
   "dependencies": {
     "@clerk/localizations": "^3.32.1",
@@ -40,6 +41,15 @@
     "stripe": "^20.1.0",
     "tailwind-merge": "^3.4.0"
   },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
     "@convex-dev/eslint-plugin": "^1.1.1",
     "@edge-runtime/vm": "^5.0.0",
@@ -51,6 +61,8 @@
     "convex-test": "^0.0.41",
     "eslint": "^9.39.1",
     "eslint-config-next": "16.0.10",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "npm-run-all2": "^8.0.4",
     "prettier": "^3.6.2",
     "serwist": "^9.4.2",
