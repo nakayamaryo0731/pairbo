@@ -45,11 +45,11 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <GoogleAnalytics />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <GoogleAnalytics />
         <ConvexClientProvider>
           <div className="pb-14">{children}</div>
           <AdBanner />
