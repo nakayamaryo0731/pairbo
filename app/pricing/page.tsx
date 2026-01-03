@@ -172,7 +172,11 @@ export default function PricingPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon />
-                  <span>基本的な分析グラフ</span>
+                  <span>負担方法（均等・全額）</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckIcon />
+                  <span>月次分析グラフ</span>
                 </li>
               </ul>
               {!isPremium && (
@@ -221,11 +225,11 @@ export default function PricingPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-emerald-500" />
-                  <span>詳細な分析レポート</span>
+                  <span>傾斜折半（割合・金額指定）</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-emerald-500" />
-                  <span>データエクスポート（CSV）</span>
+                  <span>年次分析・月別推移グラフ</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-emerald-500" />

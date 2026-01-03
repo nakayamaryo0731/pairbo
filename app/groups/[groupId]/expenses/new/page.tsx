@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import { useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ExpenseForm } from "@/components/expenses";
@@ -55,9 +56,16 @@ function ExpenseFormSkeleton() {
 
 export default function ExpenseNewPage({ params }: PageProps) {
   const { groupId } = use(params);
+  const { isAuthenticated } = useConvexAuth();
   const detail = useQuery(api.groups.getDetail, {
     groupId: groupId as Id<"groups">,
   });
+  const subscription = useQuery(
+    api.subscriptions.getMySubscription,
+    isAuthenticated ? {} : "skip",
+  );
+
+  const isPremium = subscription?.plan === "premium";
 
   // ローディング中
   if (detail === undefined) {
@@ -87,6 +95,7 @@ export default function ExpenseNewPage({ params }: PageProps) {
               displayName: m.displayName,
               isMe: m.isMe,
             }))}
+            isPremium={isPremium}
           />
         </div>
       </main>

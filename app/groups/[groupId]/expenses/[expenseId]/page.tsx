@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
@@ -67,10 +67,17 @@ export default function ExpensePage({ params }: PageProps) {
   const resolvedParams = use(params);
   const groupId = resolvedParams.groupId as Id<"groups">;
   const expenseId = resolvedParams.expenseId as Id<"expenses">;
+  const { isAuthenticated } = useConvexAuth();
 
   const expense = useQuery(api.expenses.getById, { expenseId });
   const detail = useQuery(api.groups.getDetail, { groupId });
+  const subscription = useQuery(
+    api.subscriptions.getMySubscription,
+    isAuthenticated ? {} : "skip",
+  );
   const removeExpense = useMutation(api.expenses.remove);
+
+  const isPremium = subscription?.plan === "premium";
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -221,6 +228,7 @@ export default function ExpensePage({ params }: PageProps) {
             }))}
             mode="edit"
             initialData={initialData}
+            isPremium={isPremium}
           />
         </div>
       </main>
