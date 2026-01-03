@@ -531,3 +531,27 @@ graph LR
 1. **今すぐ**: ユーザー獲得に集中（無料で価値を証明）
 2. **100+ MAU到達時**: フィードバック収集、課金ニーズ確認
 3. **500+ MAU到達時**: マネタイズ実装開始
+
+## 開発者アカウント
+
+開発者はStripe課金なしでPremium機能を利用できる。
+
+### 設定方法
+
+1. Convexダッシュボード → Data → `users`テーブル → 対象ユーザーの`_id`をコピー
+2. `subscriptions`テーブル → 「Add document」で以下を追加:
+
+| フィールド        | 値                              |
+| ----------------- | ------------------------------- |
+| userId            | コピーしたユーザーID            |
+| stripeCustomerId  | `dev_admin`（開発者用ダミー値） |
+| plan              | `premium`                       |
+| status            | `active`                        |
+| cancelAtPeriodEnd | `false`                         |
+| createdAt         | 現在のタイムスタンプ（ミリ秒）  |
+| updatedAt         | 現在のタイムスタンプ（ミリ秒）  |
+
+### 識別方法
+
+- `stripeCustomerId`が`dev_admin`のレコードは開発者用
+- 通常のStripe課金ユーザーは`cus_`で始まるID

@@ -48,6 +48,11 @@ export function AdBanner({
     return null;
   }
 
+  // サブスクリプション読み込み中は表示しない（ちらつき防止）
+  if (isAuthenticated && subscription === undefined) {
+    return null;
+  }
+
   // Premiumユーザーは広告非表示
   if (subscription?.plan === "premium") {
     return null;
