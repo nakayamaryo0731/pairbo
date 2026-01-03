@@ -66,21 +66,42 @@ export const isPro = isPremium;
 // グループ数・メンバー数の制限は廃止（同棲カップル向けアプリのため不要）
 
 /**
- * 詳細分析機能にアクセスできるかどうかを確認
+ * 傾斜折半（割合・金額指定）にアクセスできるかどうかを確認
+ */
+export async function canUseSlopedSplit(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+): Promise<boolean> {
+  return isPremium(ctx, userId);
+}
+
+/**
+ * 年次分析・月別推移グラフにアクセスできるかどうかを確認
+ */
+export async function canAccessYearlyAnalytics(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+): Promise<boolean> {
+  return isPremium(ctx, userId);
+}
+
+/**
+ * @deprecated canAccessYearlyAnalytics を使用してください
  */
 export async function canAccessDetailedAnalytics(
   ctx: QueryCtx | MutationCtx,
   userId: Id<"users">,
 ): Promise<boolean> {
-  return isPro(ctx, userId);
+  return isPremium(ctx, userId);
 }
 
 /**
  * データエクスポート機能にアクセスできるかどうかを確認
+ * 注: 現在未実装。将来の実装用に残す
  */
 export async function canExportData(
   ctx: QueryCtx | MutationCtx,
   userId: Id<"users">,
 ): Promise<boolean> {
-  return isPro(ctx, userId);
+  return isPremium(ctx, userId);
 }

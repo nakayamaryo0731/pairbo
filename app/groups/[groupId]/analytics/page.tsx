@@ -1,10 +1,11 @@
 "use client";
 
 import { use, useState, useMemo, useEffect } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import Link from "next/link";
 import { CategoryPieChart } from "@/components/analytics/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/analytics/MonthlyTrendChart";
 import { ChartSkeleton } from "@/components/analytics/ChartSkeleton";
@@ -58,11 +59,18 @@ function getSettlementPeriod(
 
 export default function AnalyticsPage({ params }: PageProps) {
   const { groupId } = use(params);
+  const { isAuthenticated } = useConvexAuth();
   const [viewType, setViewType] = useState<ViewType>("month");
 
   const group = useQuery(api.groups.getDetail, {
     groupId: groupId as Id<"groups">,
   });
+  const subscription = useQuery(
+    api.subscriptions.getMySubscription,
+    isAuthenticated ? {} : "skip",
+  );
+
+  const isPremium = subscription?.plan === "premium";
 
   // 現在の精算期間を計算
   const currentPeriod = useMemo(() => {
@@ -224,16 +232,30 @@ export default function AnalyticsPage({ params }: PageProps) {
               月次
             </button>
             <button
-              onClick={() => setViewType("year")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+              onClick={() => isPremium && setViewType("year")}
+              disabled={!isPremium}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1 ${
                 viewType === "year"
                   ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  : isPremium
+                    ? "text-slate-500 hover:text-slate-700"
+                    : "text-slate-400 cursor-not-allowed"
               }`}
             >
               年次
+              {!isPremium && <Lock className="h-3 w-3" />}
             </button>
           </div>
+
+          {/* Premiumへの誘導 */}
+          {!isPremium && (
+            <p className="text-xs text-slate-500 text-center">
+              <Link href="/pricing" className="text-blue-600 hover:underline">
+                Premiumプラン
+              </Link>
+              で年次分析・月別推移グラフが利用可能
+            </p>
+          )}
 
           {/* 期間ナビゲーター */}
           {viewType === "month" ? (

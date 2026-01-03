@@ -29,6 +29,7 @@ type SplitMethodSelectorProps = {
   onAmountsChange: (amounts: Map<Id<"users">, number>) => void;
   bearerId: Id<"users"> | null;
   onBearerIdChange: (bearerId: Id<"users">) => void;
+  isPremium?: boolean;
 };
 
 const methodLabels: Record<SplitMethod, string> = {
@@ -51,11 +52,19 @@ export function SplitMethodSelector({
   onAmountsChange,
   bearerId,
   onBearerIdChange,
+  isPremium = false,
 }: SplitMethodSelectorProps) {
   // 選択されたメンバーのみをフィルタ
   const selectedMembers = members.filter((m) =>
     selectedMemberIds.has(m.userId),
   );
+
+  // Freeプランは均等・全額のみ、Premiumは全て利用可能
+  const availableMethods: SplitMethod[] = isPremium
+    ? ["equal", "ratio", "amount", "full"]
+    : ["equal", "full"];
+
+  const premiumMethods: SplitMethod[] = ["ratio", "amount"];
 
   return (
     <div className="space-y-4">
@@ -68,21 +77,47 @@ export function SplitMethodSelector({
 
       {/* 分割方法選択 */}
       <div className="flex gap-2">
-        {(["equal", "ratio", "amount", "full"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
-              method === m
-                ? "bg-blue-500 text-white border-blue-500"
-                : "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
-            }`}
-            onClick={() => onMethodChange(m)}
-          >
-            {methodLabels[m]}
-          </button>
-        ))}
+        {(["equal", "ratio", "amount", "full"] as const).map((m) => {
+          const isAvailable = availableMethods.includes(m);
+          const isPremiumOnly = premiumMethods.includes(m);
+
+          return (
+            <button
+              key={m}
+              type="button"
+              disabled={!isAvailable}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
+                method === m
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : isAvailable
+                    ? "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
+                    : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+              }`}
+              onClick={() => isAvailable && onMethodChange(m)}
+              title={
+                isPremiumOnly && !isPremium
+                  ? "Premiumプランで利用可能"
+                  : undefined
+              }
+            >
+              {methodLabels[m]}
+              {isPremiumOnly && !isPremium && (
+                <span className="ml-1 text-xs">🔒</span>
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Premiumへの誘導 */}
+      {!isPremium && (
+        <p className="text-xs text-slate-500">
+          <a href="/pricing" className="text-blue-600 hover:underline">
+            Premiumプラン
+          </a>
+          で割合・金額指定が利用可能
+        </p>
+      )}
 
       {/* 均等分割プレビュー */}
       {method === "equal" && selectedMembers.length > 0 && totalAmount > 0 && (

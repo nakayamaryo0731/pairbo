@@ -45,6 +45,7 @@ type ExpenseFormProps = {
   members: Member[];
   mode?: "create" | "edit";
   initialData?: InitialData;
+  isPremium?: boolean;
 };
 
 /**
@@ -60,6 +61,7 @@ export function ExpenseForm({
   members,
   mode = "create",
   initialData,
+  isPremium = false,
 }: ExpenseFormProps) {
   const router = useRouter();
   const createExpense = useMutation(api.expenses.create);
@@ -451,6 +453,7 @@ export function ExpenseForm({
           onAmountsChange={setAmounts}
           bearerId={bearerId}
           onBearerIdChange={setBearerId}
+          isPremium={isPremium}
         />
       </div>
 
