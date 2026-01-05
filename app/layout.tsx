@@ -4,6 +4,7 @@ import "./globals.css";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import { AdBanner } from "@/components/ads";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { GoogleAdSense } from "@/components/GoogleAdSense";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,6 +51,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <GoogleAnalytics />
+        <GoogleAdSense />
         <ConvexClientProvider>
           <div className="pb-14">{children}</div>
           <AdBanner />
