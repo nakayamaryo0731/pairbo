@@ -88,84 +88,87 @@ export function TagBreakdownChart({
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 space-y-6">
-      {/* 円グラフ */}
-      <div className="flex items-center justify-center">
-        <div className="relative w-48 h-48">
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            {segments.map((segment, index) => {
-              const endAngle =
-                segment.startAngle + (segment.percentage / 100) * 360;
-              if (segment.percentage <= 0) return null;
-              return (
-                <path
-                  key={index}
-                  d={createArcPath(segment.startAngle, endAngle, 45, 50, 50)}
-                  fill={segment.color}
-                />
-              );
-            })}
-            {/* 中央の円（ドーナツ型にする） */}
-            <circle cx="50" cy="50" r="25" fill="white" />
-          </svg>
-          {/* 合計金額 */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs text-slate-500">合計</span>
-            <span className="text-lg font-semibold text-slate-800">
-              ¥{totalAmount.toLocaleString()}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 凡例 */}
-      <div className="space-y-2">
-        {data.map((item) => {
-          const colors = getTagColorClasses(item.tagColor);
-          return (
-            <div
-              key={item.tagId}
-              className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0"
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm ${colors.bg} ${colors.text}`}
-                >
-                  #{item.tagName}
-                </span>
-                <span className="text-xs text-slate-500">({item.count}件)</span>
-              </div>
-              <div className="text-right">
-                <div className="font-medium text-slate-800">
-                  ¥{item.amount.toLocaleString()}
-                </div>
-                <div className="text-xs text-slate-500">{item.percentage}%</div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* タグなし */}
-        {untaggedAmount > 0 && (
-          <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm bg-slate-100 text-slate-600">
-                タグなし
+    <div className="bg-white rounded-xl p-4">
+      {/* 円グラフ + 凡例 横並び（50/50分割） */}
+      <div className="flex">
+        {/* 円グラフ（左半分） */}
+        <div className="w-1/2 flex items-center justify-center">
+          <div className="w-44 h-44 relative">
+            <svg viewBox="0 0 100 100" className="w-full h-full">
+              {segments.map((segment, index) => {
+                const endAngle =
+                  segment.startAngle + (segment.percentage / 100) * 360;
+                if (segment.percentage <= 0) return null;
+                return (
+                  <path
+                    key={index}
+                    d={createArcPath(segment.startAngle, endAngle, 45, 50, 50)}
+                    fill={segment.color}
+                  />
+                );
+              })}
+              {/* 中央の円（ドーナツ型にする） */}
+              <circle cx="50" cy="50" r="25" fill="white" />
+            </svg>
+            {/* 合計金額 */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xs text-slate-400">合計</span>
+              <span className="text-sm font-semibold text-slate-700">
+                ¥{totalAmount.toLocaleString()}
               </span>
             </div>
-            <div className="text-right">
-              <div className="font-medium text-slate-800">
-                ¥{untaggedAmount.toLocaleString()}
-              </div>
-              <div className="text-xs text-slate-500">
-                {totalAmount > 0
-                  ? Math.round((untaggedAmount / totalAmount) * 1000) / 10
-                  : 0}
-                %
-              </div>
+          </div>
+        </div>
+
+        {/* 凡例（右半分） */}
+        <div className="w-1/2 flex items-center justify-center">
+          <div className="max-h-44 overflow-y-auto">
+            <div className="space-y-1">
+              {data.map((item) => {
+                const colors = getTagColorClasses(item.tagColor);
+                return (
+                  <div
+                    key={item.tagId}
+                    className="flex items-center gap-1.5 text-sm"
+                  >
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs max-w-[5rem] truncate ${colors.bg} ${colors.text}`}
+                    >
+                      #{item.tagName}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      ({item.count})
+                    </span>
+                    <span className="font-medium text-slate-800 ml-auto pl-3 tabular-nums">
+                      ¥{item.amount.toLocaleString()}
+                    </span>
+                    <span className="text-xs text-slate-400 w-10 text-right tabular-nums">
+                      {item.percentage}%
+                    </span>
+                  </div>
+                );
+              })}
+
+              {/* タグなし */}
+              {untaggedAmount > 0 && (
+                <div className="flex items-center gap-1.5 text-sm">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">
+                    タグなし
+                  </span>
+                  <span className="font-medium text-slate-800 ml-auto pl-3 tabular-nums">
+                    ¥{untaggedAmount.toLocaleString()}
+                  </span>
+                  <span className="text-xs text-slate-400 w-10 text-right tabular-nums">
+                    {totalAmount > 0
+                      ? Math.round((untaggedAmount / totalAmount) * 1000) / 10
+                      : 0}
+                    %
+                  </span>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
