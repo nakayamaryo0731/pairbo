@@ -30,8 +30,8 @@ type CategoryPieChartProps = {
 export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-xl p-6 text-center text-slate-500">
-        この期間のデータがありません
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <p>この期間の支出データがありません</p>
       </div>
     );
   }
@@ -42,73 +42,60 @@ export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
   }));
 
   return (
-    <div className="bg-white rounded-xl p-4">
-      {/* 円グラフ + 凡例 横並び（50/50分割） */}
-      <div className="flex">
-        {/* 円グラフ（左半分） */}
-        <div className="w-1/2 flex items-center justify-center">
-          <div className="w-36 h-36 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  dataKey="amount"
-                  nameKey="categoryName"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={34}
-                  outerRadius={64}
-                  paddingAngle={2}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) => [
-                    `¥${Number(value).toLocaleString()}`,
-                    "金額",
-                  ]}
-                  labelFormatter={(label) => String(label)}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* 中央に合計金額 */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-xs text-slate-400">合計</span>
-              <span className="text-sm font-semibold text-slate-700">
-                ¥{totalAmount.toLocaleString()}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 凡例（右半分） */}
-        <div className="w-1/2 flex items-center pl-2">
-          <div className="max-h-36 overflow-y-auto">
-            <div className="space-y-1">
-              {chartData.map((item) => (
-                <div
-                  key={item.categoryId}
-                  className="flex items-center gap-1.5 text-sm"
-                >
-                  <div
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: item.fill }}
-                  />
-                  <span className="truncate max-w-[4rem] text-slate-700">
-                    {item.categoryName}
-                  </span>
-                  <span className="font-medium text-slate-800 ml-auto pl-3 tabular-nums">
-                    ¥{item.amount.toLocaleString()}
-                  </span>
-                  <span className="text-xs text-slate-400 w-10 text-right tabular-nums">
-                    {item.percentage}%
-                  </span>
-                </div>
+    <div className="flex flex-col gap-4">
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              dataKey="amount"
+              nameKey="categoryName"
+              cx="50%"
+              cy="50%"
+              innerRadius={40}
+              outerRadius={70}
+              paddingAngle={2}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
-            </div>
+            </Pie>
+            <Tooltip
+              formatter={(value) => [
+                `¥${Number(value).toLocaleString()}`,
+                "金額",
+              ]}
+              labelFormatter={(label) => String(label)}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {chartData.map((item) => (
+          <div key={item.categoryId} className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full shrink-0"
+              style={{ backgroundColor: item.fill }}
+            />
+            <span className="shrink-0">{item.categoryIcon}</span>
+            <span className="flex-1 truncate text-sm">{item.categoryName}</span>
+            <span className="text-sm font-medium">
+              ¥{item.amount.toLocaleString()}
+            </span>
+            <span className="text-xs text-muted-foreground w-12 text-right">
+              {item.percentage}%
+            </span>
           </div>
+        ))}
+      </div>
+
+      <div className="pt-2 border-t">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">合計</span>
+          <span className="text-lg font-bold">
+            ¥{totalAmount.toLocaleString()}
+          </span>
         </div>
       </div>
     </div>
