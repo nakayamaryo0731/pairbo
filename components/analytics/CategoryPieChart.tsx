@@ -47,7 +47,7 @@ export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
       <div className="flex">
         {/* 円グラフ（左半分） */}
         <div className="w-1/2 flex items-center justify-center">
-          <div className="w-44 h-44 relative">
+          <div className="w-36 h-36 relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -56,8 +56,8 @@ export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
                   nameKey="categoryName"
                   cx="50%"
                   cy="50%"
-                  innerRadius={42}
-                  outerRadius={78}
+                  innerRadius={34}
+                  outerRadius={64}
                   paddingAngle={2}
                 >
                   {chartData.map((entry, index) => (
@@ -84,8 +84,8 @@ export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
         </div>
 
         {/* 凡例（右半分） */}
-        <div className="w-1/2 flex items-center justify-center">
-          <div className="max-h-44 overflow-y-auto">
+        <div className="w-1/2 flex items-center pl-2">
+          <div className="max-h-36 overflow-y-auto">
             <div className="space-y-1">
               {chartData.map((item) => (
                 <div
@@ -96,7 +96,6 @@ export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ backgroundColor: item.fill }}
                   />
-                  <span className="shrink-0">{item.categoryIcon}</span>
                   <span className="truncate max-w-[4rem] text-slate-700">
                     {item.categoryName}
                   </span>

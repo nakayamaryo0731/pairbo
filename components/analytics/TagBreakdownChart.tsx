@@ -93,7 +93,7 @@ export function TagBreakdownChart({
       <div className="flex">
         {/* 円グラフ（左半分） */}
         <div className="w-1/2 flex items-center justify-center">
-          <div className="w-44 h-44 relative">
+          <div className="w-36 h-36 relative">
             <svg viewBox="0 0 100 100" className="w-full h-full">
               {segments.map((segment, index) => {
                 const endAngle =
@@ -121,8 +121,8 @@ export function TagBreakdownChart({
         </div>
 
         {/* 凡例（右半分） */}
-        <div className="w-1/2 flex items-center justify-center">
-          <div className="max-h-44 overflow-y-auto">
+        <div className="w-1/2 flex items-center pl-2">
+          <div className="max-h-36 overflow-y-auto">
             <div className="space-y-1">
               {data.map((item) => {
                 const colors = getTagColorClasses(item.tagColor);
