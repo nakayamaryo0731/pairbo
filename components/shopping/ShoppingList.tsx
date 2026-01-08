@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { usePeriodNavigation } from "@/hooks";
 import { ShoppingItemInput } from "./ShoppingItemInput";
 import { ShoppingItem } from "./ShoppingItem";
 import { ShoppingHistory } from "./ShoppingHistory";
@@ -15,50 +16,21 @@ type ShoppingListProps = {
   groupId: Id<"groups">;
 };
 
-function getCurrentYearMonth() {
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
-}
-
 export function ShoppingList({ groupId }: ShoppingListProps) {
   const [showHistory, setShowHistory] = useState(false);
-  const [historyYear, setHistoryYear] = useState(
-    () => getCurrentYearMonth().year,
-  );
-  const [historyMonth, setHistoryMonth] = useState(
-    () => getCurrentYearMonth().month,
-  );
+  const {
+    year: historyYear,
+    month: historyMonth,
+    goToPreviousMonth,
+    goToNextMonth,
+    canGoNextMonth,
+  } = usePeriodNavigation();
 
   const pending = useQuery(api.shoppingList.list, { groupId });
   const purchased = useQuery(
     api.shoppingList.listPurchasedByMonth,
     showHistory ? { groupId, year: historyYear, month: historyMonth } : "skip",
   );
-
-  const currentYearMonth = getCurrentYearMonth();
-  const canGoNext =
-    historyYear < currentYearMonth.year ||
-    (historyYear === currentYearMonth.year &&
-      historyMonth < currentYearMonth.month);
-
-  const goToPreviousMonth = () => {
-    if (historyMonth === 1) {
-      setHistoryYear(historyYear - 1);
-      setHistoryMonth(12);
-    } else {
-      setHistoryMonth(historyMonth - 1);
-    }
-  };
-
-  const goToNextMonth = () => {
-    if (!canGoNext) return;
-    if (historyMonth === 12) {
-      setHistoryYear(historyYear + 1);
-      setHistoryMonth(1);
-    } else {
-      setHistoryMonth(historyMonth + 1);
-    }
-  };
 
   if (pending === undefined) {
     return (
@@ -112,7 +84,7 @@ export function ShoppingList({ groupId }: ShoppingListProps) {
                   variant="ghost"
                   size="icon"
                   onClick={goToNextMonth}
-                  disabled={!canGoNext}
+                  disabled={!canGoNextMonth}
                   aria-label="翌月"
                 >
                   <ChevronRight className="h-5 w-5" />

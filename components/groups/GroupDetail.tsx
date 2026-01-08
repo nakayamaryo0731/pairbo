@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { usePeriodNavigation } from "@/hooks";
 import { PeriodExpenseList, DeleteExpenseDialog } from "@/components/expenses";
 import {
   SettlementPreview,
@@ -35,64 +36,20 @@ type ExpenseToDelete = {
   categoryName: string;
 };
 
-/**
- * 今日が含まれる精算期間の年月を計算
- */
-function getCurrentSettlementYearMonth(closingDay: number): {
-  year: number;
-  month: number;
-} {
-  const now = new Date();
-  const today = now.getDate();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-
-  if (today > closingDay) {
-    if (currentMonth === 12) {
-      return { year: currentYear + 1, month: 1 };
-    }
-    return { year: currentYear, month: currentMonth + 1 };
-  }
-
-  return { year: currentYear, month: currentMonth };
-}
-
-/**
- * 精算期間を計算
- */
-function getSettlementPeriod(
-  closingDay: number,
-  year: number,
-  month: number,
-): { startDate: string; endDate: string } {
-  const formatDate = (date: Date): string => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
-
-  const endDate = new Date(year, month - 1, closingDay);
-  const startDate = new Date(year, month - 2, closingDay + 1);
-
-  return {
-    startDate: formatDate(startDate),
-    endDate: formatDate(endDate),
-  };
-}
-
 export function GroupDetail({ group }: GroupDetailProps) {
   const router = useRouter();
   const removeExpense = useMutation(api.expenses.remove);
 
-  // 今期の年月を初期値として設定
-  const initialPeriod = useMemo(
-    () => getCurrentSettlementYearMonth(group.closingDay),
-    [group.closingDay],
-  );
+  // 期間ナビゲーション
+  const {
+    year: displayYear,
+    month: displayMonth,
+    goToPreviousMonth,
+    goToNextMonth,
+    canGoNextMonth: canGoNext,
+    period,
+  } = usePeriodNavigation({ closingDay: group.closingDay });
 
-  const [displayYear, setDisplayYear] = useState(initialPeriod.year);
-  const [displayMonth, setDisplayMonth] = useState(initialPeriod.month);
   const [activeTab, setActiveTab] = useState<TabType>("expenses");
 
   // 支出サマリー取得（固定表示用）
@@ -129,43 +86,6 @@ export function GroupDetail({ group }: GroupDetailProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // 現在の精算期間
-  const currentPeriod = useMemo(
-    () => getCurrentSettlementYearMonth(group.closingDay),
-    [group.closingDay],
-  );
-
-  // 表示中の期間
-  const period = useMemo(
-    () => getSettlementPeriod(group.closingDay, displayYear, displayMonth),
-    [group.closingDay, displayYear, displayMonth],
-  );
-
-  // 翌月へ移動可能かどうか（今期より先には進めない）
-  const canGoNext =
-    displayYear < currentPeriod.year ||
-    (displayYear === currentPeriod.year && displayMonth < currentPeriod.month);
-
-  const goToPreviousMonth = () => {
-    if (displayMonth === 1) {
-      setDisplayYear(displayYear - 1);
-      setDisplayMonth(12);
-    } else {
-      setDisplayMonth(displayMonth - 1);
-    }
-  };
-
-  const goToNextMonth = () => {
-    if (!canGoNext) return;
-
-    if (displayMonth === 12) {
-      setDisplayYear(displayYear + 1);
-      setDisplayMonth(1);
-    } else {
-      setDisplayMonth(displayMonth + 1);
-    }
-  };
-
   const handleEdit = (expenseId: Id<"expenses">) => {
     router.push(`/groups/${group._id}/expenses/${expenseId}`);
   };
@@ -196,8 +116,8 @@ export function GroupDetail({ group }: GroupDetailProps) {
           <PeriodNavigator
             year={displayYear}
             month={displayMonth}
-            startDate={period.startDate}
-            endDate={period.endDate}
+            startDate={period!.startDate}
+            endDate={period!.endDate}
             onPrevious={goToPreviousMonth}
             onNext={goToNextMonth}
             canGoNext={canGoNext}

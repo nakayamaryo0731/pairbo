@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useState, useMemo, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import { useQuery, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { usePeriodNavigation } from "@/hooks";
 import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { CategoryPieChart } from "@/components/analytics/CategoryPieChart";
@@ -11,52 +12,13 @@ import { MonthlyTrendChart } from "@/components/analytics/MonthlyTrendChart";
 import { TagBreakdownChart } from "@/components/analytics/TagBreakdownChart";
 import { ChartSkeleton } from "@/components/analytics/ChartSkeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { formatDateISO, formatPeriod } from "@/lib/formatters";
+import { formatPeriod } from "@/lib/formatters";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
 };
 
 type ViewType = "month" | "year";
-
-/**
- * 今日が含まれる精算期間の年月を計算
- */
-function getCurrentSettlementYearMonth(closingDay: number): {
-  year: number;
-  month: number;
-} {
-  const now = new Date();
-  const today = now.getDate();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-
-  if (today > closingDay) {
-    if (currentMonth === 12) {
-      return { year: currentYear + 1, month: 1 };
-    }
-    return { year: currentYear, month: currentMonth + 1 };
-  }
-
-  return { year: currentYear, month: currentMonth };
-}
-
-/**
- * 精算期間を計算
- */
-function getSettlementPeriod(
-  closingDay: number,
-  year: number,
-  month: number,
-): { startDate: string; endDate: string } {
-  const endDate = new Date(year, month - 1, closingDay);
-  const startDate = new Date(year, month - 2, closingDay + 1);
-
-  return {
-    startDate: formatDateISO(startDate),
-    endDate: formatDateISO(endDate),
-  };
-}
 
 export default function AnalyticsPage({ params }: PageProps) {
   const { groupId } = use(params);
@@ -73,54 +35,35 @@ export default function AnalyticsPage({ params }: PageProps) {
 
   const isPremium = subscription?.plan === "premium";
 
-  // 現在の精算期間を計算
-  const currentPeriod = useMemo(() => {
-    if (!group)
-      return {
-        year: new Date().getFullYear(),
-        month: new Date().getMonth() + 1,
-      };
-    return getCurrentSettlementYearMonth(group.group.closingDay);
-  }, [group]);
+  // 月次ナビゲーション（精算期間ベース）
+  const {
+    year: activeYear,
+    month: activeMonth,
+    goToPreviousMonth,
+    goToNextMonth,
+    canGoNextMonth,
+    period,
+    currentPeriod,
+  } = usePeriodNavigation({
+    closingDay: group?.group.closingDay,
+  });
 
-  // 月次表示用の年月
-  const [displayYear, setDisplayYear] = useState<number | null>(null);
-  const [displayMonth, setDisplayMonth] = useState<number | null>(null);
-
-  // 年次表示用の年
+  // 年次表示用の年（月次とは独立して管理）
   const [displayYearForYearly, setDisplayYearForYearly] = useState<
     number | null
   >(null);
-
-  // 実際に使用する年月（初期値はcurrentPeriod）
-  const activeYear = displayYear ?? currentPeriod.year;
-  const activeMonth = displayMonth ?? currentPeriod.month;
   const activeYearForYearly = displayYearForYearly ?? currentPeriod.year;
 
-  // 月次ナビゲーション
-  const canGoNextMonth =
-    activeYear < currentPeriod.year ||
-    (activeYear === currentPeriod.year && activeMonth < currentPeriod.month);
+  // 年次ナビゲーション（独立）
+  const canGoNextYearForYearly = activeYearForYearly < currentPeriod.year;
 
-  const goToPreviousMonth = () => {
-    if (activeMonth === 1) {
-      setDisplayYear(activeYear - 1);
-      setDisplayMonth(12);
-    } else {
-      setDisplayYear(activeYear);
-      setDisplayMonth(activeMonth - 1);
-    }
+  const goToPreviousYearForYearly = () => {
+    setDisplayYearForYearly(activeYearForYearly - 1);
   };
 
-  const goToNextMonth = () => {
-    if (!canGoNextMonth) return;
-    if (activeMonth === 12) {
-      setDisplayYear(activeYear + 1);
-      setDisplayMonth(1);
-    } else {
-      setDisplayYear(activeYear);
-      setDisplayMonth(activeMonth + 1);
-    }
+  const goToNextYearForYearly = () => {
+    if (!canGoNextYearForYearly) return;
+    setDisplayYearForYearly(activeYearForYearly + 1);
   };
 
   // キーボードショートカット（左右矢印で月次/年次切り替え）
@@ -144,24 +87,6 @@ export default function AnalyticsPage({ params }: PageProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isPremium]);
-
-  // 年次ナビゲーション
-  const canGoNextYear = activeYearForYearly < currentPeriod.year;
-
-  const goToPreviousYear = () => {
-    setDisplayYearForYearly(activeYearForYearly - 1);
-  };
-
-  const goToNextYear = () => {
-    if (!canGoNextYear) return;
-    setDisplayYearForYearly(activeYearForYearly + 1);
-  };
-
-  // 表示中の期間
-  const period = useMemo(() => {
-    if (!group) return { startDate: "", endDate: "" };
-    return getSettlementPeriod(group.group.closingDay, activeYear, activeMonth);
-  }, [group, activeYear, activeMonth]);
 
   // 月次データ
   const monthlyCategory = useQuery(
@@ -298,7 +223,7 @@ export default function AnalyticsPage({ params }: PageProps) {
                   {activeYear}年{activeMonth}月分
                 </div>
                 <div className="text-sm text-slate-500">
-                  {formatPeriod(period.startDate, period.endDate)}
+                  {period && formatPeriod(period.startDate, period.endDate)}
                 </div>
               </div>
               <button
@@ -313,7 +238,7 @@ export default function AnalyticsPage({ params }: PageProps) {
           ) : (
             <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
               <button
-                onClick={goToPreviousYear}
+                onClick={goToPreviousYearForYearly}
                 className="p-2 hover:bg-slate-200 rounded-full transition-colors"
                 aria-label="前の年へ"
               >
@@ -326,8 +251,8 @@ export default function AnalyticsPage({ params }: PageProps) {
                 <div className="text-sm text-slate-500">1月〜12月</div>
               </div>
               <button
-                onClick={goToNextYear}
-                disabled={!canGoNextYear}
+                onClick={goToNextYearForYearly}
+                disabled={!canGoNextYearForYearly}
                 className="p-2 hover:bg-slate-200 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="次の年へ"
               >
