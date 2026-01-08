@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -12,13 +11,17 @@ import {
   Users,
   Tag,
   ShoppingCart,
-  Pencil,
-  Check,
-  X,
   Home,
   ChevronRight,
   CreditCard,
 } from "lucide-react";
+import { useInlineEdit } from "@/hooks/useInlineEdit";
+import {
+  InlineEditText,
+  InlineEditDisplay,
+  InlineEditControls,
+  InlineEditButton,
+} from "@/components/ui/InlineEdit";
 
 type Category = {
   _id: Id<"categories">;
@@ -55,48 +58,38 @@ export function GroupSettings({
   categories,
   myRole,
 }: GroupSettingsProps) {
-  const [editingGroupName, setEditingGroupName] = useState(false);
-  const [groupName, setGroupName] = useState(group.name);
-  const [editingClosingDay, setEditingClosingDay] = useState(false);
-  const [closingDay, setClosingDay] = useState(group.closingDay);
-  const [editingDisplayName, setEditingDisplayName] = useState(false);
-  const [displayName, setDisplayName] = useState(
-    members.find((m) => m.isMe)?.displayName ?? "",
-  );
-
   const updateGroupName = useMutation(api.groups.updateName);
   const updateClosingDay = useMutation(api.groups.updateClosingDay);
   const updateDisplayName = useMutation(api.users.updateDisplayName);
 
-  const handleGroupNameSave = async () => {
-    if (groupName.trim() === "") return;
-    try {
-      await updateGroupName({ groupId: group._id, name: groupName.trim() });
-      setEditingGroupName(false);
-    } catch {
-      setGroupName(group.name);
-    }
-  };
+  const myMember = members.find((m) => m.isMe);
 
-  const handleClosingDaySave = async () => {
-    if (closingDay < 1 || closingDay > 28) return;
-    try {
+  // グループ名の編集
+  const groupNameEdit = useInlineEdit({
+    initialValue: group.name,
+    onSave: async (name) => {
+      await updateGroupName({ groupId: group._id, name: name.trim() });
+    },
+    validate: (name) => name.trim() !== "",
+  });
+
+  // 締め日の編集
+  const closingDayEdit = useInlineEdit({
+    initialValue: group.closingDay,
+    onSave: async (closingDay) => {
       await updateClosingDay({ groupId: group._id, closingDay });
-      setEditingClosingDay(false);
-    } catch {
-      setClosingDay(group.closingDay);
-    }
-  };
+    },
+    validate: (day) => day >= 1 && day <= 28,
+  });
 
-  const handleDisplayNameSave = async () => {
-    if (displayName.trim() === "") return;
-    try {
+  // 表示名の編集
+  const displayNameEdit = useInlineEdit({
+    initialValue: myMember?.displayName ?? "",
+    onSave: async (displayName) => {
       await updateDisplayName({ displayName: displayName.trim() });
-      setEditingDisplayName(false);
-    } catch {
-      setDisplayName(members.find((m) => m.isMe)?.displayName ?? "");
-    }
-  };
+    },
+    validate: (name) => name.trim() !== "",
+  });
 
   return (
     <div className="space-y-6">
@@ -108,44 +101,24 @@ export function GroupSettings({
           </div>
           <div className="flex-1">
             <p className="text-sm text-slate-500">グループ名</p>
-            {editingGroupName ? (
-              <div className="flex items-center gap-2 mt-1">
-                <input
-                  type="text"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  className="flex-1 px-2 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {groupNameEdit.isEditing ? (
+              <div className="mt-1">
+                <InlineEditText
+                  value={groupNameEdit.value}
+                  onChange={groupNameEdit.setValue}
                   maxLength={50}
-                  autoFocus
+                  onSave={groupNameEdit.save}
+                  onCancel={groupNameEdit.cancelEditing}
+                  isSaving={groupNameEdit.isSaving}
                 />
-                <button
-                  onClick={handleGroupNameSave}
-                  className="p-1 text-green-600 hover:bg-green-50 rounded"
-                >
-                  <Check className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setGroupName(group.name);
-                    setEditingGroupName(false);
-                  }}
-                  className="p-1 text-slate-500 hover:bg-slate-100 rounded"
-                >
-                  <X className="h-4 w-4" />
-                </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <InlineEditDisplay
+                showEditButton={myRole === "owner"}
+                onEdit={groupNameEdit.startEditing}
+              >
                 <p className="font-medium text-slate-800">{group.name}</p>
-                {myRole === "owner" && (
-                  <button
-                    onClick={() => setEditingGroupName(true)}
-                    className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
+              </InlineEditDisplay>
             )}
           </div>
         </div>
@@ -159,14 +132,17 @@ export function GroupSettings({
           </div>
           <div className="flex-1">
             <p className="text-sm text-slate-500">締め日</p>
-            {editingClosingDay ? (
+            {closingDayEdit.isEditing ? (
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm text-slate-600">毎月</span>
                 <select
-                  value={closingDay}
-                  onChange={(e) => setClosingDay(Number(e.target.value))}
+                  value={closingDayEdit.value}
+                  onChange={(e) =>
+                    closingDayEdit.setValue(Number(e.target.value))
+                  }
                   className="px-2 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
+                  disabled={closingDayEdit.isSaving}
                 >
                   {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
                     <option key={day} value={day}>
@@ -175,36 +151,21 @@ export function GroupSettings({
                   ))}
                 </select>
                 <span className="text-sm text-slate-600">日</span>
-                <button
-                  onClick={handleClosingDaySave}
-                  className="p-1 text-green-600 hover:bg-green-50 rounded"
-                >
-                  <Check className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setClosingDay(group.closingDay);
-                    setEditingClosingDay(false);
-                  }}
-                  className="p-1 text-slate-500 hover:bg-slate-100 rounded"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                <InlineEditControls
+                  onSave={closingDayEdit.save}
+                  onCancel={closingDayEdit.cancelEditing}
+                  isSaving={closingDayEdit.isSaving}
+                />
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <InlineEditDisplay
+                showEditButton={myRole === "owner"}
+                onEdit={closingDayEdit.startEditing}
+              >
                 <p className="font-medium text-slate-800">
                   毎月 {group.closingDay} 日
                 </p>
-                {myRole === "owner" && (
-                  <button
-                    onClick={() => setEditingClosingDay(true)}
-                    className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
+              </InlineEditDisplay>
             )}
           </div>
         </div>
@@ -235,32 +196,15 @@ export function GroupSettings({
                 {member.displayName.charAt(0)}
               </div>
               <div className="flex-1">
-                {member.isMe && editingDisplayName ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="flex-1 px-2 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      maxLength={20}
-                      autoFocus
-                    />
-                    <button
-                      onClick={handleDisplayNameSave}
-                      className="p-1 text-green-600 hover:bg-green-50 rounded"
-                    >
-                      <Check className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setDisplayName(member.displayName);
-                        setEditingDisplayName(false);
-                      }}
-                      className="p-1 text-slate-500 hover:bg-slate-100 rounded"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
+                {member.isMe && displayNameEdit.isEditing ? (
+                  <InlineEditText
+                    value={displayNameEdit.value}
+                    onChange={displayNameEdit.setValue}
+                    maxLength={20}
+                    onSave={displayNameEdit.save}
+                    onCancel={displayNameEdit.cancelEditing}
+                    isSaving={displayNameEdit.isSaving}
+                  />
                 ) : (
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-slate-800">
@@ -272,12 +216,9 @@ export function GroupSettings({
                       )}
                     </p>
                     {member.isMe && (
-                      <button
-                        onClick={() => setEditingDisplayName(true)}
-                        className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
+                      <InlineEditButton
+                        onClick={displayNameEdit.startEditing}
+                      />
                     )}
                   </div>
                 )}
