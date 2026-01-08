@@ -2,6 +2,7 @@
 
 import type { Id } from "@/convex/_generated/dataModel";
 import { ExpenseCard } from "./ExpenseCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Expense = {
   _id: Id<"expenses">;
@@ -59,11 +60,11 @@ function groupByYearMonth(expenses: Expense[]): Map<string, Expense[]> {
 export function ExpenseList({ expenses, onEdit, onDelete }: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-500">
-        <div className="text-4xl mb-2">📝</div>
-        <p>まだ支出がありません</p>
-        <p className="text-sm mt-1">下の+ボタンから記録を始めましょう</p>
-      </div>
+      <EmptyState
+        emoji="📝"
+        title="まだ支出がありません"
+        description="下の+ボタンから記録を始めましょう"
+      />
     );
   }
 

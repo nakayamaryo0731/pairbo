@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ExpenseCard } from "./ExpenseCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type ExpenseForDelete = {
   _id: Id<"expenses">;
@@ -37,11 +38,11 @@ export function PeriodExpenseList({
 
   if (data.expenses.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-500">
-        <div className="text-4xl mb-2">📝</div>
-        <p>この期間の支出はありません</p>
-        <p className="text-sm mt-1">下の+ボタンから記録を始めましょう</p>
-      </div>
+      <EmptyState
+        emoji="📝"
+        title="この期間の支出はありません"
+        description="下の+ボタンから記録を始めましょう"
+      />
     );
   }
 

@@ -12,6 +12,7 @@ import { EditGroupDialog } from "./EditGroupDialog";
 import { DeleteGroupDialog } from "./DeleteGroupDialog";
 import { Button } from "@/components/ui/button";
 import { GroupListSkeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Group = {
   _id: Id<"groups">;
@@ -61,18 +62,17 @@ export function GroupList() {
   // グループがない場合
   if (groups.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="text-4xl mb-4">🏠</div>
-        <h3 className="text-lg font-medium text-slate-800 mb-2">
-          グループがありません
-        </h3>
-        <p className="text-slate-500 mb-6">
-          グループを作成して、家計簿を共有しましょう
-        </p>
-        <CreateGroupDialog>
-          <Button>グループを作成</Button>
-        </CreateGroupDialog>
-      </div>
+      <EmptyState
+        emoji="🏠"
+        title="グループがありません"
+        description="グループを作成して、家計簿を共有しましょう"
+        variant="large"
+        action={
+          <CreateGroupDialog>
+            <Button>グループを作成</Button>
+          </CreateGroupDialog>
+        }
+      />
     );
   }
 

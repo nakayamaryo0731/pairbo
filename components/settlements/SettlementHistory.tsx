@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { SettlementCard } from "./SettlementCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type SettlementHistoryProps = {
   groupId: Id<"groups">;
@@ -18,11 +19,7 @@ export function SettlementHistory({ groupId }: SettlementHistoryProps) {
   }
 
   if (settlements.length === 0) {
-    return (
-      <div className="text-center text-sm text-slate-500 py-4">
-        まだ精算履歴がありません
-      </div>
-    );
+    return <EmptyState title="まだ精算履歴がありません" variant="compact" />;
   }
 
   return (
