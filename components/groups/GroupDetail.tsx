@@ -109,9 +109,9 @@ export function GroupDetail({ group }: GroupDetailProps) {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       {/* 固定ヘッダー（期間ナビ + サマリー） */}
-      <div className="shrink-0 bg-white border-b border-slate-200">
+      <div className="sticky top-14 z-10 bg-white border-b border-slate-200">
         <div className="px-4 py-4">
           <PeriodNavigator
             year={displayYear}
@@ -136,8 +136,8 @@ export function GroupDetail({ group }: GroupDetailProps) {
         )}
       </div>
 
-      {/* スクロール可能なコンテンツ領域 */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 pb-40">
+      {/* コンテンツ領域 */}
+      <div className="px-4 py-6 pb-40">
         {/* タブコンテンツ */}
         {activeTab === "expenses" && (
           <div>
