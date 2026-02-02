@@ -26,6 +26,7 @@ import {
   getSettlementYearMonthForDate,
 } from "./domain/settlement";
 import { TAG_LIMITS } from "./domain/tag";
+import type { Id } from "./_generated/dataModel";
 
 const splitDetailsValidator = v.union(
   v.object({
@@ -420,6 +421,301 @@ export const listByPeriod = authQuery({
       expenses: enrichedExpenses,
       totalCount: expenses.length,
       totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0),
+    };
+  },
+});
+
+/**
+ * カテゴリ別・期間内の支出一覧取得
+ */
+export const listByCategory = authQuery({
+  args: {
+    groupId: v.id("groups"),
+    categoryId: v.id("categories"),
+    year: v.number(),
+    month: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
+
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
+
+    const category = await ctx.db.get(args.categoryId);
+    if (!category || category.groupId !== args.groupId) {
+      throw new ConvexError("カテゴリが見つかりません");
+    }
+
+    // 全支出を取得
+    const allExpenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
+      .collect();
+
+    // 期間でフィルタ
+    let filteredExpenses;
+    let periodLabel: string;
+
+    if (args.month !== undefined) {
+      // 月次: 精算期間ベース
+      const period = getSettlementPeriod(
+        group.closingDay,
+        args.year,
+        args.month,
+      );
+      filteredExpenses = allExpenses.filter(
+        (e) => e.date >= period.startDate && e.date <= period.endDate,
+      );
+      periodLabel = `${args.year}年${args.month}月`;
+    } else {
+      // 年次: 1/1〜12/31
+      const startDate = `${args.year}-01-01`;
+      const endDate = `${args.year}-12-31`;
+      filteredExpenses = allExpenses.filter(
+        (e) => e.date >= startDate && e.date <= endDate,
+      );
+      periodLabel = `${args.year}年`;
+    }
+
+    // カテゴリでフィルタ
+    const categoryExpenses = filteredExpenses
+      .filter((e) => e.categoryId === args.categoryId)
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    const enrichedExpenses = await enrichExpenseList(ctx, categoryExpenses);
+
+    return {
+      category: {
+        _id: category._id,
+        name: category.name,
+        icon: category.icon,
+      },
+      periodLabel,
+      expenses: enrichedExpenses,
+      totalCount: categoryExpenses.length,
+      totalAmount: categoryExpenses.reduce((sum, e) => sum + e.amount, 0),
+    };
+  },
+});
+
+/**
+ * タグ別・期間内の支出一覧取得
+ */
+export const listByTag = authQuery({
+  args: {
+    groupId: v.id("groups"),
+    tagId: v.union(v.id("tags"), v.literal("untagged")),
+    year: v.number(),
+    month: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
+
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
+
+    // 全支出を取得
+    const allExpenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
+      .collect();
+
+    // 期間でフィルタ
+    let filteredExpenses;
+    let periodLabel: string;
+
+    if (args.month !== undefined) {
+      // 月次: 精算期間ベース
+      const period = getSettlementPeriod(
+        group.closingDay,
+        args.year,
+        args.month,
+      );
+      filteredExpenses = allExpenses.filter(
+        (e) => e.date >= period.startDate && e.date <= period.endDate,
+      );
+      periodLabel = `${args.year}年${args.month}月`;
+    } else {
+      // 年次: 1/1〜12/31
+      const startDate = `${args.year}-01-01`;
+      const endDate = `${args.year}-12-31`;
+      filteredExpenses = allExpenses.filter(
+        (e) => e.date >= startDate && e.date <= endDate,
+      );
+      periodLabel = `${args.year}年`;
+    }
+
+    let tagExpenses;
+    let tagInfo: { _id: string; name: string; color: string } | null = null;
+
+    if (args.tagId === "untagged") {
+      // タグなし支出
+      const expenseIds = filteredExpenses.map((e) => e._id);
+      const allExpenseTags = await ctx.db.query("expenseTags").collect();
+      const taggedExpenseIds = new Set(
+        allExpenseTags
+          .filter((et) => expenseIds.includes(et.expenseId))
+          .map((et) => et.expenseId),
+      );
+      tagExpenses = filteredExpenses.filter(
+        (e) => !taggedExpenseIds.has(e._id),
+      );
+    } else {
+      // 特定タグの支出
+      const tagIdForQuery = args.tagId as Id<"tags">;
+      const tag = await ctx.db.get(tagIdForQuery);
+      if (!tag || tag.groupId !== args.groupId) {
+        throw new ConvexError("タグが見つかりません");
+      }
+      tagInfo = { _id: tag._id, name: tag.name, color: tag.color };
+
+      const expenseTags = await ctx.db
+        .query("expenseTags")
+        .withIndex("by_tag", (q) => q.eq("tagId", tagIdForQuery))
+        .collect();
+
+      const taggedExpenseIds = new Set(expenseTags.map((et) => et.expenseId));
+      tagExpenses = filteredExpenses.filter((e) => taggedExpenseIds.has(e._id));
+    }
+
+    // 日付降順でソート
+    tagExpenses = tagExpenses.sort((a, b) => b.date.localeCompare(a.date));
+
+    const enrichedExpenses = await enrichExpenseList(ctx, tagExpenses);
+
+    return {
+      tag: tagInfo,
+      isUntagged: args.tagId === "untagged",
+      periodLabel,
+      expenses: enrichedExpenses,
+      totalCount: tagExpenses.length,
+      totalAmount: tagExpenses.reduce((sum, e) => sum + e.amount, 0),
+    };
+  },
+});
+
+/**
+ * 全期間カテゴリ別支出一覧取得
+ */
+export const listByCategoryAllTime = authQuery({
+  args: {
+    groupId: v.id("groups"),
+    categoryId: v.id("categories"),
+  },
+  handler: async (ctx, args) => {
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
+
+    const category = await ctx.db.get(args.categoryId);
+    if (!category || category.groupId !== args.groupId) {
+      throw new ConvexError("カテゴリが見つかりません");
+    }
+
+    // 全支出を取得（カテゴリでフィルタ）
+    const allExpenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
+      .collect();
+
+    const categoryExpenses = allExpenses
+      .filter((e) => e.categoryId === args.categoryId)
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    const enrichedExpenses = await enrichExpenseList(ctx, categoryExpenses);
+
+    // 期間ラベル
+    const dates = categoryExpenses.map((e) => e.date).sort();
+    const periodLabel =
+      dates.length > 0 ? `${dates[0]} 〜 ${dates[dates.length - 1]}` : null;
+
+    return {
+      category: {
+        _id: category._id,
+        name: category.name,
+        icon: category.icon,
+      },
+      periodLabel,
+      expenses: enrichedExpenses,
+      totalCount: categoryExpenses.length,
+      totalAmount: categoryExpenses.reduce((sum, e) => sum + e.amount, 0),
+    };
+  },
+});
+
+/**
+ * 全期間タグ別支出一覧取得
+ */
+export const listByTagAllTime = authQuery({
+  args: {
+    groupId: v.id("groups"),
+    tagId: v.union(v.id("tags"), v.literal("untagged")),
+  },
+  handler: async (ctx, args) => {
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
+
+    // 全支出を取得
+    const allExpenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
+      .collect();
+
+    let tagExpenses;
+    let tagInfo: { _id: string; name: string; color: string } | null = null;
+
+    if (args.tagId === "untagged") {
+      // タグなし支出
+      const expenseIds = allExpenses.map((e) => e._id);
+      const allExpenseTags = await ctx.db.query("expenseTags").collect();
+      const taggedExpenseIds = new Set(
+        allExpenseTags
+          .filter((et) => expenseIds.includes(et.expenseId))
+          .map((et) => et.expenseId),
+      );
+      tagExpenses = allExpenses.filter((e) => !taggedExpenseIds.has(e._id));
+    } else {
+      // 特定タグの支出
+      const tagIdForQuery = args.tagId as Id<"tags">;
+      const tag = await ctx.db.get(tagIdForQuery);
+      if (!tag || tag.groupId !== args.groupId) {
+        throw new ConvexError("タグが見つかりません");
+      }
+      tagInfo = { _id: tag._id, name: tag.name, color: tag.color };
+
+      const expenseTags = await ctx.db
+        .query("expenseTags")
+        .withIndex("by_tag", (q) => q.eq("tagId", tagIdForQuery))
+        .collect();
+
+      const taggedExpenseIds = new Set(expenseTags.map((et) => et.expenseId));
+      tagExpenses = allExpenses.filter((e) => taggedExpenseIds.has(e._id));
+    }
+
+    // 日付降順でソート
+    tagExpenses = tagExpenses.sort((a, b) => b.date.localeCompare(a.date));
+
+    const enrichedExpenses = await enrichExpenseList(ctx, tagExpenses);
+
+    // 期間ラベル
+    const dates = tagExpenses.map((e) => e.date).sort();
+    const periodLabel =
+      dates.length > 0 ? `${dates[0]} 〜 ${dates[dates.length - 1]}` : null;
+
+    return {
+      tag: tagInfo,
+      isUntagged: args.tagId === "untagged",
+      periodLabel,
+      expenses: enrichedExpenses,
+      totalCount: tagExpenses.length,
+      totalAmount: tagExpenses.reduce((sum, e) => sum + e.amount, 0),
     };
   },
 });

@@ -914,4 +914,113 @@ describe("expenses", () => {
       ).rejects.toThrow("このグループにアクセスする権限がありません");
     });
   });
+
+  describe("listByCategory", () => {
+    test("カテゴリ別に支出を取得できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const category1 = detail.categories[0];
+      const category2 = detail.categories[1];
+      const payerId = detail.members[0].userId;
+
+      // category1に2件、category2に1件登録
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 1000,
+        categoryId: category1._id,
+        paidBy: payerId,
+        date: "2025-01-05",
+      });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 2000,
+        categoryId: category1._id,
+        paidBy: payerId,
+        date: "2025-01-10",
+      });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 500,
+        categoryId: category2._id,
+        paidBy: payerId,
+        date: "2025-01-08",
+      });
+
+      // category1の支出を取得
+      const result = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.listByCategory, {
+          groupId,
+          categoryId: category1._id,
+          year: 2025,
+          month: 1,
+        });
+
+      expect(result.totalCount).toBe(2);
+      expect(result.totalAmount).toBe(3000);
+      expect(result.category.name).toBe(category1.name);
+      expect(result.expenses.length).toBe(2);
+      // 日付降順でソートされている
+      expect(result.expenses[0].date).toBe("2025-01-10");
+    });
+
+    test("年次でカテゴリ別支出を取得できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      // 2025年に複数月に跨る支出を登録
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 1000,
+        categoryId,
+        paidBy: payerId,
+        date: "2025-03-15",
+      });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 2000,
+        categoryId,
+        paidBy: payerId,
+        date: "2025-07-20",
+      });
+
+      // 年次で取得（monthを省略）
+      const result = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.listByCategory, {
+          groupId,
+          categoryId,
+          year: 2025,
+        });
+
+      expect(result.totalCount).toBe(2);
+      expect(result.totalAmount).toBe(3000);
+      expect(result.periodLabel).toBe("2025年");
+    });
+  });
 });

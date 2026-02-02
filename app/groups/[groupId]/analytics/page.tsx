@@ -7,6 +7,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { usePeriodNavigation } from "@/hooks";
 import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CategoryPieChart } from "@/components/analytics/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/analytics/MonthlyTrendChart";
 import { TagBreakdownChart } from "@/components/analytics/TagBreakdownChart";
@@ -18,12 +19,13 @@ type PageProps = {
   params: Promise<{ groupId: string }>;
 };
 
-type ViewType = "month" | "year";
+type ViewType = "month" | "year" | "all";
 
 export default function AnalyticsPage({ params }: PageProps) {
   const { groupId } = use(params);
   const { isAuthenticated } = useConvexAuth();
   const [viewType, setViewType] = useState<ViewType>("month");
+  const router = useRouter();
 
   const group = useQuery(api.groups.getDetail, {
     groupId: groupId as Id<"groups">,
@@ -146,6 +148,26 @@ export default function AnalyticsPage({ params }: PageProps) {
       : "skip",
   );
 
+  // 全期間カテゴリ別データ（Premium）
+  const allTimeCategory = useQuery(
+    api.analytics.getAllTimeCategoryBreakdown,
+    group && isPremium
+      ? {
+          groupId: groupId as Id<"groups">,
+        }
+      : "skip",
+  );
+
+  // 全期間タグ別データ（Premium）
+  const allTimeTagBreakdown = useQuery(
+    api.analytics.getAllTimeTagBreakdown,
+    group && isPremium
+      ? {
+          groupId: groupId as Id<"groups">,
+        }
+      : "skip",
+  );
+
   if (group === undefined) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -160,9 +182,46 @@ export default function AnalyticsPage({ params }: PageProps) {
     );
   }
 
-  const categoryData = viewType === "month" ? monthlyCategory : yearlyCategory;
+  const categoryData =
+    viewType === "month"
+      ? monthlyCategory
+      : viewType === "year"
+        ? yearlyCategory
+        : allTimeCategory;
   const tagData =
-    viewType === "month" ? monthlyTagBreakdown : yearlyTagBreakdown;
+    viewType === "month"
+      ? monthlyTagBreakdown
+      : viewType === "year"
+        ? yearlyTagBreakdown
+        : allTimeTagBreakdown;
+
+  const handleCategoryClick = (categoryId: Id<"categories">) => {
+    const params = new URLSearchParams();
+    params.set("category", categoryId);
+    if (viewType === "month") {
+      params.set("year", activeYear.toString());
+      params.set("month", activeMonth.toString());
+    } else if (viewType === "year") {
+      params.set("year", activeYearForYearly.toString());
+    } else {
+      params.set("all", "true");
+    }
+    router.push(`/groups/${groupId}/expenses?${params.toString()}`);
+  };
+
+  const handleTagClick = (tagId: Id<"tags"> | "untagged") => {
+    const params = new URLSearchParams();
+    params.set("tag", tagId);
+    if (viewType === "month") {
+      params.set("year", activeYear.toString());
+      params.set("month", activeMonth.toString());
+    } else if (viewType === "year") {
+      params.set("year", activeYearForYearly.toString());
+    } else {
+      params.set("all", "true");
+    }
+    router.push(`/groups/${groupId}/expenses?${params.toString()}`);
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -170,7 +229,7 @@ export default function AnalyticsPage({ params }: PageProps) {
 
       <main className="flex-1 p-4">
         <div className="max-w-lg mx-auto space-y-6">
-          {/* 月次/年次 切り替えタブ */}
+          {/* 月次/年次/全期間 切り替えタブ */}
           <div className="flex bg-slate-100 rounded-lg p-1">
             <button
               onClick={() => setViewType("month")}
@@ -196,6 +255,20 @@ export default function AnalyticsPage({ params }: PageProps) {
               年次
               {!isPremium && <Lock className="h-3 w-3" />}
             </button>
+            <button
+              onClick={() => isPremium && setViewType("all")}
+              disabled={!isPremium}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1 ${
+                viewType === "all"
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : isPremium
+                    ? "text-slate-500 hover:text-slate-700"
+                    : "text-slate-400 cursor-not-allowed"
+              }`}
+            >
+              全期間
+              {!isPremium && <Lock className="h-3 w-3" />}
+            </button>
           </div>
 
           {/* Premiumへの誘導 */}
@@ -204,12 +277,12 @@ export default function AnalyticsPage({ params }: PageProps) {
               <Link href="/pricing" className="text-blue-600 hover:underline">
                 Premiumプラン
               </Link>
-              で年次分析・タグ別分析が利用可能
+              で年次分析・全期間分析・タグ別分析が利用可能
             </p>
           )}
 
           {/* 期間ナビゲーター */}
-          {viewType === "month" ? (
+          {viewType === "month" && (
             <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
               <button
                 onClick={goToPreviousMonth}
@@ -235,7 +308,8 @@ export default function AnalyticsPage({ params }: PageProps) {
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
-          ) : (
+          )}
+          {viewType === "year" && (
             <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
               <button
                 onClick={goToPreviousYearForYearly}
@@ -260,6 +334,16 @@ export default function AnalyticsPage({ params }: PageProps) {
               </button>
             </div>
           )}
+          {viewType === "all" && (
+            <div className="flex items-center justify-center bg-slate-50 rounded-lg p-3">
+              <div className="text-center">
+                <div className="font-medium text-slate-800">全期間</div>
+                <div className="text-sm text-slate-500">
+                  {allTimeCategory?.periodLabel ?? "データなし"}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* カテゴリ別支出 */}
           <section>
@@ -272,6 +356,7 @@ export default function AnalyticsPage({ params }: PageProps) {
               <CategoryPieChart
                 data={categoryData.breakdown}
                 totalAmount={categoryData.totalAmount}
+                onCategoryClick={handleCategoryClick}
               />
             )}
           </section>
@@ -289,6 +374,7 @@ export default function AnalyticsPage({ params }: PageProps) {
                   data={tagData.breakdown}
                   totalAmount={tagData.totalAmount}
                   untaggedAmount={tagData.untaggedAmount}
+                  onTagClick={handleTagClick}
                 />
               )}
             </section>

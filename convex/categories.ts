@@ -216,3 +216,31 @@ export const canDelete = authQuery({
     return { canDelete: true, reason: null, usageCount: 0 };
   },
 });
+
+/**
+ * カテゴリ並び替え
+ */
+export const reorder = authMutation({
+  args: {
+    groupId: v.id("groups"),
+    categoryIds: v.array(v.id("categories")),
+  },
+  handler: async (ctx, args) => {
+    // 認可チェック
+    await requireGroupMember(ctx, args.groupId);
+
+    // 各カテゴリのsortOrderを更新
+    for (let i = 0; i < args.categoryIds.length; i++) {
+      const category = await ctx.db.get(args.categoryIds[i]);
+      if (!category || category.groupId !== args.groupId) {
+        throw new ConvexError("無効なカテゴリが指定されました");
+      }
+      await ctx.db.patch(args.categoryIds[i], { sortOrder: i });
+    }
+
+    ctx.logger.audit("CATEGORY", "reordered", {
+      groupId: args.groupId,
+      categoryCount: args.categoryIds.length,
+    });
+  },
+});

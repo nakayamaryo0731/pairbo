@@ -477,4 +477,89 @@ describe("categories", () => {
       expect(result.usageCount).toBe(3);
     });
   });
+
+  describe("reorder", () => {
+    test("カテゴリの順序を変更できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      // カテゴリを取得（プリセットがある）
+      const detail = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const originalOrder = detail.categories.map((c) => c._id);
+      expect(originalOrder.length).toBeGreaterThan(0);
+
+      // 順序を逆にする
+      const reversedOrder = [...originalOrder].reverse();
+
+      await t.withIdentity(testIdentity).mutation(api.categories.reorder, {
+        groupId,
+        categoryIds: reversedOrder,
+      });
+
+      // 並び替え後のカテゴリを取得
+      const updatedDetail = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const newOrder = updatedDetail.categories.map((c) => c._id);
+      expect(newOrder).toEqual(reversedOrder);
+    });
+
+    test("メンバーでないユーザーは並び替えできない", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      await expect(
+        t.withIdentity(testIdentity2).mutation(api.categories.reorder, {
+          groupId,
+          categoryIds: detail.categories.map((c) => c._id),
+        }),
+      ).rejects.toThrow("このグループにアクセスする権限がありません");
+    });
+
+    test("別グループのカテゴリIDを指定するとエラー", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId1 = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "グループ1",
+        });
+
+      const groupId2 = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "グループ2",
+        });
+
+      const detail2 = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.getDetail, { groupId: groupId2 });
+
+      // グループ2のカテゴリIDをグループ1で使おうとする
+      await expect(
+        t.withIdentity(testIdentity).mutation(api.categories.reorder, {
+          groupId: groupId1,
+          categoryIds: detail2.categories.map((c) => c._id),
+        }),
+      ).rejects.toThrow("無効なカテゴリが指定されました");
+    });
+  });
 });

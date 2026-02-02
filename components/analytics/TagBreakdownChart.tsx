@@ -17,12 +17,14 @@ type TagBreakdownChartProps = {
   data: TagBreakdownData[];
   totalAmount: number;
   untaggedAmount: number;
+  onTagClick?: (tagId: Id<"tags"> | "untagged") => void;
 };
 
 export function TagBreakdownChart({
   data,
   totalAmount,
   untaggedAmount,
+  onTagClick,
 }: TagBreakdownChartProps) {
   if (totalAmount === 0) {
     return (
@@ -33,10 +35,16 @@ export function TagBreakdownChart({
   }
 
   // チャートデータを構築
-  const chartData = data.map((item) => ({
+  const chartData: {
+    name: string;
+    amount: number;
+    fill: string;
+    tagId: Id<"tags"> | "untagged";
+  }[] = data.map((item) => ({
     name: `#${item.tagName}`,
     amount: item.amount,
     fill: getTagColorHex(item.tagColor),
+    tagId: item.tagId,
   }));
 
   // タグなし支出を追加
@@ -45,6 +53,7 @@ export function TagBreakdownChart({
       name: "タグなし",
       amount: untaggedAmount,
       fill: "#94a3b8", // slate-400
+      tagId: "untagged",
     });
   }
 
@@ -66,7 +75,12 @@ export function TagBreakdownChart({
                 paddingAngle={chartData.length > 1 ? 2 : 0}
               >
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.fill}
+                    onClick={() => onTagClick?.(entry.tagId)}
+                    style={{ cursor: onTagClick ? "pointer" : "default" }}
+                  />
                 ))}
               </Pie>
               <Tooltip
@@ -95,7 +109,8 @@ export function TagBreakdownChart({
           return (
             <div
               key={item.tagId}
-              className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0"
+              className={`flex items-center justify-between py-2 border-b border-slate-100 last:border-0 ${onTagClick ? "cursor-pointer hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors" : ""}`}
+              onClick={() => onTagClick?.(item.tagId)}
             >
               <div className="flex items-center gap-2">
                 <span
@@ -117,7 +132,10 @@ export function TagBreakdownChart({
 
         {/* タグなし */}
         {untaggedAmount > 0 && (
-          <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+          <div
+            className={`flex items-center justify-between py-2 border-b border-slate-100 last:border-0 ${onTagClick ? "cursor-pointer hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors" : ""}`}
+            onClick={() => onTagClick?.("untagged")}
+          >
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm bg-slate-100 text-slate-600">
                 タグなし

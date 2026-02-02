@@ -231,4 +231,105 @@ describe("analytics", () => {
       ).rejects.toThrow("このグループにアクセスする権限がありません");
     });
   });
+
+  describe("getAllTimeCategoryBreakdown", () => {
+    test("全期間のカテゴリ別支出を集計できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const category1 = detail.categories[0];
+      const category2 = detail.categories[1];
+      const payerId = detail.members[0].userId;
+
+      // 複数年に跨る支出を登録
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 1000,
+        categoryId: category1._id,
+        paidBy: payerId,
+        date: "2023-06-15",
+      });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 2000,
+        categoryId: category1._id,
+        paidBy: payerId,
+        date: "2024-03-10",
+      });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+        groupId,
+        amount: 1500,
+        categoryId: category2._id,
+        paidBy: payerId,
+        date: "2025-01-05",
+      });
+
+      const result = await t
+        .withIdentity(userAIdentity)
+        .query(api.analytics.getAllTimeCategoryBreakdown, {
+          groupId,
+        });
+
+      expect(result.totalAmount).toBe(4500);
+      expect(result.breakdown).toHaveLength(2);
+      expect(result.periodLabel).toBe("2023-06-15 〜 2025-01-05");
+
+      // 金額降順でソートされている
+      expect(result.breakdown[0].amount).toBe(3000);
+      expect(result.breakdown[1].amount).toBe(1500);
+    });
+
+    test("支出がない場合はnullのperiodLabelを返す", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const result = await t
+        .withIdentity(userAIdentity)
+        .query(api.analytics.getAllTimeCategoryBreakdown, {
+          groupId,
+        });
+
+      expect(result.totalAmount).toBe(0);
+      expect(result.breakdown).toHaveLength(0);
+      expect(result.periodLabel).toBeNull();
+    });
+
+    test("非メンバーはアクセスできない", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      await t.withIdentity(userBIdentity).mutation(api.groups.create, {
+        name: "ユーザーBのグループ",
+      });
+
+      await expect(
+        t
+          .withIdentity(userBIdentity)
+          .query(api.analytics.getAllTimeCategoryBreakdown, {
+            groupId,
+          }),
+      ).rejects.toThrow("このグループにアクセスする権限がありません");
+    });
+  });
 });
