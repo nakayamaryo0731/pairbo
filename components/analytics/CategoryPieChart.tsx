@@ -25,9 +25,14 @@ type CategoryBreakdown = {
 type CategoryPieChartProps = {
   data: CategoryBreakdown[];
   totalAmount: number;
+  onCategoryClick?: (categoryId: Id<"categories">) => void;
 };
 
-export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
+export function CategoryPieChart({
+  data,
+  totalAmount,
+  onCategoryClick,
+}: CategoryPieChartProps) {
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -57,7 +62,12 @@ export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
               paddingAngle={2}
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.fill}
+                  onClick={() => onCategoryClick?.(entry.categoryId)}
+                  style={{ cursor: onCategoryClick ? "pointer" : "default" }}
+                />
               ))}
             </Pie>
             <Tooltip
@@ -73,7 +83,11 @@ export function CategoryPieChart({ data, totalAmount }: CategoryPieChartProps) {
 
       <div className="flex flex-col gap-2">
         {chartData.map((item) => (
-          <div key={item.categoryId} className="flex items-center gap-2">
+          <div
+            key={item.categoryId}
+            className={`flex items-center gap-2 ${onCategoryClick ? "cursor-pointer hover:bg-slate-50 rounded-lg p-1 -m-1 transition-colors" : ""}`}
+            onClick={() => onCategoryClick?.(item.categoryId)}
+          >
             <div
               className="w-3 h-3 rounded-full shrink-0"
               style={{ backgroundColor: item.fill }}

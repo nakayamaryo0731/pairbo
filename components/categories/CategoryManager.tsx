@@ -5,6 +5,24 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -34,10 +52,70 @@ type EditingCategory = {
   icon: string;
 };
 
+function SortableCategoryItem({
+  category,
+  onEdit,
+  onDelete,
+}: {
+  category: Category;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category._id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 bg-white"
+    >
+      <button
+        type="button"
+        className="touch-none cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="text-lg">{category.icon}</span>
+      <span className="flex-1">{category.name}</span>
+      {!category.isPreset && (
+        <>
+          <Button variant="ghost" size="sm" onClick={onEdit}>
+            編集
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={onDelete}
+          >
+            削除
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function CategoryManager({ groupId, categories }: CategoryManagerProps) {
   const createCategory = useMutation(api.categories.create);
   const updateCategory = useMutation(api.categories.update);
   const removeCategory = useMutation(api.categories.remove);
+  const reorderCategories = useMutation(api.categories.reorder);
 
   const [mode, setMode] = useState<"list" | "create" | "edit">("list");
   const [editingCategory, setEditingCategory] =
@@ -53,8 +131,26 @@ export function CategoryManager({ groupId, categories }: CategoryManagerProps) {
       },
     });
 
-  const presetCategories = categories.filter((c) => c.isPreset);
-  const customCategories = categories.filter((c) => !c.isPreset);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = categories.findIndex((c) => c._id === active.id);
+      const newIndex = categories.findIndex((c) => c._id === over.id);
+
+      const newOrder = arrayMove(categories, oldIndex, newIndex);
+      const categoryIds = newOrder.map((c) => c._id);
+
+      await reorderCategories({ groupId, categoryIds });
+    }
+  };
 
   const handleCreate = async (name: string, icon: string) => {
     await execute(() => createCategory({ groupId, name, icon }), {
@@ -111,59 +207,34 @@ export function CategoryManager({ groupId, categories }: CategoryManagerProps) {
                 </p>
               )}
 
-              <div>
-                <h3 className="text-sm font-medium text-slate-500 mb-2">
-                  プリセット
-                </h3>
-                <div className="space-y-1">
-                  {presetCategories.map((category) => (
-                    <div
-                      key={category._id}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-slate-50"
-                    >
-                      <span className="text-lg">{category.icon}</span>
-                      <span className="flex-1">{category.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <p className="text-xs text-slate-500">
+                ドラッグして並び替えできます
+              </p>
 
-              {customCategories.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-slate-500 mb-2">
-                    カスタム
-                  </h3>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={categories.map((c) => c._id)}
+                  strategy={verticalListSortingStrategy}
+                >
                   <div className="space-y-1">
-                    {customCategories.map((category) => (
-                      <div
+                    {categories.map((category) => (
+                      <SortableCategoryItem
                         key={category._id}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50"
-                      >
-                        <span className="text-lg">{category.icon}</span>
-                        <span className="flex-1">{category.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingCategory(category);
-                            setMode("edit");
-                          }}
-                        >
-                          編集
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => setDeletingCategory(category)}
-                        >
-                          削除
-                        </Button>
-                      </div>
+                        category={category}
+                        onEdit={() => {
+                          setEditingCategory(category);
+                          setMode("edit");
+                        }}
+                        onDelete={() => setDeletingCategory(category)}
+                      />
                     ))}
                   </div>
-                </div>
-              )}
+                </SortableContext>
+              </DndContext>
 
               <Button
                 className="w-full"
