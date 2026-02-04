@@ -143,4 +143,108 @@ describe("users", () => {
       await expect(t.mutation(api.users.ensureUser, {})).rejects.toThrow();
     });
   });
+
+  describe("getMe", () => {
+    test("現在のユーザー情報が返される", async () => {
+      const t = convexTest(schema, modules);
+
+      await t.withIdentity(testIdentity).mutation(api.users.ensureUser, {});
+
+      const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
+
+      expect(me).toBeDefined();
+      expect(me.displayName).toBe(testIdentity.name);
+      expect(me.defaultGroupId).toBeUndefined();
+    });
+
+    test("認証なしではエラーになる", async () => {
+      const t = convexTest(schema, modules);
+
+      await expect(t.query(api.users.getMe, {})).rejects.toThrow();
+    });
+  });
+
+  describe("setDefaultGroup", () => {
+    test("デフォルトグループを設定できる", async () => {
+      const t = convexTest(schema, modules);
+
+      // ユーザーを作成
+      await t.withIdentity(testIdentity).mutation(api.users.ensureUser, {});
+
+      // グループを作成
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      // デフォルトグループを設定
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.users.setDefaultGroup, { groupId });
+
+      // 確認
+      const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
+      expect(me.defaultGroupId).toBe(groupId);
+    });
+
+    test("デフォルトグループを解除できる", async () => {
+      const t = convexTest(schema, modules);
+
+      await t.withIdentity(testIdentity).mutation(api.users.ensureUser, {});
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      // 設定
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.users.setDefaultGroup, { groupId });
+
+      // 解除
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.users.setDefaultGroup, { groupId: null });
+
+      const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
+      expect(me.defaultGroupId).toBeUndefined();
+    });
+
+    test("メンバーでないグループはデフォルトに設定できない", async () => {
+      const t = convexTest(schema, modules);
+
+      const otherIdentity = {
+        subject: "other_user",
+        name: "他のユーザー",
+      };
+
+      await t.withIdentity(testIdentity).mutation(api.users.ensureUser, {});
+      await t.withIdentity(otherIdentity).mutation(api.users.ensureUser, {});
+
+      // 他のユーザーがグループを作成
+      const groupId = await t
+        .withIdentity(otherIdentity)
+        .mutation(api.groups.create, {
+          name: "他のグループ",
+        });
+
+      // メンバーでないグループをデフォルトに設定しようとするとエラー
+      await expect(
+        t
+          .withIdentity(testIdentity)
+          .mutation(api.users.setDefaultGroup, { groupId }),
+      ).rejects.toThrow();
+    });
+
+    test("認証なしではエラーになる", async () => {
+      const t = convexTest(schema, modules);
+
+      await expect(
+        t.mutation(api.users.setDefaultGroup, { groupId: null }),
+      ).rejects.toThrow();
+    });
+  });
 });

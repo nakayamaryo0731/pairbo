@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { InviteDialog } from "./InviteDialog";
 import { CategoryManager } from "@/components/categories";
+import { Switch } from "@/components/ui/switch";
 import {
   Calendar,
   Users,
@@ -14,6 +15,7 @@ import {
   Home,
   ChevronRight,
   CreditCard,
+  Star,
 } from "lucide-react";
 import { useInlineEdit } from "@/hooks/useInlineEdit";
 import {
@@ -58,9 +60,17 @@ export function GroupSettings({
   categories,
   myRole,
 }: GroupSettingsProps) {
+  const me = useQuery(api.users.getMe);
   const updateGroupName = useMutation(api.groups.updateName);
   const updateClosingDay = useMutation(api.groups.updateClosingDay);
   const updateDisplayName = useMutation(api.users.updateDisplayName);
+  const setDefaultGroup = useMutation(api.users.setDefaultGroup);
+
+  const isDefaultGroup = me?.defaultGroupId === group._id;
+
+  const handleSetDefault = async (checked: boolean) => {
+    await setDefaultGroup({ groupId: checked ? group._id : null });
+  };
 
   const myMember = members.find((m) => m.isMe);
 
@@ -121,6 +131,26 @@ export function GroupSettings({
               </InlineEditDisplay>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* デフォルトグループ */}
+      <section className="bg-white border border-slate-200 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+            <Star className="h-5 w-5 text-slate-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-slate-500">デフォルトグループ</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              ログイン時に自動でこのグループを開きます
+            </p>
+          </div>
+          <Switch
+            checked={isDefaultGroup}
+            onCheckedChange={handleSetDefault}
+            disabled={me === undefined}
+          />
         </div>
       </section>
 

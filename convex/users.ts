@@ -1,5 +1,6 @@
 import { v, ConvexError } from "convex/values";
-import { authMutation } from "./lib/auth";
+import { authMutation, authQuery } from "./lib/auth";
+import { requireGroupMember } from "./lib/authorization";
 
 const MAX_DISPLAY_NAME_LENGTH = 20;
 
@@ -45,6 +46,45 @@ export const updateDisplayName = authMutation({
     ctx.logger.info("USER", "display_name_updated", {
       userId: ctx.user._id,
       newDisplayName: trimmed,
+    });
+  },
+});
+
+/**
+ * 現在のユーザー情報取得
+ */
+export const getMe = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    return {
+      _id: ctx.user._id,
+      displayName: ctx.user.displayName,
+      avatarUrl: ctx.user.avatarUrl,
+      defaultGroupId: ctx.user.defaultGroupId,
+    };
+  },
+});
+
+/**
+ * デフォルトグループ設定
+ */
+export const setDefaultGroup = authMutation({
+  args: {
+    groupId: v.union(v.id("groups"), v.null()),
+  },
+  handler: async (ctx, args) => {
+    if (args.groupId !== null) {
+      await requireGroupMember(ctx, args.groupId);
+    }
+
+    await ctx.db.patch(ctx.user._id, {
+      defaultGroupId: args.groupId ?? undefined,
+      updatedAt: Date.now(),
+    });
+
+    ctx.logger.info("USER", "default_group_updated", {
+      userId: ctx.user._id,
+      defaultGroupId: args.groupId,
     });
   },
 });

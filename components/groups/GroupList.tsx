@@ -24,8 +24,10 @@ type Group = {
 export function GroupList() {
   const router = useRouter();
   const groups = useQuery(api.groups.listMyGroups);
+  const me = useQuery(api.users.getMe);
   const updateName = useMutation(api.groups.updateName);
   const removeGroup = useMutation(api.groups.remove);
+  const setDefaultGroup = useMutation(api.users.setDefaultGroup);
 
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
@@ -54,8 +56,13 @@ export function GroupList() {
     }
   };
 
+  const handleSetDefault = async (groupId: Id<"groups">) => {
+    const isCurrentDefault = me?.defaultGroupId === groupId;
+    await setDefaultGroup({ groupId: isCurrentDefault ? null : groupId });
+  };
+
   // ローディング中
-  if (groups === undefined) {
+  if (groups === undefined || me === undefined) {
     return <GroupListSkeleton />;
   }
 
@@ -86,10 +93,12 @@ export function GroupList() {
             name={group.name}
             memberCount={group.memberCount}
             myRole={group.myRole}
+            isDefault={me.defaultGroupId === group._id}
             onClick={() => router.push(`/groups/${group._id}`)}
             onEdit={() => setEditingGroup(group)}
             onDelete={() => setDeletingGroup(group)}
             onSettings={() => router.push(`/groups/${group._id}/settings`)}
+            onSetDefault={() => handleSetDefault(group._id)}
           />
         ))}
         <CreateGroupDialog>

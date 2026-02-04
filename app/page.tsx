@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { useConvexAuth, useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { GroupList } from "@/components/groups";
 import { GroupListSkeleton } from "@/components/ui/skeleton";
@@ -10,9 +11,13 @@ import { AppHeader } from "@/components/ui/AppHeader";
 import { LandingPage } from "@/components/landing";
 
 export default function Home() {
+  const router = useRouter();
   const { isAuthenticated, isLoading } = useConvexAuth();
   const ensureUser = useMutation(api.users.ensureUser);
   const [isUserReady, setIsUserReady] = useState(false);
+
+  const me = useQuery(api.users.getMe, isUserReady ? {} : "skip");
+  const groups = useQuery(api.groups.listMyGroups, isUserReady ? {} : "skip");
 
   // 認証後、ユーザーを初期化
   useEffect(() => {
@@ -34,6 +39,26 @@ export default function Home() {
       setIsUserReady(false);
     };
   }, [isAuthenticated, ensureUser]);
+
+  // 自動遷移処理
+  useEffect(() => {
+    if (groups === undefined || me === undefined) return;
+    if (groups.length === 0) return;
+
+    // グループが1つの場合は自動遷移
+    if (groups.length === 1) {
+      router.replace(`/groups/${groups[0]._id}`);
+      return;
+    }
+
+    // デフォルトグループが設定されている場合
+    if (me.defaultGroupId) {
+      const defaultGroup = groups.find((g) => g._id === me.defaultGroupId);
+      if (defaultGroup) {
+        router.replace(`/groups/${defaultGroup._id}`);
+      }
+    }
+  }, [groups, me, router]);
 
   if (isLoading) {
     return (
@@ -58,13 +83,38 @@ export default function Home() {
     return <LandingPage />;
   }
 
+  // ローディング中または自動遷移中
+  const isRedirecting =
+    groups !== undefined &&
+    me !== undefined &&
+    (groups.length === 1 ||
+      (me.defaultGroupId && groups.some((g) => g._id === me.defaultGroupId)));
+
+  if (
+    !isUserReady ||
+    groups === undefined ||
+    me === undefined ||
+    isRedirecting
+  ) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <AppHeader rightElement={<UserButton />} />
+        <main className="flex-1 p-4">
+          <div className="max-w-lg mx-auto">
+            <GroupListSkeleton />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader rightElement={<UserButton />} />
 
       <main className="flex-1 p-4">
         <div className="max-w-lg mx-auto">
-          {isUserReady ? <GroupList /> : <GroupListSkeleton />}
+          <GroupList />
         </div>
       </main>
     </div>
