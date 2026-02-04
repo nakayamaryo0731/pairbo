@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
@@ -10,7 +10,7 @@ import { GroupListSkeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { LandingPage } from "@/components/landing";
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const showList = searchParams.get("list") === "true";
@@ -123,5 +123,31 @@ export default function Home() {
         </div>
       </main>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+        <div
+          className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"
+          style={{ animationDelay: "0.1s" }}
+        ></div>
+        <div
+          className="w-2 h-2 bg-slate-600 rounded-full animate-bounce"
+          style={{ animationDelay: "0.2s" }}
+        ></div>
+      </div>
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <HomeContent />
+    </Suspense>
   );
 }
