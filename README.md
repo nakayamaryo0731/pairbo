@@ -1,6 +1,6 @@
-# Oaiko
+# Pairbo
 
-共有家計簿Webアプリ
+2人のための共有家計簿Webアプリ
 
 ## 開発
 
@@ -21,4 +21,4 @@ pnpm dev
 
 ## デプロイ
 
-- **本番**: https://oaiko.vercel.app
+- **本番**: https://pairbo.vercel.app

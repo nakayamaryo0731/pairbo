@@ -17,12 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Oaiko - おあいこ",
+  title: "Pairbo - 2人のための共有家計簿",
   description: "割り勘・傾斜折半ができる共有家計簿",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Oaiko",
+    title: "Pairbo",
   },
   formatDetection: {
     telephone: false,
