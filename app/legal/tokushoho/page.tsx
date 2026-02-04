@@ -28,26 +28,19 @@ export default function TokushohoPage() {
                 <th className="py-4 pr-4 text-left text-sm font-medium text-slate-500 align-top w-1/3">
                   販売事業者
                 </th>
-                <td className="py-4 text-slate-800">
-                  {/* TODO: 実際の事業者名を入力 */}
-                  [事業者名を入力]
-                </td>
+                <td className="py-4 text-slate-800">中山遼</td>
               </tr>
               <tr>
                 <th className="py-4 pr-4 text-left text-sm font-medium text-slate-500 align-top">
                   運営責任者
                 </th>
-                <td className="py-4 text-slate-800">
-                  {/* TODO: 実際の責任者名を入力 */}
-                  [責任者名を入力]
-                </td>
+                <td className="py-4 text-slate-800">中山遼</td>
               </tr>
               <tr>
                 <th className="py-4 pr-4 text-left text-sm font-medium text-slate-500 align-top">
                   所在地
                 </th>
                 <td className="py-4 text-slate-800">
-                  {/* TODO: 実際の住所を入力（請求があれば開示する旨の記載でも可） */}
                   請求があった場合に遅滞なく開示いたします。
                 </td>
               </tr>
@@ -56,7 +49,6 @@ export default function TokushohoPage() {
                   電話番号
                 </th>
                 <td className="py-4 text-slate-800">
-                  {/* TODO: 実際の電話番号を入力（請求があれば開示する旨の記載でも可） */}
                   請求があった場合に遅滞なく開示いたします。
                 </td>
               </tr>
@@ -64,10 +56,7 @@ export default function TokushohoPage() {
                 <th className="py-4 pr-4 text-left text-sm font-medium text-slate-500 align-top">
                   メールアドレス
                 </th>
-                <td className="py-4 text-slate-800">
-                  {/* TODO: 実際のメールアドレスを入力 */}
-                  [メールアドレスを入力]
-                </td>
+                <td className="py-4 text-slate-800">pairbo.app@gmail.com</td>
               </tr>
               <tr>
                 <th className="py-4 pr-4 text-left text-sm font-medium text-slate-500 align-top">
@@ -158,7 +147,7 @@ export default function TokushohoPage() {
           </table>
 
           <div className="pt-8 border-t border-slate-200">
-            <p className="text-sm text-slate-500">最終更新日：2026年1月1日</p>
+            <p className="text-sm text-slate-500">最終更新日：2026年2月5日</p>
           </div>
         </div>
       </div>
