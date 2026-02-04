@@ -16,6 +16,7 @@ export default defineSchema({
     clerkId: v.string(),
     displayName: v.string(),
     avatarUrl: v.optional(v.string()),
+    defaultGroupId: v.optional(v.id("groups")),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_clerk_id", ["clerkId"]),
