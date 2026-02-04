@@ -1,7 +1,7 @@
 # Pairbo - セッション引き継ぎ書
 
-> 最終更新: 2026-02-04
-> ステータス: MVP完了、マネタイズ基盤完了
+> 最終更新: 2026-02-05
+> ステータス: リリース準備完了
 
 ---
 
@@ -32,26 +32,20 @@
 - テスト実装（ユニットテスト 276件）
 - 構造化ロガー
 - バックエンドリファクタリング（認可・クエリ・データヘルパー共通化）
+- マネタイズ基盤（Stripe、料金ページ、広告バナー）
+- ランディングページ・法的ページ
+- グループ自動遷移・デフォルトグループ設定機能
+- 特商法表記の情報入力完了
+- GitHubリポジトリ名変更（oaiko → pairbo）
 
-**直近の実装: マネタイズ機能 & LP・法的ページ**
+**直近の実装**
 
-- Stripeサブスクリプション基盤（PR #58）
-  - subscriptionsテーブル追加
-  - Stripe Checkout Session / Customer Portal
-  - Webhook処理（checkout完了、サブスク更新、解約、決済失敗）
-  - サブスクリプション状態管理
-  - Premium判定ヘルパー関数
-- 料金ページ（/pricing）- 月払い/年払い切り替え、FAQ付き
-- 広告バナー（Freeユーザー向け）（PR #59）
-  - Premiumプランへの誘導バナー
-  - グループ詳細ページにも表示（TabNavigationの上に配置）
-  - Premiumユーザーは広告非表示
-- ランディングページ（未ログイン時のトップページ）
-- 法的ページ
-  - /privacy - プライバシーポリシー
-  - /terms - 利用規約
-  - /legal/tokushoho - 特定商取引法に基づく表記
-- 設定ページに法的ページへのリンク追加
+- グループ自動遷移機能（PR #83, #84）
+  - グループが1つの場合、または デフォルトグループ設定時は自動遷移
+  - デフォルトグループ設定UI（グループ設定ページ、グループ一覧メニュー）
+  - 戻るボタンで一覧に戻れるよう `?list=true` パラメータ対応
+- プロダクト名をOaikoからPairboに変更
+- 特商法表記のプレースホルダーを実際の情報に置換
 
 **プラン設計**
 
@@ -61,9 +55,10 @@
 
 **次のステップ**
 
-1. 特商法表記のプレースホルダーを実際の情報に置換（公開前）
-2. Premium限定機能の実装（詳細分析、データエクスポート）
-3. 広告のA/Bテスト・文言最適化
+1. カスタムドメイン取得・設定（pairbo.jp等）
+2. AdSense再申請（コンテンツ充実後）
+3. Premium限定機能の実装（詳細分析、データエクスポート）
+4. ロゴ・OGP画像作成
 
 ---
 
@@ -240,12 +235,12 @@ Deploy: Vercel + Convex
 
 ## デプロイ情報
 
-| 環境           | URL                                      |
-| -------------- | ---------------------------------------- |
-| 本番（Vercel） | https://oaiko.vercel.app                 |
-| Convex本番     | https://hip-moose-165.convex.cloud       |
-| GitHub         | https://github.com/nakayamaryo0731/oaiko |
-| Stripe         | https://dashboard.stripe.com             |
+| 環境           | URL                                       |
+| -------------- | ----------------------------------------- |
+| 本番（Vercel） | https://pairbo.vercel.app                 |
+| Convex本番     | https://hip-moose-165.convex.cloud        |
+| GitHub         | https://github.com/nakayamaryo0731/pairbo |
+| Stripe         | https://dashboard.stripe.com              |
 
 ### Stripe環境変数（Convexに設定済み）
 
