@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "利用規約 | Oaiko",
-  description: "Oaikoの利用規約",
+  title: "利用規約 | Pairbo",
+  description: "Pairboの利用規約",
 };
 
 export default function TermsPage() {
@@ -21,7 +21,7 @@ export default function TermsPage() {
 
         <div className="prose prose-slate max-w-none space-y-8">
           <p className="text-slate-600">
-            この利用規約（以下「本規約」）は、Oaiko（以下「当サービス」）の利用条件を定めるものです。
+            この利用規約（以下「本規約」）は、Pairbo（以下「当サービス」）の利用条件を定めるものです。
             ユーザーは、本規約に同意した上で当サービスを利用するものとします。
           </p>
 

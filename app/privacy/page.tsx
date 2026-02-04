@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "プライバシーポリシー | Oaiko",
-  description: "Oaikoのプライバシーポリシー",
+  title: "プライバシーポリシー | Pairbo",
+  description: "Pairboのプライバシーポリシー",
 };
 
 export default function PrivacyPolicyPage() {
@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="prose prose-slate max-w-none space-y-8">
           <p className="text-slate-600">
-            Oaiko（以下「当サービス」）は、ユーザーの個人情報の取扱いについて、以下のとおりプライバシーポリシーを定めます。
+            Pairbo（以下「当サービス」）は、ユーザーの個人情報の取扱いについて、以下のとおりプライバシーポリシーを定めます。
           </p>
 
           <section>

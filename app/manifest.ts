@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Oaiko - 共有家計簿",
-    short_name: "Oaiko",
+    name: "Pairbo - 2人のための共有家計簿",
+    short_name: "Pairbo",
     description: "割り勘・傾斜折半ができる共有家計簿アプリ",
     start_url: "/",
     display: "standalone",

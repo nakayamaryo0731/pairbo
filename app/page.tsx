@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -10,8 +10,11 @@ import { GroupListSkeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { LandingPage } from "@/components/landing";
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const showList = searchParams.get("list") === "true";
+
   const { isAuthenticated, isLoading } = useConvexAuth();
   const ensureUser = useMutation(api.users.ensureUser);
   const [isUserReady, setIsUserReady] = useState(false);
@@ -40,8 +43,9 @@ export default function Home() {
     };
   }, [isAuthenticated, ensureUser]);
 
-  // 自動遷移処理
+  // 自動遷移処理（?list=true の場合はスキップ）
   useEffect(() => {
+    if (showList) return;
     if (groups === undefined || me === undefined) return;
     if (groups.length === 0) return;
 
@@ -58,7 +62,7 @@ export default function Home() {
         router.replace(`/groups/${defaultGroup._id}`);
       }
     }
-  }, [groups, me, router]);
+  }, [groups, me, router, showList]);
 
   if (isLoading) {
     return (
@@ -83,8 +87,9 @@ export default function Home() {
     return <LandingPage />;
   }
 
-  // ローディング中または自動遷移中
+  // ローディング中または自動遷移中（?list=true の場合は自動遷移しない）
   const isRedirecting =
+    !showList &&
     groups !== undefined &&
     me !== undefined &&
     (groups.length === 1 ||
@@ -118,5 +123,31 @@ export default function Home() {
         </div>
       </main>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+        <div
+          className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"
+          style={{ animationDelay: "0.1s" }}
+        ></div>
+        <div
+          className="w-2 h-2 bg-slate-600 rounded-full animate-bounce"
+          style={{ animationDelay: "0.2s" }}
+        ></div>
+      </div>
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <HomeContent />
+    </Suspense>
   );
 }

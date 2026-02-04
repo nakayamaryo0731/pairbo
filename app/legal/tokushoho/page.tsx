@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "特定商取引法に基づく表記 | Oaiko",
-  description: "Oaikoの特定商取引法に基づく表記",
+  title: "特定商取引法に基づく表記 | Pairbo",
+  description: "Pairboの特定商取引法に基づく表記",
 };
 
 export default function TokushohoPage() {

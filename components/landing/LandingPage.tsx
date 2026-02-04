@@ -48,7 +48,7 @@ export function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="px-4 py-16 text-center">
-        <h1 className="text-4xl font-bold text-slate-800 mb-4">おあいこ</h1>
+        <h1 className="text-4xl font-bold text-slate-800 mb-4">Pairbo</h1>
         <p className="text-xl text-slate-600 mb-2">
           割り勘・傾斜折半ができる共有家計簿
         </p>
@@ -196,7 +196,7 @@ export function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-center sm:text-left">
-              <p className="font-bold text-white mb-1">Oaiko</p>
+              <p className="font-bold text-white mb-1">Pairbo</p>
               <p className="text-sm">割り勘・傾斜折半ができる共有家計簿</p>
             </div>
             <div className="flex flex-wrap justify-center gap-4 text-sm">
@@ -221,7 +221,9 @@ export function LandingPage() {
             </div>
           </div>
           <div className="mt-8 pt-4 border-t border-slate-800 text-center text-sm">
-            <p>&copy; {new Date().getFullYear()} Oaiko. All rights reserved.</p>
+            <p>
+              &copy; {new Date().getFullYear()} Pairbo. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
