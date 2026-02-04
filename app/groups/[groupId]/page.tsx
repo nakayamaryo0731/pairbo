@@ -9,6 +9,7 @@ import { GroupDetail } from "@/components/groups";
 import { GroupDetailSkeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Settings, ShoppingCart, BarChart3 } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -40,19 +41,25 @@ export default function GroupDetailPage({ params }: PageProps) {
       >
         <Settings className="h-5 w-5 text-slate-600" />
       </Link>
+      <UserButton />
     </div>
   ) : (
     <div className="flex items-center gap-1">
       <div className="w-9 h-9" />
       <div className="w-9 h-9" />
       <div className="w-9 h-9" />
+      <div className="w-8 h-8" />
     </div>
   );
 
   if (detail === undefined) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <PageHeader backHref="/" isLoading rightElement={rightIcons} />
+        <PageHeader
+          backHref="/?list=true"
+          isLoading
+          rightElement={rightIcons}
+        />
         <main className="p-4">
           <div className="max-w-lg mx-auto">
             <GroupDetailSkeleton />
@@ -65,7 +72,7 @@ export default function GroupDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <PageHeader
-        backHref="/"
+        backHref="/?list=true"
         title={detail.group.name}
         rightElement={rightIcons}
       />
