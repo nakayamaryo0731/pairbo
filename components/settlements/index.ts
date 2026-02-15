@@ -3,5 +3,6 @@ export { SettlementHistory } from "./SettlementHistory";
 export { SettlementCard } from "./SettlementCard";
 export { SettlementDetail } from "./SettlementDetail";
 export { MemberBalanceList } from "./MemberBalanceList";
+export { MemberExpenseDetail } from "./MemberExpenseDetail";
 export { PaymentCard } from "./PaymentCard";
 export { PeriodNavigator } from "./PeriodNavigator";
