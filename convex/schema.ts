@@ -43,6 +43,7 @@ export default defineSchema({
     groupId: v.id("groups"),
     userId: v.id("users"),
     role: memberRoleValidator,
+    color: v.optional(v.string()),
     joinedAt: v.number(),
   })
     .index("by_user", ["userId"])

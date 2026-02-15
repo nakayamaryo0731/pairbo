@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -7,6 +8,12 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { InviteDialog } from "./InviteDialog";
 import { CategoryManager } from "@/components/categories";
 import { Switch } from "@/components/ui/switch";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { MEMBER_COLORS } from "@/lib/userColors";
 import {
   Calendar,
   Users,
@@ -16,6 +23,7 @@ import {
   CreditCard,
   Star,
   Shield,
+  Check,
 } from "lucide-react";
 import { useInlineEdit } from "@/hooks/useInlineEdit";
 import {
@@ -38,6 +46,7 @@ type Member = {
   displayName: string;
   avatarUrl?: string;
   role: "owner" | "member";
+  color?: string;
   joinedAt: number;
   isMe: boolean;
 };
@@ -68,9 +77,12 @@ export function GroupSettings({
   const updateClosingDay = useMutation(api.groups.updateClosingDay);
   const updateDisplayName = useMutation(api.users.updateDisplayName);
   const setDefaultGroup = useMutation(api.users.setDefaultGroup);
+  const updateMemberColor = useMutation(api.groups.updateMemberColor);
   const setAdminPlanOverride = useMutation(
     api.subscriptions.setAdminPlanOverride,
   );
+
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   const isDefaultGroup = me?.defaultGroupId === group._id;
 
@@ -228,14 +240,56 @@ export function GroupSettings({
         <div className="divide-y divide-slate-100">
           {members.map((member) => (
             <div key={member._id} className="px-4 py-3 flex items-center gap-3">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
-                style={{
-                  backgroundColor: memberColors?.[member.userId] ?? "#cbd5e1",
-                }}
-              >
-                {member.displayName.charAt(0)}
-              </div>
+              {member.isMe ? (
+                <Popover
+                  open={colorPickerOpen}
+                  onOpenChange={setColorPickerOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <button
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white ring-offset-2 hover:ring-2 hover:ring-slate-300 transition-shadow"
+                      style={{
+                        backgroundColor:
+                          memberColors?.[member.userId] ?? "#cbd5e1",
+                      }}
+                    >
+                      {member.displayName.charAt(0)}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-auto">
+                    <p className="text-xs text-slate-500 mb-2">カラーを選択</p>
+                    <div className="grid grid-cols-5 gap-2">
+                      {MEMBER_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          className="w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                          style={{ backgroundColor: color }}
+                          onClick={() => {
+                            updateMemberColor({
+                              groupId: group._id,
+                              color,
+                            });
+                            setColorPickerOpen(false);
+                          }}
+                        >
+                          {memberColors?.[member.userId] === color && (
+                            <Check className="h-4 w-4 text-white" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
+                  style={{
+                    backgroundColor: memberColors?.[member.userId] ?? "#cbd5e1",
+                  }}
+                >
+                  {member.displayName.charAt(0)}
+                </div>
+              )}
               <div className="flex-1">
                 {member.isMe && displayNameEdit.isEditing ? (
                   <InlineEditText

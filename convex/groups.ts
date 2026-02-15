@@ -144,6 +144,7 @@ export const getDetail = authQuery({
           displayName: user.displayName,
           avatarUrl: user.avatarUrl,
           role: membership.role,
+          color: membership.color,
           joinedAt: membership.joinedAt,
           isMe: user._id === ctx.user._id,
         };
@@ -289,6 +290,18 @@ export const updateClosingDay = authMutation({
       oldClosingDay: group.closingDay,
       newClosingDay: args.closingDay,
     });
+  },
+});
+
+export const updateMemberColor = authMutation({
+  args: {
+    groupId: v.id("groups"),
+    color: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const membership = await requireGroupMember(ctx, args.groupId);
+
+    await ctx.db.patch(membership._id, { color: args.color });
   },
 });
 

@@ -29,10 +29,7 @@ export function SettlementPreview({
   const isOwner = groupDetail?.myRole === "owner";
   const createSettlement = useMutation(api.settlements.create);
   const memberColors = useMemo(
-    () =>
-      groupDetail
-        ? buildMemberColorMap(groupDetail.members.map((m) => m.userId))
-        : {},
+    () => (groupDetail ? buildMemberColorMap(groupDetail.members) : {}),
     [groupDetail],
   );
   const [isCreating, setIsCreating] = useState(false);
