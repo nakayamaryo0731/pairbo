@@ -91,8 +91,7 @@ export default function ExpensePage({ params }: PageProps) {
     try {
       await removeExpense({ expenseId });
       router.push(`/groups/${groupId}`);
-    } catch (error) {
-      console.error("削除エラー:", error);
+    } catch {
       setIsDeleting(false);
       setShowDeleteDialog(false);
     }

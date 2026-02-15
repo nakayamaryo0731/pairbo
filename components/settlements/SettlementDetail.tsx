@@ -36,8 +36,8 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
     setIsReopening(true);
     try {
       await reopenMutation({ settlementId });
-    } catch (error) {
-      console.error("再オープンエラー:", error);
+    } catch {
+      // エラーはConvexが自動的にUIに反映
     } finally {
       setIsReopening(false);
     }

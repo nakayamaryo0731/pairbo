@@ -35,7 +35,7 @@ function HomeContent() {
           setIsUserReady(true);
         }
       })
-      .catch(console.error);
+      .catch(() => {});
 
     return () => {
       cancelled = true;

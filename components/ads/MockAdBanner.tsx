@@ -94,7 +94,6 @@ export function MockAdBanner({ aboveTabNav = false }: MockAdBannerProps) {
             className={`rounded-full ${ad.bgColor} border border-current px-3 py-1 text-xs font-medium ${ad.accentColor}`}
             onClick={() => {
               // モックなのでクリックしても何もしない
-              console.log("Mock ad clicked:", ad.title);
             }}
           >
             {ad.cta}
