@@ -101,8 +101,8 @@ export function GroupDetail({ group }: GroupDetailProps) {
     try {
       await removeExpense({ expenseId: expenseToDelete._id });
       setExpenseToDelete(null);
-    } catch (error) {
-      console.error("削除エラー:", error);
+    } catch {
+      // エラーはConvexが自動的にUIに反映
     } finally {
       setIsDeleting(false);
     }

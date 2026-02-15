@@ -18,7 +18,23 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pairbo - 2人のための共有家計簿",
-  description: "割り勘・傾斜折半ができる共有家計簿",
+  description:
+    "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
+  openGraph: {
+    title: "Pairbo - 2人のための共有家計簿",
+    description:
+      "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
+    url: "https://pairbo.vercel.app",
+    siteName: "Pairbo",
+    locale: "ja_JP",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Pairbo - 2人のための共有家計簿",
+    description:
+      "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

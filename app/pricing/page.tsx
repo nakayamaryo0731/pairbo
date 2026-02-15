@@ -38,8 +38,7 @@ export default function PricingPage() {
         cancelUrl: `${window.location.origin}/pricing`,
       });
       window.location.href = url;
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("エラーが発生しました");
     } finally {
       setLoading(false);
@@ -53,8 +52,7 @@ export default function PricingPage() {
         returnUrl: `${window.location.origin}/pricing`,
       });
       window.location.href = url;
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("エラーが発生しました");
     } finally {
       setLoading(false);

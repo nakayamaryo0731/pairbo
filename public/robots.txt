@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pairbo.vercel.app/sitemap.xml
