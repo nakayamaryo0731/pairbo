@@ -295,7 +295,7 @@ export default function PricingPage() {
 function CheckIcon({ className = "text-slate-400" }: { className?: string }) {
   return (
     <svg
-      className={`w-5 h-5 flex-shrink-0 ${className}`}
+      className={`w-5 h-5 shrink-0 ${className}`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
