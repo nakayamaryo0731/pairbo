@@ -555,3 +555,55 @@ graph LR
 
 - `stripeCustomerId`が`dev_admin`のレコードは開発者用
 - 通常のStripe課金ユーザーは`cus_`で始まるID
+
+---
+
+## 本番Stripe設定チェックリスト
+
+本番リリース時に以下を順番に実施する。
+
+### 1. Stripeアカウントの本番有効化
+
+- [ ] ビジネス情報の登録（Stripeダッシュボード → Settings → Business details）
+- [ ] 銀行口座の登録（入金先）
+- [ ] 本番モード（Live mode）が有効化されていることを確認
+
+### 2. 商品・価格の作成（Stripeダッシュボード Live mode）
+
+- [ ] 商品作成: "Pairbo Premium"
+- [ ] 価格作成: 月額 ¥300（JPY, recurring/monthly）
+- [ ] 価格作成: 年額 ¥2,400（JPY, recurring/yearly）
+- [ ] 各Price IDを控える（`price_xxx`形式）
+
+### 3. Customer Portal設定
+
+- [ ] Stripeダッシュボード → Settings → Customer portal
+- [ ] 解約を許可
+- [ ] プラン変更を許可（月↔年の切り替え）
+
+### 4. Webhook設定
+
+- [ ] Stripeダッシュボード → Developers → Webhooks → Add endpoint
+- [ ] エンドポイントURL: `https://<convex-deployment>.convex.site/stripe/webhook`
+- [ ] 以下のイベントを選択:
+  - `checkout.session.completed`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+  - `invoice.payment_failed`
+- [ ] Webhook Signing Secretを控える（`whsec_xxx`形式）
+
+### 5. Convex環境変数設定（本番デプロイメント）
+
+```bash
+npx convex env set STRIPE_SECRET_KEY sk_live_xxx
+npx convex env set STRIPE_WEBHOOK_SECRET whsec_xxx
+npx convex env set STRIPE_PRICE_MONTHLY price_xxx
+npx convex env set STRIPE_PRICE_YEARLY price_xxx
+```
+
+### 6. 動作確認
+
+- [ ] テスト用カードで決済を実行し、subscriptionsテーブルにレコードが作成されることを確認
+- [ ] Customer Portalで解約操作ができることを確認
+- [ ] Stripeダッシュボード → Developers → Webhooks でイベントが正常に受信されていることを確認
+- [ ] 決済後にアプリ上でPremium機能が有効化されることを確認

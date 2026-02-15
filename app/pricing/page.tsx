@@ -85,6 +85,25 @@ export default function PricingPage() {
               </div>
             )}
 
+          {/* 決済失敗警告 */}
+          {isAuthenticated && subscription?.status === "past_due" && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-amber-800 font-medium mb-2">
+                お支払いに問題が発生しています
+              </p>
+              <p className="text-amber-700 text-sm mb-3">
+                お支払い情報を更新してください。更新されない場合、Premium機能が制限されます。
+              </p>
+              <button
+                onClick={handleManageSubscription}
+                disabled={loading}
+                className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+              >
+                {loading ? "処理中..." : "お支払い情報を更新"}
+              </button>
+            </div>
+          )}
+
           {/* 現在のプラン（ログイン済みの場合） */}
           {isAuthenticated && subscription && (
             <div className="mb-6 p-4 bg-white border border-slate-200 rounded-lg">
