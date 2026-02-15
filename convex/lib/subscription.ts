@@ -17,6 +17,11 @@ export async function getUserPlan(
   ctx: QueryCtx | MutationCtx,
   userId: Id<"users">,
 ): Promise<"free" | "premium"> {
+  const user = await ctx.db.get(userId);
+  if (user?.isAdmin && user.planOverride) {
+    return user.planOverride;
+  }
+
   const subscription = await ctx.db
     .query("subscriptions")
     .withIndex("by_user", (q) => q.eq("userId", userId))
