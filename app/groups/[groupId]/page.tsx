@@ -78,7 +78,7 @@ export default function GroupDetailPage({ params }: PageProps) {
       />
       <main>
         <div className="max-w-lg mx-auto">
-          <GroupDetail group={detail.group} />
+          <GroupDetail group={detail.group} members={detail.members} />
         </div>
       </main>
     </div>

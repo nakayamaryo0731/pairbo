@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useMemo } from "react";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -12,6 +12,7 @@ import {
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { buildMemberColorMap } from "@/lib/userColors";
 
 type PageProps = {
   params: Promise<{
@@ -79,6 +80,12 @@ export default function ExpensePage({ params }: PageProps) {
 
   const isPremium = subscription?.plan === "premium";
 
+  const memberColors = useMemo(
+    () =>
+      detail ? buildMemberColorMap(detail.members.map((m) => m.userId)) : {},
+    [detail],
+  );
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -145,6 +152,7 @@ export default function ExpensePage({ params }: PageProps) {
               isSettled={true}
               onDelete={handleDelete}
               isDeleting={isDeleting}
+              memberColors={memberColors}
             />
           </div>
         </main>
@@ -230,6 +238,7 @@ export default function ExpensePage({ params }: PageProps) {
             initialData={initialData}
             isPremium={isPremium}
             linkedShoppingItems={expense.linkedShoppingItems}
+            memberColors={memberColors}
           />
         </div>
       </main>

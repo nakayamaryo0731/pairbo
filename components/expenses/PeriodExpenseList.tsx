@@ -19,6 +19,7 @@ type PeriodExpenseListProps = {
   groupId: Id<"groups">;
   year: number;
   month: number;
+  memberColors?: Record<string, string>;
   onEdit?: (expenseId: Id<"expenses">) => void;
   onDelete?: (expense: ExpenseForDelete) => void;
 };
@@ -27,6 +28,7 @@ export function PeriodExpenseList({
   groupId,
   year,
   month,
+  memberColors,
   onEdit,
   onDelete,
 }: PeriodExpenseListProps) {
@@ -53,6 +55,7 @@ export function PeriodExpenseList({
         <ExpenseCard
           key={expense._id}
           expense={expense}
+          memberColors={memberColors}
           onEdit={onEdit ? () => onEdit(expense._id) : undefined}
           onDelete={
             onDelete

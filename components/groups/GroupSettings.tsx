@@ -53,6 +53,7 @@ type GroupSettingsProps = {
   members: Member[];
   categories: Category[];
   myRole: "owner" | "member";
+  memberColors?: Record<string, string>;
 };
 
 export function GroupSettings({
@@ -60,6 +61,7 @@ export function GroupSettings({
   members,
   categories,
   myRole,
+  memberColors,
 }: GroupSettingsProps) {
   const me = useQuery(api.users.getMe);
   const subscription = useQuery(api.subscriptions.getMySubscription);
@@ -227,7 +229,12 @@ export function GroupSettings({
         <div className="divide-y divide-slate-100">
           {members.map((member) => (
             <div key={member._id} className="px-4 py-3 flex items-center gap-3">
-              <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-sm font-medium text-slate-600">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
+                style={{
+                  backgroundColor: memberColors?.[member.userId] ?? "#cbd5e1",
+                }}
+              >
                 {member.displayName.charAt(0)}
               </div>
               <div className="flex-1">

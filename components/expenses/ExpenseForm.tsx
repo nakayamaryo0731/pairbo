@@ -50,6 +50,7 @@ type ExpenseFormProps = {
   initialData?: InitialData;
   isPremium?: boolean;
   linkedShoppingItems?: { _id: Id<"shoppingItems">; name: string }[];
+  memberColors?: Record<string, string>;
 };
 
 /**
@@ -67,6 +68,7 @@ export function ExpenseForm({
   initialData,
   isPremium = false,
   linkedShoppingItems,
+  memberColors,
 }: ExpenseFormProps) {
   const router = useRouter();
   const createExpense = useMutation(api.expenses.create);
@@ -433,12 +435,18 @@ export function ExpenseForm({
               key={member.userId}
               type="button"
               onClick={() => setPaidBy(member.userId)}
-              className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
                 paidBy === member.userId
                   ? "bg-blue-500 text-white"
                   : "bg-blue-50 text-blue-600 hover:bg-blue-100"
               }`}
             >
+              {memberColors?.[member.userId] && (
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full shrink-0 border border-white/30"
+                  style={{ backgroundColor: memberColors[member.userId] }}
+                />
+              )}
               {member.displayName}
               {member.isMe && " ✓"}
             </button>
@@ -465,6 +473,7 @@ export function ExpenseForm({
           bearerId={bearerId}
           onBearerIdChange={setBearerId}
           isPremium={isPremium}
+          memberColors={memberColors}
         />
       </div>
 

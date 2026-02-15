@@ -12,9 +12,13 @@ type Balance = {
 
 type MemberBalanceListProps = {
   balances: Balance[];
+  memberColors?: Record<string, string>;
 };
 
-export function MemberBalanceList({ balances }: MemberBalanceListProps) {
+export function MemberBalanceList({
+  balances,
+  memberColors,
+}: MemberBalanceListProps) {
   // net が大きい順（受け取る人が上）にソート
   const sortedBalances = [...balances].sort((a, b) => b.net - a.net);
 
@@ -25,7 +29,15 @@ export function MemberBalanceList({ balances }: MemberBalanceListProps) {
           key={balance.userId}
           className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2"
         >
-          <span className="text-sm">{balance.displayName}</span>
+          <div className="flex items-center gap-2">
+            {memberColors?.[balance.userId] && (
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: memberColors[balance.userId] }}
+              />
+            )}
+            <span className="text-sm">{balance.displayName}</span>
+          </div>
           <span
             className={`font-medium ${
               balance.net > 0

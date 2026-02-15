@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { GroupSettings } from "@/components/groups";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { buildMemberColorMap } from "@/lib/userColors";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -48,6 +49,9 @@ export default function GroupSettingsPage({ params }: PageProps) {
             members={detail.members}
             categories={detail.categories}
             myRole={detail.myRole}
+            memberColors={buildMemberColorMap(
+              detail.members.map((m) => m.userId),
+            )}
           />
         </div>
       </main>

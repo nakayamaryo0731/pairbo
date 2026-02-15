@@ -6,7 +6,8 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { MemberBalanceList } from "./MemberBalanceList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { buildMemberColorMap } from "@/lib/userColors";
 
 type SettlementPreviewProps = {
   groupId: Id<"groups">;
@@ -27,6 +28,13 @@ export function SettlementPreview({
   const groupDetail = useQuery(api.groups.getDetail, { groupId });
   const isOwner = groupDetail?.myRole === "owner";
   const createSettlement = useMutation(api.settlements.create);
+  const memberColors = useMemo(
+    () =>
+      groupDetail
+        ? buildMemberColorMap(groupDetail.members.map((m) => m.userId))
+        : {},
+    [groupDetail],
+  );
   const [isCreating, setIsCreating] = useState(false);
 
   if (preview === undefined) {
@@ -69,7 +77,10 @@ export function SettlementPreview({
           <h4 className="text-sm font-medium text-slate-600 mb-2">
             各メンバーの収支
           </h4>
-          <MemberBalanceList balances={preview.balances} />
+          <MemberBalanceList
+            balances={preview.balances}
+            memberColors={memberColors}
+          />
         </div>
       )}
 
@@ -83,8 +94,25 @@ export function SettlementPreview({
                 key={index}
                 className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2"
               >
-                <span className="text-sm">
-                  {payment.fromUserName} → {payment.toUserName}
+                <span className="text-sm flex items-center gap-1">
+                  {memberColors[payment.fromUserId] && (
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: memberColors[payment.fromUserId],
+                      }}
+                    />
+                  )}
+                  {payment.fromUserName} →{" "}
+                  {memberColors[payment.toUserId] && (
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: memberColors[payment.toUserId],
+                      }}
+                    />
+                  )}
+                  {payment.toUserName}
                 </span>
                 <span className="font-medium">
                   ¥{payment.amount.toLocaleString()}
