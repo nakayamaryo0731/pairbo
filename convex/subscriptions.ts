@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { action, internalMutation, internalQuery } from "./_generated/server";
+import {
+  action,
+  internalMutation,
+  internalQuery,
+  query,
+} from "./_generated/server";
 import { authQuery } from "./lib/auth";
 import { internal } from "./_generated/api";
 import Stripe from "stripe";
@@ -23,12 +28,36 @@ function getStripe() {
 /**
  * 現在のサブスクリプション状態を取得
  */
-export const getMySubscription = authQuery({
+export const getMySubscription = query({
   args: {},
   handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return {
+        plan: "free" as const,
+        status: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      };
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) {
+      return {
+        plan: "free" as const,
+        status: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      };
+    }
+
     const subscription = await ctx.db
       .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
       .unique();
 
     if (!subscription) {
