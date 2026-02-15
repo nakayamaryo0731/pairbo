@@ -8,7 +8,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { GroupDetail } from "@/components/groups";
 import { GroupDetailSkeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Settings, ShoppingCart, BarChart3 } from "lucide-react";
+import { Settings, BarChart3 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 
 type PageProps = {
@@ -30,12 +30,6 @@ export default function GroupDetailPage({ params }: PageProps) {
         <BarChart3 className="h-5 w-5 text-slate-600" />
       </Link>
       <Link
-        href={`/groups/${detail.group._id}/shopping`}
-        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-      >
-        <ShoppingCart className="h-5 w-5 text-slate-600" />
-      </Link>
-      <Link
         href={`/groups/${detail.group._id}/settings`}
         className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
       >
@@ -45,7 +39,6 @@ export default function GroupDetailPage({ params }: PageProps) {
     </div>
   ) : (
     <div className="flex items-center gap-1">
-      <div className="w-9 h-9" />
       <div className="w-9 h-9" />
       <div className="w-9 h-9" />
       <div className="w-8 h-8" />

@@ -1,14 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Users,
-  PieChart,
-  Calculator,
-  ShoppingCart,
-  Smartphone,
-  Shield,
-} from "lucide-react";
+import { Users, PieChart, Calculator, Smartphone, Shield } from "lucide-react";
 
 const features = [
   {
@@ -25,11 +18,6 @@ const features = [
     icon: PieChart,
     title: "自動精算計算",
     description: "月末に自動で精算額を計算。誰が誰にいくら払うか一目瞭然。",
-  },
-  {
-    icon: ShoppingCart,
-    title: "買い物リスト",
-    description: "共有の買い物リストで買い忘れ防止。購入後は支出に連携。",
   },
   {
     icon: Smartphone,
