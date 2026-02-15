@@ -100,6 +100,10 @@ export function GroupDetail({ group, members }: GroupDetailProps) {
     router.push(`/groups/${group._id}/expenses/${expenseId}`);
   };
 
+  const handleDuplicate = (expenseId: Id<"expenses">) => {
+    router.push(`/groups/${group._id}/expenses/new?from=${expenseId}`);
+  };
+
   const handleDelete = (expense: ExpenseToDelete) => {
     setExpenseToDelete(expense);
   };
@@ -157,6 +161,7 @@ export function GroupDetail({ group, members }: GroupDetailProps) {
               month={displayMonth}
               memberColors={memberColors}
               onEdit={handleEdit}
+              onDuplicate={handleDuplicate}
               onDelete={handleDelete}
             />
           </div>

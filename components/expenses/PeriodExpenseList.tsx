@@ -22,6 +22,7 @@ type PeriodExpenseListProps = {
   month: number;
   memberColors?: Record<string, string>;
   onEdit?: (expenseId: Id<"expenses">) => void;
+  onDuplicate?: (expenseId: Id<"expenses">) => void;
   onDelete?: (expense: ExpenseForDelete) => void;
 };
 
@@ -31,6 +32,7 @@ export function PeriodExpenseList({
   month,
   memberColors,
   onEdit,
+  onDuplicate,
   onDelete,
 }: PeriodExpenseListProps) {
   const data = useQuery(api.expenses.listByPeriod, { groupId, year, month });
@@ -58,6 +60,7 @@ export function PeriodExpenseList({
           expense={expense}
           memberColors={memberColors}
           onEdit={onEdit ? () => onEdit(expense._id) : undefined}
+          onDuplicate={onDuplicate ? () => onDuplicate(expense._id) : undefined}
           onDelete={
             onDelete
               ? () =>
