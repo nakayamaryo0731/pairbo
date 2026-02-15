@@ -13,21 +13,23 @@ const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
 async function generateIcons() {
   await mkdir(iconsDir, { recursive: true });
 
+  const trimmedBuffer = await sharp(sourceIcon).trim().toBuffer();
+
   for (const size of sizes) {
     const outputPath = join(iconsDir, `icon-${size}x${size}.png`);
-    await sharp(sourceIcon).resize(size, size).png().toFile(outputPath);
+    await sharp(trimmedBuffer).resize(size, size).png().toFile(outputPath);
     console.log(`Generated: icon-${size}x${size}.png`);
   }
 
   // Apple Touch Icon (180x180)
-  await sharp(sourceIcon)
+  await sharp(trimmedBuffer)
     .resize(180, 180)
     .png()
     .toFile(join(iconsDir, "apple-touch-icon.png"));
   console.log("Generated: apple-touch-icon.png");
 
   // Favicon (32x32)
-  await sharp(sourceIcon)
+  await sharp(trimmedBuffer)
     .resize(32, 32)
     .png()
     .toFile(join(rootDir, "public", "favicon.ico"));
