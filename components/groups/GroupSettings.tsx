@@ -350,7 +350,7 @@ export function GroupSettings({
       </section>
 
       {/* 管理者モード */}
-      {subscription?.isAdmin && (
+      {me?.isAdmin && subscription && (
         <section className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">

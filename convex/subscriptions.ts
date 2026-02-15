@@ -38,7 +38,6 @@ export const getMySubscription = query({
         status: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-        isAdmin: false,
       };
     }
 
@@ -53,19 +52,15 @@ export const getMySubscription = query({
         status: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-        isAdmin: false,
       };
     }
 
-    const isAdmin = user.isAdmin === true;
-
-    if (isAdmin && user.planOverride) {
+    if (user.isAdmin === true && user.planOverride) {
       return {
         plan: user.planOverride,
         status: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-        isAdmin,
       };
     }
 
@@ -80,7 +75,6 @@ export const getMySubscription = query({
         status: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-        isAdmin,
       };
     }
 
@@ -89,7 +83,6 @@ export const getMySubscription = query({
       status: subscription.status,
       currentPeriodEnd: subscription.currentPeriodEnd,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-      isAdmin,
     };
   },
 });
@@ -457,6 +450,9 @@ export const setAdminPlanOverride = authMutation({
     await ctx.db.patch(ctx.user._id, {
       planOverride: args.plan,
       updatedAt: Date.now(),
+    });
+    ctx.logger.audit("SUBSCRIPTION", "admin_plan_override", {
+      plan: args.plan,
     });
   },
 });
