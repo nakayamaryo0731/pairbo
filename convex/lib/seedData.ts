@@ -43,9 +43,9 @@ export const SAMPLE_EXPENSES = [
     paidByIndex: 0,
   },
   {
-    categoryName: "食費",
+    categoryName: "外食",
     amount: 2800,
-    memo: "外食（ランチ）",
+    memo: "ランチ",
     splitMethod: "equal" as const,
     paidByIndex: 1,
   },
