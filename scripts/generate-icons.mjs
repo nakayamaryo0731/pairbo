@@ -35,6 +35,13 @@ async function generateIcons() {
     .toFile(join(rootDir, "public", "favicon.ico"));
   console.log("Generated: favicon.ico");
 
+  // Maskable icon (512x512) - ソース画像をそのままリサイズ（端まで背景色が入ったロゴを使用）
+  await sharp(sourceIcon)
+    .resize(512, 512)
+    .png()
+    .toFile(join(iconsDir, "icon-maskable-512x512.png"));
+  console.log("Generated: icon-maskable-512x512.png");
+
   console.log("\nAll icons generated successfully!");
 }
 
