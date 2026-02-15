@@ -17,6 +17,8 @@ export default defineSchema({
     displayName: v.string(),
     avatarUrl: v.optional(v.string()),
     defaultGroupId: v.optional(v.id("groups")),
+    isAdmin: v.optional(v.boolean()),
+    planOverride: v.optional(v.union(v.literal("free"), v.literal("premium"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_clerk_id", ["clerkId"]),

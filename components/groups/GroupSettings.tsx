@@ -16,6 +16,7 @@ import {
   ChevronRight,
   CreditCard,
   Star,
+  Shield,
 } from "lucide-react";
 import { useInlineEdit } from "@/hooks/useInlineEdit";
 import {
@@ -61,10 +62,14 @@ export function GroupSettings({
   myRole,
 }: GroupSettingsProps) {
   const me = useQuery(api.users.getMe);
+  const subscription = useQuery(api.subscriptions.getMySubscription);
   const updateGroupName = useMutation(api.groups.updateName);
   const updateClosingDay = useMutation(api.groups.updateClosingDay);
   const updateDisplayName = useMutation(api.users.updateDisplayName);
   const setDefaultGroup = useMutation(api.users.setDefaultGroup);
+  const setAdminPlanOverride = useMutation(
+    api.subscriptions.setAdminPlanOverride,
+  );
 
   const isDefaultGroup = me?.defaultGroupId === group._id;
 
@@ -314,6 +319,31 @@ export function GroupSettings({
           <ChevronRight className="h-5 w-5 text-slate-400" />
         </Link>
       </section>
+
+      {/* 管理者モード */}
+      {subscription?.isAdmin && (
+        <section className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+              <Shield className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800">管理者モード</p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                {subscription.plan === "premium" ? "Premium" : "Free"} プラン
+              </p>
+            </div>
+            <Switch
+              checked={subscription.plan === "premium"}
+              onCheckedChange={(checked) =>
+                setAdminPlanOverride({
+                  plan: checked ? "premium" : "free",
+                })
+              }
+            />
+          </div>
+        </section>
+      )}
 
       {/* 法的情報 */}
       <section className="pt-4">

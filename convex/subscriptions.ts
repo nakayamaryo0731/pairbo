@@ -5,7 +5,7 @@ import {
   internalQuery,
   query,
 } from "./_generated/server";
-import { authQuery } from "./lib/auth";
+import { authMutation } from "./lib/auth";
 import { internal } from "./_generated/api";
 import Stripe from "stripe";
 
@@ -38,6 +38,7 @@ export const getMySubscription = query({
         status: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
+        isAdmin: false,
       };
     }
 
@@ -52,6 +53,19 @@ export const getMySubscription = query({
         status: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
+        isAdmin: false,
+      };
+    }
+
+    const isAdmin = user.isAdmin === true;
+
+    if (isAdmin && user.planOverride) {
+      return {
+        plan: user.planOverride,
+        status: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        isAdmin,
       };
     }
 
@@ -66,6 +80,7 @@ export const getMySubscription = query({
         status: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
+        isAdmin,
       };
     }
 
@@ -74,6 +89,7 @@ export const getMySubscription = query({
       status: subscription.status,
       currentPeriodEnd: subscription.currentPeriodEnd,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      isAdmin,
     };
   },
 });
@@ -422,6 +438,54 @@ export const setDeveloperPremium = internalMutation({
       action: "created",
       userId: args.userId,
       displayName: user.displayName,
+    };
+  },
+});
+
+/**
+ * 管理者プラン切替（フロントエンドから呼び出し）
+ * isAdmin=true のユーザーのみ実行可能
+ */
+export const setAdminPlanOverride = authMutation({
+  args: {
+    plan: v.union(v.literal("free"), v.literal("premium")),
+  },
+  handler: async (ctx, args) => {
+    if (!ctx.user.isAdmin) {
+      throw new Error("管理者権限が必要です");
+    }
+    await ctx.db.patch(ctx.user._id, {
+      planOverride: args.plan,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * 管理者フラグを設定（CLI用）
+ *
+ * 使用方法:
+ * npx convex run subscriptions:setAdminFlag '{"userId":"<user_id>", "isAdmin": true}' --prod
+ */
+export const setAdminFlag = internalMutation({
+  args: {
+    userId: v.id("users"),
+    isAdmin: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("ユーザーが見つかりません");
+    }
+    await ctx.db.patch(args.userId, {
+      isAdmin: args.isAdmin,
+      updatedAt: Date.now(),
+    });
+    return {
+      success: true,
+      userId: args.userId,
+      displayName: user.displayName,
+      isAdmin: args.isAdmin,
     };
   },
 });
