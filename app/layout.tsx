@@ -28,12 +28,21 @@ export const metadata: Metadata = {
     siteName: "Pairbo",
     locale: "ja_JP",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 612,
+        height: 408,
+        alt: "Pairbo - 2人のための支出管理",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Pairbo - 2人のための共有家計簿",
     description:
       "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
+    images: ["/og-image.png"],
   },
   appleWebApp: {
     capable: true,

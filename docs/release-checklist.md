@@ -43,10 +43,10 @@
 
 ### 4. OGP 画像の作成・設定
 
-- [ ] 1200x630px の OGP 画像を作成（SNS シェア時に表示）
+- [x] OGP 画像を作成（SNS シェア時に表示）→ `public/og-image.png` に配置済み
 - [x] `app/layout.tsx` の metadata に `openGraph` プロパティを追加済み
 - [x] Twitter Card 用のメタデータも追加済み
-- [ ] OGP 画像作成後、metadata の `images` プロパティに画像パスを設定
+- [x] OGP 画像作成後、metadata の `images` プロパティに画像パスを設定 → `/og-image.png` を設定済み
 
 ---
 
@@ -85,10 +85,10 @@
 
 ### 10. ロゴ・アイコンの正式版作成
 
-- [ ] 正式なブランドロゴをデザイン
-- [ ] `scripts/generate-icons.mjs` を更新して全サイズのアイコンを再生成
-- [ ] ファビコン（`public/favicon.ico`）も更新
-- [ ] 現在は仮デザイン（青背景に白い円）
+- [x] 正式なブランドロゴをデザイン → `public/icons/logo.png` に配置済み
+- [x] `scripts/generate-icons.mjs` を更新して全サイズのアイコンを再生成 → logo.png からリサイズ生成に変更
+- [x] ファビコン（`public/favicon.ico`）も更新済み
+- [x] ~~現在は仮デザイン（青背景に白い円）~~ → 正式ロゴに置換済み
 
 ---
 
