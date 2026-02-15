@@ -27,7 +27,7 @@ type Member = {
 };
 
 type InitialData = {
-  expenseId: Id<"expenses">;
+  expenseId?: Id<"expenses">;
   amount: number;
   categoryId: Id<"categories">;
   paidBy: Id<"users">;
@@ -75,33 +75,34 @@ export function ExpenseForm({
   const updateExpense = useMutation(api.expenses.update);
 
   const isEditMode = mode === "edit" && initialData;
+  const hasInitialData = !!initialData;
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [amount, setAmount] = useState(
-    isEditMode ? String(initialData.amount) : "",
+    hasInitialData ? String(initialData.amount) : "",
   );
   const [categoryId, setCategoryId] = useState<Id<"categories"> | "">(
-    isEditMode ? initialData.categoryId : (categories[0]?._id ?? ""),
+    hasInitialData ? initialData.categoryId : (categories[0]?._id ?? ""),
   );
   const [paidBy, setPaidBy] = useState<Id<"users">>(
-    isEditMode
+    hasInitialData
       ? initialData.paidBy
       : (members.find((m) => m.isMe)?.userId ?? members[0]?.userId),
   );
   const [date, setDate] = useState(
-    isEditMode ? initialData.date : getTodayString(),
+    hasInitialData ? initialData.date : getTodayString(),
   );
   const [title, setTitle] = useState(
-    isEditMode ? (initialData.title ?? "") : "",
+    hasInitialData ? (initialData.title ?? "") : "",
   );
 
   const [splitMethod, setSplitMethod] = useState<SplitMethod>(
-    isEditMode ? initialData.splitMethod : "equal",
+    hasInitialData ? initialData.splitMethod : "equal",
   );
   const [ratios, setRatios] = useState<Map<Id<"users">, number>>(() => {
-    if (isEditMode && initialData.ratios) {
+    if (hasInitialData && initialData.ratios) {
       const map = new Map<Id<"users">, number>();
       initialData.ratios.forEach((r) => map.set(r.userId, r.ratio));
       return map;
@@ -117,7 +118,7 @@ export function ExpenseForm({
     return map;
   });
   const [amounts, setAmounts] = useState<Map<Id<"users">, number>>(() => {
-    if (isEditMode && initialData.amounts) {
+    if (hasInitialData && initialData.amounts) {
       const map = new Map<Id<"users">, number>();
       initialData.amounts.forEach((a) => map.set(a.userId, a.amount));
       return map;
@@ -127,12 +128,11 @@ export function ExpenseForm({
     return map;
   });
   const [bearerId, setBearerId] = useState<Id<"users"> | null>(
-    isEditMode && initialData.bearerId ? initialData.bearerId : null,
+    hasInitialData && initialData.bearerId ? initialData.bearerId : null,
   );
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<Id<"users">>>(
     () => {
-      if (isEditMode && initialData.splits) {
-        // 編集時: 負担額 > 0 のメンバーを選択
+      if (hasInitialData && initialData.splits) {
         const splitUserIds = initialData.splits
           .filter((s) => s.amount > 0)
           .map((s) => s.userId);
@@ -140,13 +140,12 @@ export function ExpenseForm({
           ? new Set(splitUserIds)
           : new Set(members.map((m) => m.userId));
       }
-      // 新規: 全員選択
       return new Set(members.map((m) => m.userId));
     },
   );
   const [shoppingItemIds] = useState<Id<"shoppingItems">[]>([]);
   const [tagIds, setTagIds] = useState<Id<"tags">[]>(
-    isEditMode && initialData.tagIds ? initialData.tagIds : [],
+    hasInitialData && initialData.tagIds ? initialData.tagIds : [],
   );
   const [isShoppingListOpen, setIsShoppingListOpen] = useState(false);
 
@@ -285,7 +284,7 @@ export function ExpenseForm({
     setIsLoading(true);
 
     try {
-      if (isEditMode) {
+      if (isEditMode && initialData.expenseId) {
         await updateExpense({
           expenseId: initialData.expenseId,
           amount: amountNum,

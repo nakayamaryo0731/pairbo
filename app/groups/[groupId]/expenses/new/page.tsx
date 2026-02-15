@@ -3,6 +3,7 @@
 import { use } from "react";
 import { useQuery } from "convex/react";
 import { useConvexAuth } from "convex/react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ExpenseForm } from "@/components/expenses";
@@ -55,12 +56,66 @@ function ExpenseFormSkeleton() {
   );
 }
 
+function getTodayString(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+function buildInitialDataFromExpense(expense: {
+  amount: number;
+  date: string;
+  title?: string;
+  memo?: string;
+  splitMethod: string;
+  category: { _id: Id<"categories"> } | null;
+  payer: { _id: Id<"users"> } | null;
+  splits: { userId: Id<"users">; amount: number }[];
+}) {
+  return {
+    amount: expense.amount,
+    categoryId: expense.category?._id as Id<"categories">,
+    paidBy: expense.payer?._id as Id<"users">,
+    date: getTodayString(),
+    title: expense.title,
+    memo: expense.memo,
+    splitMethod: expense.splitMethod as "equal" | "ratio" | "amount" | "full",
+    ratios:
+      expense.splitMethod === "ratio"
+        ? expense.splits.map((s) => ({
+            userId: s.userId,
+            ratio: Math.round((s.amount / expense.amount) * 100),
+          }))
+        : undefined,
+    amounts:
+      expense.splitMethod === "amount"
+        ? expense.splits.map((s) => ({
+            userId: s.userId,
+            amount: s.amount,
+          }))
+        : undefined,
+    bearerId:
+      expense.splitMethod === "full"
+        ? expense.splits.find((s) => s.amount === expense.amount)?.userId
+        : undefined,
+    splits: expense.splits.map((s) => ({
+      userId: s.userId,
+      amount: s.amount,
+    })),
+  };
+}
+
 export default function ExpenseNewPage({ params }: PageProps) {
   const { groupId } = use(params);
+  const searchParams = useSearchParams();
+  const fromExpenseId = searchParams.get("from") as Id<"expenses"> | null;
+
   const { isAuthenticated } = useConvexAuth();
   const detail = useQuery(api.groups.getDetail, {
     groupId: groupId as Id<"groups">,
   });
+  const sourceExpense = useQuery(
+    api.expenses.getById,
+    fromExpenseId ? { expenseId: fromExpenseId } : "skip",
+  );
   const subscription = useQuery(
     api.subscriptions.getMySubscription,
     isAuthenticated ? {} : "skip",
@@ -68,8 +123,10 @@ export default function ExpenseNewPage({ params }: PageProps) {
 
   const isPremium = subscription?.plan === "premium";
 
-  // ローディング中
-  if (detail === undefined) {
+  const isLoading =
+    detail === undefined || (fromExpenseId && sourceExpense === undefined);
+
+  if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50">
         <PageHeader backHref={`/groups/${groupId}`} isLoading />
@@ -81,6 +138,10 @@ export default function ExpenseNewPage({ params }: PageProps) {
       </div>
     );
   }
+
+  const initialData = sourceExpense
+    ? buildInitialDataFromExpense(sourceExpense)
+    : undefined;
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -96,6 +157,7 @@ export default function ExpenseNewPage({ params }: PageProps) {
               displayName: m.displayName,
               isMe: m.isMe,
             }))}
+            initialData={initialData}
             isPremium={isPremium}
             memberColors={buildMemberColorMap(detail.members)}
           />

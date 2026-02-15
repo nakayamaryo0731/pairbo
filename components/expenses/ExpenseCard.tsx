@@ -1,7 +1,7 @@
 "use client";
 
 import type { Id } from "@/convex/_generated/dataModel";
-import { Trash2 } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { formatDateShort, formatAmount } from "@/lib/formatters";
 import { CategoryIcon } from "@/components/categories/CategoryIcon";
 import { DEFAULT_ICON } from "@/lib/categoryIcons";
@@ -32,6 +32,7 @@ type ExpenseCardProps = {
   };
   memberColors?: Record<string, string>;
   onEdit?: () => void;
+  onDuplicate?: () => void;
   onDelete?: () => void;
 };
 
@@ -66,6 +67,7 @@ export function ExpenseCard({
   expense,
   memberColors,
   onEdit,
+  onDuplicate,
   onDelete,
 }: ExpenseCardProps) {
   const { category, payer, amount, date, title, splits } = expense;
@@ -76,6 +78,13 @@ export function ExpenseCard({
   const handleCardClick = () => {
     if (onEdit) {
       onEdit();
+    }
+  };
+
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDuplicate) {
+      onDuplicate();
     }
   };
 
@@ -133,21 +142,33 @@ export function ExpenseCard({
             </div>
           </div>
 
-          {/* 右: 金額 + 削除ボタン */}
+          {/* 右: 金額 + アクションボタン */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="font-semibold text-slate-800">
               ¥{formatAmount(amount)}
             </div>
-            {onDelete && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                aria-label="削除"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
+            <div className="flex items-center -space-x-1">
+              {onDuplicate && (
+                <button
+                  type="button"
+                  onClick={handleDuplicate}
+                  className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+                  aria-label="複製"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  aria-label="削除"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
