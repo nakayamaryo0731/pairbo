@@ -77,6 +77,9 @@ export function SettlementPreview({
           <MemberBalanceList
             balances={preview.balances}
             memberColors={memberColors}
+            groupId={groupId}
+            year={year}
+            month={month}
           />
         </div>
       )}
