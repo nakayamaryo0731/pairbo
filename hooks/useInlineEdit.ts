@@ -47,6 +47,10 @@ type UseInlineEditReturn<T> = {
    */
   save: () => Promise<void>;
   /**
+   * 指定した値で即座に保存（selectなど、setValueとsaveを同時に行いたい場合）
+   */
+  saveWithValue: (newValue: T) => Promise<void>;
+  /**
    * 元の値にリセット
    */
   resetValue: (newInitialValue: T) => void;
@@ -89,6 +93,27 @@ export function useInlineEdit<T>({
     }
   }, [value, savedValue, onSave, validate]);
 
+  const saveWithValue = useCallback(
+    async (newValue: T) => {
+      if (validate && !validate(newValue)) {
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        await onSave(newValue);
+        setValue(newValue);
+        setSavedValue(newValue);
+        setIsEditing(false);
+      } catch {
+        setValue(savedValue);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [savedValue, onSave, validate],
+  );
+
   const resetValue = useCallback((newInitialValue: T) => {
     setValue(newInitialValue);
     setSavedValue(newInitialValue);
@@ -102,6 +127,7 @@ export function useInlineEdit<T>({
     startEditing,
     cancelEditing,
     save,
+    saveWithValue,
     resetValue,
   };
 }
