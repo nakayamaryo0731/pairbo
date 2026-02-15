@@ -1,11 +1,12 @@
 "use client";
 
-import { use } from "react";
+import { use, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { SettlementDetail } from "@/components/settlements";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { buildMemberColorMap } from "@/lib/userColors";
 
 type PageProps = {
   params: Promise<{
@@ -20,6 +21,14 @@ export default function SettlementDetailPage({ params }: PageProps) {
   const groupId = resolvedParams.groupId as Id<"groups">;
 
   const settlement = useQuery(api.settlements.getById, { settlementId });
+  const groupDetail = useQuery(api.groups.getDetail, { groupId });
+  const memberColors = useMemo(
+    () =>
+      groupDetail
+        ? buildMemberColorMap(groupDetail.members.map((m) => m.userId))
+        : {},
+    [groupDetail],
+  );
 
   // ローディング中
   if (settlement === undefined) {
@@ -58,7 +67,10 @@ export default function SettlementDetailPage({ params }: PageProps) {
       <PageHeader backHref={`/groups/${groupId}`} title="精算詳細" />
       <main className="flex-1 p-4">
         <div className="max-w-2xl mx-auto">
-          <SettlementDetail settlementId={settlementId} />
+          <SettlementDetail
+            settlementId={settlementId}
+            memberColors={memberColors}
+          />
         </div>
       </main>
     </div>

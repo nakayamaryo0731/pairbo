@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ExpenseForm } from "@/components/expenses";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { buildMemberColorMap } from "@/lib/userColors";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -96,6 +97,9 @@ export default function ExpenseNewPage({ params }: PageProps) {
               isMe: m.isMe,
             }))}
             isPremium={isPremium}
+            memberColors={buildMemberColorMap(
+              detail.members.map((m) => m.userId),
+            )}
           />
         </div>
       </main>

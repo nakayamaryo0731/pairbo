@@ -20,9 +20,10 @@ type PaymentCardProps = {
     paidAt?: number;
     canMarkPaid: boolean;
   };
+  memberColors?: Record<string, string>;
 };
 
-export function PaymentCard({ payment }: PaymentCardProps) {
+export function PaymentCard({ payment, memberColors }: PaymentCardProps) {
   const markPaid = useMutation(api.settlements.markPaid);
   const [isMarking, setIsMarking] = useState(false);
 
@@ -38,8 +39,21 @@ export function PaymentCard({ payment }: PaymentCardProps) {
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-slate-600">
-          {payment.fromUserName} → {payment.toUserName}
+        <span className="text-sm text-slate-600 flex items-center gap-1">
+          {memberColors?.[payment.fromUserId] && (
+            <span
+              className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: memberColors[payment.fromUserId] }}
+            />
+          )}
+          {payment.fromUserName} →{" "}
+          {memberColors?.[payment.toUserId] && (
+            <span
+              className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: memberColors[payment.toUserId] }}
+            />
+          )}
+          {payment.toUserName}
         </span>
         <span className="font-medium">¥{formatAmount(payment.amount)}</span>
       </div>

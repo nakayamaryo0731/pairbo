@@ -30,6 +30,7 @@ type SplitMethodSelectorProps = {
   bearerId: Id<"users"> | null;
   onBearerIdChange: (bearerId: Id<"users">) => void;
   isPremium?: boolean;
+  memberColors?: Record<string, string>;
 };
 
 const methodLabels: Record<SplitMethod, string> = {
@@ -53,6 +54,7 @@ export function SplitMethodSelector({
   bearerId,
   onBearerIdChange,
   isPremium = false,
+  memberColors,
 }: SplitMethodSelectorProps) {
   // 選択されたメンバーのみをフィルタ
   const selectedMembers = members.filter((m) =>
@@ -73,6 +75,7 @@ export function SplitMethodSelector({
         members={members}
         selectedIds={selectedMemberIds}
         onChange={onSelectedMemberIdsChange}
+        memberColors={memberColors}
       />
 
       {/* 分割方法選択 */}
@@ -132,6 +135,7 @@ export function SplitMethodSelector({
           members={selectedMembers}
           ratios={ratios}
           onRatiosChange={onRatiosChange}
+          memberColors={memberColors}
         />
       )}
 
@@ -141,6 +145,7 @@ export function SplitMethodSelector({
           totalAmount={totalAmount}
           amounts={amounts}
           onAmountsChange={onAmountsChange}
+          memberColors={memberColors}
         />
       )}
 
@@ -149,6 +154,7 @@ export function SplitMethodSelector({
           members={selectedMembers}
           bearerId={bearerId}
           onBearerIdChange={onBearerIdChange}
+          memberColors={memberColors}
         />
       )}
     </div>
@@ -159,10 +165,12 @@ function RatioInput({
   members,
   ratios,
   onRatiosChange,
+  memberColors,
 }: {
   members: Member[];
   ratios: Map<Id<"users">, number>;
   onRatiosChange: (ratios: Map<Id<"users">, number>) => void;
+  memberColors?: Record<string, string>;
 }) {
   const total = Array.from(ratios.values()).reduce((sum, v) => sum + v, 0);
   const isValid = total === 100;
@@ -178,7 +186,15 @@ function RatioInput({
     <div className="space-y-3 p-3 bg-blue-50 rounded-xl">
       {members.map((member) => (
         <div key={member.userId} className="flex items-center gap-3">
-          <span className="flex-1 text-sm">{member.displayName}</span>
+          <span className="flex-1 text-sm flex items-center gap-1.5">
+            {memberColors?.[member.userId] && (
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: memberColors[member.userId] }}
+              />
+            )}
+            {member.displayName}
+          </span>
           <div className="flex items-center gap-1">
             <input
               type="number"
@@ -207,11 +223,13 @@ function AmountInput({
   totalAmount,
   amounts,
   onAmountsChange,
+  memberColors,
 }: {
   members: Member[];
   totalAmount: number;
   amounts: Map<Id<"users">, number>;
   onAmountsChange: (amounts: Map<Id<"users">, number>) => void;
+  memberColors?: Record<string, string>;
 }) {
   const total = Array.from(amounts.values()).reduce((sum, v) => sum + v, 0);
   const remaining = totalAmount - total;
@@ -228,7 +246,15 @@ function AmountInput({
     <div className="space-y-3 p-3 bg-blue-50 rounded-xl">
       {members.map((member) => (
         <div key={member.userId} className="flex items-center gap-3">
-          <span className="flex-1 text-sm">{member.displayName}</span>
+          <span className="flex-1 text-sm flex items-center gap-1.5">
+            {memberColors?.[member.userId] && (
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: memberColors[member.userId] }}
+              />
+            )}
+            {member.displayName}
+          </span>
           <div className="flex items-center gap-1">
             <span className="text-sm text-slate-500">¥</span>
             <input
@@ -258,10 +284,12 @@ function FullInput({
   members,
   bearerId,
   onBearerIdChange,
+  memberColors,
 }: {
   members: Member[];
   bearerId: Id<"users"> | null;
   onBearerIdChange: (bearerId: Id<"users">) => void;
+  memberColors?: Record<string, string>;
 }) {
   return (
     <div className="space-y-2 p-3 bg-blue-50 rounded-xl">
@@ -278,7 +306,15 @@ function FullInput({
             onChange={() => onBearerIdChange(member.userId)}
             className="w-4 h-4 text-blue-600"
           />
-          <span className="text-sm">{member.displayName}</span>
+          <span className="text-sm flex items-center gap-1.5">
+            {memberColors?.[member.userId] && (
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: memberColors[member.userId] }}
+              />
+            )}
+            {member.displayName}
+          </span>
         </label>
       ))}
       {bearerId === null && (
@@ -292,10 +328,12 @@ function MemberSelector({
   members,
   selectedIds,
   onChange,
+  memberColors,
 }: {
   members: Member[];
   selectedIds: Set<Id<"users">>;
   onChange: (ids: Set<Id<"users">>) => void;
+  memberColors?: Record<string, string>;
 }) {
   const handleToggle = (userId: Id<"users">) => {
     const newSet = new Set(selectedIds);
@@ -350,12 +388,18 @@ function MemberSelector({
               key={member.userId}
               type="button"
               onClick={() => handleToggle(member.userId)}
-              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border transition-colors ${
                 isSelected
                   ? "bg-blue-500 text-white border-blue-500"
                   : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
               }`}
             >
+              {memberColors?.[member.userId] && (
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full shrink-0 border border-white/30"
+                  style={{ backgroundColor: memberColors[member.userId] }}
+                />
+              )}
               {member.displayName}
               {member.isMe && " (自分)"}
             </button>

@@ -11,9 +11,13 @@ import { formatDateSlash, formatPeriodLabel } from "@/lib/formatters";
 
 type SettlementDetailProps = {
   settlementId: Id<"settlements">;
+  memberColors?: Record<string, string>;
 };
 
-export function SettlementDetail({ settlementId }: SettlementDetailProps) {
+export function SettlementDetail({
+  settlementId,
+  memberColors,
+}: SettlementDetailProps) {
   const settlement = useQuery(api.settlements.getById, { settlementId });
   const reopenMutation = useMutation(api.settlements.reopen);
   const [isReopening, setIsReopening] = useState(false);
@@ -92,7 +96,11 @@ export function SettlementDetail({ settlementId }: SettlementDetailProps) {
         {settlement.payments.length > 0 ? (
           <div className="space-y-2">
             {settlement.payments.map((payment) => (
-              <PaymentCard key={payment._id} payment={payment} />
+              <PaymentCard
+                key={payment._id}
+                payment={payment}
+                memberColors={memberColors}
+              />
             ))}
           </div>
         ) : (
