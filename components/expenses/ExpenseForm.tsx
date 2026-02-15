@@ -10,7 +10,6 @@ import {
   type SplitMethod,
   type SplitDetails,
 } from "./SplitMethodSelector";
-import { ShoppingItemSelector } from "./ShoppingItemSelector";
 import { TagSelector } from "./TagSelector";
 import { ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -142,9 +141,7 @@ export function ExpenseForm({
       return new Set(members.map((m) => m.userId));
     },
   );
-  const [shoppingItemIds, setShoppingItemIds] = useState<Id<"shoppingItems">[]>(
-    [],
-  );
+  const [shoppingItemIds] = useState<Id<"shoppingItems">[]>([]);
   const [tagIds, setTagIds] = useState<Id<"tags">[]>(
     isEditMode && initialData.tagIds ? initialData.tagIds : [],
   );
@@ -477,7 +474,7 @@ export function ExpenseForm({
         disabled={isLoading}
       />
 
-      {/* 買い物リスト連携（新規作成時のみ） */}
+      {/* 買い物リスト連携（現在非表示）
       {!isEditMode && (
         <ShoppingItemSelector
           groupId={groupId}
@@ -485,6 +482,7 @@ export function ExpenseForm({
           onSelectionChange={setShoppingItemIds}
         />
       )}
+      */}
 
       {/* 連携した買い物リスト（編集時のみ） */}
       {isEditMode && linkedShoppingItems && linkedShoppingItems.length > 0 && (

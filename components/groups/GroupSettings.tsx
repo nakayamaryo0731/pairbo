@@ -11,7 +11,6 @@ import {
   Calendar,
   Users,
   Tag,
-  ShoppingCart,
   Home,
   ChevronRight,
   CreditCard,
@@ -277,25 +276,6 @@ export function GroupSettings({
           </div>
           <CategoryManager groupId={group._id} categories={categories} />
         </div>
-      </section>
-
-      {/* 買い物リスト */}
-      <section className="bg-white border border-slate-200 rounded-lg">
-        <Link
-          href={`/groups/${group._id}/shopping`}
-          className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors"
-        >
-          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-            <ShoppingCart className="h-5 w-5 text-slate-600" />
-          </div>
-          <div className="flex-1">
-            <p className="font-medium text-slate-800">買い物リスト</p>
-            <p className="text-sm text-slate-500">
-              グループで共有する買い物リスト
-            </p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-slate-400" />
-        </Link>
       </section>
 
       {/* プラン管理 */}
