@@ -1,5 +1,6 @@
 import { v, ConvexError } from "convex/values";
 import { authMutation, authQuery } from "./lib/auth";
+import { internalMutation } from "./_generated/server";
 import { requireGroupMember } from "./lib/authorization";
 import { getOrThrow } from "./lib/dataHelpers";
 import {
@@ -7,6 +8,7 @@ import {
   validateCategoryIcon,
   CategoryValidationError,
 } from "./domain/category";
+import { PRESET_CATEGORIES } from "./lib/presetCategories";
 
 /**
  * カテゴリ作成
@@ -242,5 +244,148 @@ export const reorder = authMutation({
       groupId: args.groupId,
       categoryCount: args.categoryIds.length,
     });
+  },
+});
+
+export const migratePresetCategories = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const groups = await ctx.db.query("groups").collect();
+    let totalAdded = 0;
+    let totalUpdated = 0;
+
+    // 旧名→新名のリネーム（リネーム後の名前はPRESET_CATEGORIESと一致させる）
+    const renames: Record<string, string> = {
+      家賃: "住居費",
+    };
+
+    const iconUpdates: Record<string, string> = {};
+
+    for (const group of groups) {
+      const existing = await ctx.db
+        .query("categories")
+        .withIndex("by_group", (q) => q.eq("groupId", group._id))
+        .collect();
+
+      const existingByName = new Map(existing.map((c) => [c.name, c]));
+
+      // リネーム処理（先に実行して existingByName を更新）
+      for (const [oldName, newName] of Object.entries(renames)) {
+        const found = existingByName.get(oldName);
+        if (found && !existingByName.has(newName)) {
+          const preset = PRESET_CATEGORIES.find((p) => p.name === newName);
+          await ctx.db.patch(found._id, {
+            name: newName,
+            icon: preset?.icon ?? found.icon,
+          });
+          existingByName.set(newName, { ...found, name: newName });
+          existingByName.delete(oldName);
+          totalUpdated++;
+        }
+      }
+
+      // 不足プリセットの追加 / 手動作成済みをプリセットに昇格
+      for (const preset of PRESET_CATEGORIES) {
+        const found = existingByName.get(preset.name);
+        if (!found) {
+          await ctx.db.insert("categories", {
+            groupId: group._id,
+            name: preset.name,
+            icon: preset.icon,
+            isPreset: true,
+            sortOrder: preset.sortOrder,
+            createdAt: Date.now(),
+          });
+          totalAdded++;
+        } else if (!found.isPreset) {
+          await ctx.db.patch(found._id, {
+            isPreset: true,
+            icon: preset.icon,
+            sortOrder: preset.sortOrder,
+          });
+          totalUpdated++;
+        }
+      }
+
+      // アイコン変更があったプリセットを更新
+      for (const [name, newIcon] of Object.entries(iconUpdates)) {
+        const found = existingByName.get(name);
+        if (found && found.isPreset && found.icon !== newIcon) {
+          await ctx.db.patch(found._id, { icon: newIcon });
+          totalUpdated++;
+        }
+      }
+    }
+
+    return {
+      groupCount: groups.length,
+      categoriesAdded: totalAdded,
+      iconsUpdated: totalUpdated,
+    };
+  },
+});
+
+const EMOJI_TO_LUCIDE: Record<string, string> = {
+  "🛒": "shopping-cart",
+  "🍽️": "utensils-crossed",
+  "🧴": "spray-can",
+  "🏠": "home",
+  "💡": "lightbulb",
+  "📱": "smartphone",
+  "🚃": "train-front",
+  "🎬": "film",
+  "🎨": "palette",
+  "👕": "shirt",
+  "🎁": "gift",
+  "💊": "pill",
+  "📦": "package",
+  "🚗": "car",
+  "💼": "briefcase",
+  "💻": "laptop",
+  "🎵": "music",
+  "📚": "book",
+  "✈️": "plane",
+  "🏥": "cross",
+  "💄": "sparkles",
+  "👶": "baby",
+  "🏋️": "dumbbell",
+  "🍺": "beer",
+  "☕": "coffee",
+  "🎓": "graduation-cap",
+  "💒": "heart",
+  "🔧": "wrench",
+  "🪴": "sprout",
+  "💳": "credit-card",
+  "🏦": "landmark",
+  "📝": "pencil",
+  "🎮": "gamepad-2",
+  "⚽": "circle-dot",
+  "🎤": "mic",
+  "📷": "camera",
+  "🐱": "paw-print",
+  "🐶": "paw-print",
+};
+
+export const migrateIconsToLucide = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const allCategories = await ctx.db.query("categories").collect();
+    let updated = 0;
+
+    for (const category of allCategories) {
+      const lucideName = EMOJI_TO_LUCIDE[category.icon];
+      if (lucideName) {
+        await ctx.db.patch(category._id, { icon: lucideName });
+        updated++;
+      } else if (category.isPreset) {
+        const preset = PRESET_CATEGORIES.find((p) => p.name === category.name);
+        if (preset && category.icon !== preset.icon) {
+          await ctx.db.patch(category._id, { icon: preset.icon });
+          updated++;
+        }
+      }
+    }
+
+    return { total: allCategories.length, updated };
   },
 });

@@ -12,6 +12,7 @@ import {
 } from "./SplitMethodSelector";
 import { TagSelector } from "./TagSelector";
 import { ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
 
 type Category = {
   _id: Id<"categories">;
@@ -414,7 +415,7 @@ export function ExpenseForm({
                   : "bg-blue-50 text-blue-600 hover:bg-blue-100"
               }`}
             >
-              <span>{category.icon}</span>
+              <CategoryIcon name={category.icon} size="sm" />
               <span className="text-sm font-medium">{category.name}</span>
             </button>
           ))}
@@ -524,7 +525,7 @@ export function ExpenseForm({
                   key={item._id}
                   className="flex items-center gap-3 px-4 py-3"
                 >
-                  <span className="text-slate-400">🛒</span>
+                  <ShoppingCart className="h-4 w-4 text-slate-400" />
                   <span className="text-sm text-slate-700">{item.name}</span>
                 </div>
               ))}

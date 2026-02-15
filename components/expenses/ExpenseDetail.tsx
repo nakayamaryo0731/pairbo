@@ -11,6 +11,8 @@ import {
   getSplitMethodLabel,
 } from "@/lib/formatters";
 import { ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
+import { DEFAULT_ICON } from "@/lib/categoryIcons";
 
 type ExpenseDetailProps = {
   expense: {
@@ -69,7 +71,11 @@ export function ExpenseDetail({
       <div className="bg-white border border-slate-200 rounded-lg p-6">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
-            <span className="text-3xl">{expense.category?.icon ?? "📦"}</span>
+            <CategoryIcon
+              name={expense.category?.icon ?? DEFAULT_ICON}
+              size="xl"
+              className="text-slate-600"
+            />
           </div>
           <div>
             <div className="text-2xl font-bold text-slate-800">
@@ -178,7 +184,7 @@ export function ExpenseDetail({
                     key={item._id}
                     className="flex items-center gap-3 px-4 py-3"
                   >
-                    <span className="text-slate-400">🛒</span>
+                    <ShoppingCart className="h-4 w-4 text-slate-400" />
                     <span className="text-sm text-slate-700">{item.name}</span>
                   </div>
                 ))}

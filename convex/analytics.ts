@@ -67,7 +67,7 @@ export const getCategoryBreakdown = authQuery({
         return {
           categoryId,
           categoryName: category?.name ?? "不明なカテゴリ",
-          categoryIcon: category?.icon ?? "❓",
+          categoryIcon: category?.icon ?? "package",
           amount,
           percentage,
         };
@@ -145,7 +145,7 @@ export const getYearlyCategoryBreakdown = authQuery({
         return {
           categoryId,
           categoryName: category?.name ?? "不明なカテゴリ",
-          categoryIcon: category?.icon ?? "❓",
+          categoryIcon: category?.icon ?? "package",
           amount,
           percentage,
         };
@@ -397,7 +397,7 @@ export const getAllTimeCategoryBreakdown = authQuery({
         return {
           categoryId,
           categoryName: category?.name ?? "不明なカテゴリ",
-          categoryIcon: category?.icon ?? "❓",
+          categoryIcon: category?.icon ?? "package",
           amount,
           percentage,
         };

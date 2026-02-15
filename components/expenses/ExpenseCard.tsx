@@ -3,6 +3,8 @@
 import type { Id } from "@/convex/_generated/dataModel";
 import { Trash2 } from "lucide-react";
 import { formatDateShort, formatAmount } from "@/lib/formatters";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
+import { DEFAULT_ICON } from "@/lib/categoryIcons";
 
 type ExpenseCardProps = {
   expense: {
@@ -114,7 +116,11 @@ export function ExpenseCard({
         <div className="flex items-center gap-3">
           {/* カテゴリアイコン */}
           <div className="w-9 h-9 bg-white/80 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-base">{category?.icon ?? "📦"}</span>
+            <CategoryIcon
+              name={category?.icon ?? DEFAULT_ICON}
+              size="md"
+              className="text-slate-600"
+            />
           </div>
 
           {/* 中央: タイトル + 詳細 */}

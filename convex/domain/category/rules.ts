@@ -21,14 +21,12 @@ export function validateCategoryName(name: string): string {
 }
 
 export function validateCategoryIcon(icon: string): string {
-  // Use Intl.Segmenter to properly count grapheme clusters (emoji)
-  const segmenter = new Intl.Segmenter("ja", { granularity: "grapheme" });
-  const segments = [...segmenter.segment(icon)];
-
-  if (segments.length !== 1) {
-    throw new CategoryValidationError(
-      "アイコンは絵文字1文字で入力してください",
-    );
+  const trimmed = icon.trim();
+  if (trimmed.length === 0 || trimmed.length > CATEGORY_RULES.ICON_MAX_LENGTH) {
+    throw new CategoryValidationError("アイコン名を入力してください");
   }
-  return icon;
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed)) {
+    throw new CategoryValidationError("アイコン名の形式が正しくありません");
+  }
+  return trimmed;
 }

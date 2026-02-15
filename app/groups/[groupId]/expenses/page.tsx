@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getTagColorClasses } from "@/lib/tagColors";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -90,7 +91,7 @@ export default function ExpenseListPage({ params }: PageProps) {
 
   if (data) {
     if ("category" in data && data.category) {
-      title = `${data.category.icon} ${data.category.name}`;
+      title = data.category.name;
     } else if ("tag" in data) {
       if (data.isUntagged) {
         title = "タグなし";
@@ -176,7 +177,11 @@ function ExpenseItem({ expense }: ExpenseItemProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-lg">{expense.category?.icon ?? "❓"}</span>
+            <CategoryIcon
+              name={expense.category?.icon ?? "package"}
+              size="md"
+              className="text-slate-600"
+            />
             <span className="font-medium text-slate-800 truncate">
               {expense.title || expense.category?.name || "不明"}
             </span>

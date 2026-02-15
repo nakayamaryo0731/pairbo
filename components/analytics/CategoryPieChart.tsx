@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { Id } from "@/convex/_generated/dataModel";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
 
 const CHART_COLORS = [
   "#2563eb", // blue-600
@@ -92,7 +93,11 @@ export function CategoryPieChart({
               className="w-3 h-3 rounded-full shrink-0"
               style={{ backgroundColor: item.fill }}
             />
-            <span className="shrink-0">{item.categoryIcon}</span>
+            <CategoryIcon
+              name={item.categoryIcon}
+              size="sm"
+              className="shrink-0 text-slate-600"
+            />
             <span className="flex-1 truncate text-sm">{item.categoryName}</span>
             <span className="text-sm font-medium">
               ¥{item.amount.toLocaleString()}

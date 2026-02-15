@@ -1,6 +1,7 @@
 "use client";
 
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import { CategoryIcon } from "./CategoryIcon";
 
 type DeleteCategoryDialogProps = {
   open: boolean;
@@ -32,7 +33,11 @@ export function DeleteCategoryDialog({
     >
       <div className="py-4">
         <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg">
-          <span className="text-xl">{category.icon}</span>
+          <CategoryIcon
+            name={category.icon}
+            size="lg"
+            className="text-slate-700"
+          />
           <span className="font-medium">{category.name}</span>
         </div>
       </div>
