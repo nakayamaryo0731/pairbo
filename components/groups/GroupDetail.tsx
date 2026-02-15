@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -16,8 +16,14 @@ import { TabNavigation } from "@/components/ui/TabNavigation";
 import { FAB } from "@/components/ui/FAB";
 import { AdBanner } from "@/components/ads";
 import { ClipboardList, Coins, Plus } from "lucide-react";
+import { buildMemberColorMap } from "@/lib/userColors";
 
 type TabType = "expenses" | "settlement";
+
+type Member = {
+  userId: Id<"users">;
+  joinedAt: number;
+};
 
 type GroupDetailProps = {
   group: {
@@ -26,6 +32,7 @@ type GroupDetailProps = {
     description?: string;
     closingDay: number;
   };
+  members: Member[];
 };
 
 type ExpenseToDelete = {
@@ -36,7 +43,7 @@ type ExpenseToDelete = {
   categoryName: string;
 };
 
-export function GroupDetail({ group }: GroupDetailProps) {
+export function GroupDetail({ group, members }: GroupDetailProps) {
   const router = useRouter();
   const removeExpense = useMutation(api.expenses.remove);
 
@@ -49,6 +56,11 @@ export function GroupDetail({ group }: GroupDetailProps) {
     canGoNextMonth: canGoNext,
     period,
   } = usePeriodNavigation({ closingDay: group.closingDay });
+
+  const memberColors = useMemo(
+    () => buildMemberColorMap(members.map((m) => m.userId)),
+    [members],
+  );
 
   const [activeTab, setActiveTab] = useState<TabType>("expenses");
 
@@ -145,6 +157,7 @@ export function GroupDetail({ group }: GroupDetailProps) {
               groupId={group._id}
               year={displayYear}
               month={displayMonth}
+              memberColors={memberColors}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

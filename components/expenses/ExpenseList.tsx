@@ -30,6 +30,7 @@ type Expense = {
 
 type ExpenseListProps = {
   expenses: Expense[];
+  memberColors?: Record<string, string>;
   onEdit?: (expenseId: Id<"expenses">) => void;
   onDelete?: (expenseId: Id<"expenses">) => void;
 };
@@ -57,7 +58,12 @@ function groupByYearMonth(expenses: Expense[]): Map<string, Expense[]> {
   return grouped;
 }
 
-export function ExpenseList({ expenses, onEdit, onDelete }: ExpenseListProps) {
+export function ExpenseList({
+  expenses,
+  memberColors,
+  onEdit,
+  onDelete,
+}: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
       <EmptyState
@@ -89,6 +95,7 @@ export function ExpenseList({ expenses, onEdit, onDelete }: ExpenseListProps) {
               <ExpenseCard
                 key={expense._id}
                 expense={expense}
+                memberColors={memberColors}
                 onEdit={onEdit ? () => onEdit(expense._id) : undefined}
                 onDelete={onDelete ? () => onDelete(expense._id) : undefined}
               />
