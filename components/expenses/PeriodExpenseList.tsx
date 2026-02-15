@@ -6,6 +6,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { ExpenseCard } from "./ExpenseCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { DEFAULT_ICON } from "@/lib/categoryIcons";
 
 type ExpenseForDelete = {
   _id: Id<"expenses">;
@@ -64,7 +65,7 @@ export function PeriodExpenseList({
                     _id: expense._id,
                     amount: expense.amount,
                     date: expense.date,
-                    categoryIcon: expense.category?.icon ?? "📦",
+                    categoryIcon: expense.category?.icon ?? DEFAULT_ICON,
                     categoryName: expense.category?.name ?? "カテゴリなし",
                   })
               : undefined

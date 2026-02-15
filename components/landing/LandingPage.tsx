@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Users, PieChart, Calculator, Smartphone, Shield } from "lucide-react";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
 
 const features = [
   {
@@ -68,16 +69,20 @@ export function LandingPage() {
             </div>
             <div className="space-y-2">
               {[
-                { icon: "🛒", name: "食費", amount: "¥45,200" },
-                { icon: "🏠", name: "住居費", amount: "¥80,000" },
-                { icon: "🚃", name: "交通費", amount: "¥12,400" },
+                { icon: "shopping-cart", name: "食費", amount: "¥45,200" },
+                { icon: "home", name: "住居費", amount: "¥80,000" },
+                { icon: "train-front", name: "交通費", amount: "¥12,400" },
               ].map((item) => (
                 <div
                   key={item.name}
                   className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0"
                 >
                   <div className="flex items-center gap-2">
-                    <span>{item.icon}</span>
+                    <CategoryIcon
+                      name={item.icon}
+                      size="sm"
+                      className="text-slate-500"
+                    />
                     <span className="text-sm text-slate-700">{item.name}</span>
                   </div>
                   <span className="text-sm font-medium text-slate-800">

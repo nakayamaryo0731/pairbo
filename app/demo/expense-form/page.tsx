@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
 
 type StylePattern = "minimal" | "card" | "modern";
 type ColorTheme =
@@ -110,14 +111,14 @@ const COLOR_THEMES: Record<
 };
 
 const MOCK_CATEGORIES = [
-  { id: "1", name: "食費", icon: "🍽️" },
-  { id: "2", name: "交通費", icon: "🚃" },
-  { id: "3", name: "日用品", icon: "🧴" },
-  { id: "4", name: "娯楽", icon: "🎮" },
-  { id: "5", name: "光熱費", icon: "💡" },
-  { id: "6", name: "通信費", icon: "📱" },
-  { id: "7", name: "医療費", icon: "🏥" },
-  { id: "8", name: "その他", icon: "📦" },
+  { id: "1", name: "食費", icon: "utensils-crossed" },
+  { id: "2", name: "交通費", icon: "train-front" },
+  { id: "3", name: "日用品", icon: "spray-can" },
+  { id: "4", name: "娯楽", icon: "film" },
+  { id: "5", name: "光熱費", icon: "lightbulb" },
+  { id: "6", name: "通信費", icon: "wifi" },
+  { id: "7", name: "医療費", icon: "stethoscope" },
+  { id: "8", name: "その他", icon: "package" },
 ];
 
 const MOCK_MEMBERS = [
@@ -187,7 +188,7 @@ function MinimalForm({ theme }: { theme: ColorTheme }) {
                 i === 0 ? colors.chipSelected : colors.chipUnselected
               }`}
             >
-              <span>{cat.icon}</span>
+              <CategoryIcon name={cat.icon} size="sm" />
               <span className="text-sm font-medium">{cat.name}</span>
             </button>
           ))}
@@ -331,7 +332,7 @@ function CardForm() {
                   : "bg-white/20 text-white hover:bg-white/30"
               }`}
             >
-              <span>{cat.icon}</span>
+              <CategoryIcon name={cat.icon} size="sm" />
               <span className="text-sm font-medium">{cat.name}</span>
             </button>
           ))}
@@ -476,7 +477,7 @@ function ModernForm() {
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              <span className="text-2xl">{cat.icon}</span>
+              <CategoryIcon name={cat.icon} size="lg" />
               <span className="text-xs font-bold">{cat.name}</span>
             </button>
           ))}

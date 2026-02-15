@@ -11,6 +11,7 @@ import {
 } from "@/components/expenses";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Trash2 } from "lucide-react";
+import { DEFAULT_ICON } from "@/lib/categoryIcons";
 import { useRouter } from "next/navigation";
 import { buildMemberColorMap } from "@/lib/userColors";
 
@@ -160,7 +161,7 @@ export default function ExpensePage({ params }: PageProps) {
           open={showDeleteDialog}
           onOpenChange={setShowDeleteDialog}
           expense={{
-            categoryIcon: expense.category?.icon ?? "📦",
+            categoryIcon: expense.category?.icon ?? DEFAULT_ICON,
             categoryName: expense.category?.name ?? "カテゴリなし",
             amount: expense.amount,
             date: expense.date,
@@ -247,7 +248,7 @@ export default function ExpensePage({ params }: PageProps) {
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         expense={{
-          categoryIcon: expense.category?.icon ?? "📦",
+          categoryIcon: expense.category?.icon ?? DEFAULT_ICON,
           categoryName: expense.category?.name ?? "カテゴリなし",
           amount: expense.amount,
           date: expense.date,

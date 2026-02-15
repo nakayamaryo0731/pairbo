@@ -61,44 +61,58 @@ describe("カテゴリ名バリデーション", () => {
 
 describe("カテゴリアイコンバリデーション", () => {
   describe("validateCategoryIcon", () => {
-    test("単一の絵文字を受け付ける", () => {
-      expect(validateCategoryIcon("🍔")).toBe("🍔");
-      expect(validateCategoryIcon("📦")).toBe("📦");
-      expect(validateCategoryIcon("💰")).toBe("💰");
+    test("kebab-caseのアイコン名を受け付ける", () => {
+      expect(validateCategoryIcon("shopping-cart")).toBe("shopping-cart");
+      expect(validateCategoryIcon("package")).toBe("package");
+      expect(validateCategoryIcon("home")).toBe("home");
+      expect(validateCategoryIcon("train-front")).toBe("train-front");
+      expect(validateCategoryIcon("gamepad-2")).toBe("gamepad-2");
     });
 
-    test("複合絵文字（ZWJシーケンス）を単一として受け付ける", () => {
-      // Intl.Segmenterでグラフェムクラスタとして正しく1つとカウント
-      expect(validateCategoryIcon("👨‍👩‍👧")).toBe("👨‍👩‍👧");
-    });
-
-    test("肌色修飾子付き絵文字を受け付ける", () => {
-      expect(validateCategoryIcon("👍🏽")).toBe("👍🏽");
-    });
-
-    test("複数の絵文字はエラー", () => {
-      expect(() => validateCategoryIcon("🍔🍕")).toThrow(
-        CategoryValidationError,
-      );
-      expect(() => validateCategoryIcon("🍔🍕")).toThrow(
-        "アイコンは絵文字1文字で入力してください",
-      );
+    test("前後の空白をトリムする", () => {
+      expect(validateCategoryIcon("  home  ")).toBe("home");
     });
 
     test("空文字列はエラー", () => {
       expect(() => validateCategoryIcon("")).toThrow(CategoryValidationError);
       expect(() => validateCategoryIcon("")).toThrow(
-        "アイコンは絵文字1文字で入力してください",
+        "アイコン名を入力してください",
       );
     });
 
-    test("通常文字はエラー（2文字以上の場合）", () => {
-      expect(() => validateCategoryIcon("AB")).toThrow(CategoryValidationError);
+    test("大文字を含む文字列はエラー", () => {
+      expect(() => validateCategoryIcon("ShoppingCart")).toThrow(
+        CategoryValidationError,
+      );
+      expect(() => validateCategoryIcon("Home")).toThrow(
+        CategoryValidationError,
+      );
     });
 
-    test("単一の通常文字は受け付ける（仕様上許容）", () => {
-      // 現在の実装では1文字であれば通常文字も許容
-      expect(validateCategoryIcon("A")).toBe("A");
+    test("スペースを含む文字列はエラー", () => {
+      expect(() => validateCategoryIcon("shopping cart")).toThrow(
+        CategoryValidationError,
+      );
+    });
+
+    test("絵文字はエラー", () => {
+      expect(() => validateCategoryIcon("🍔")).toThrow(CategoryValidationError);
+      expect(() => validateCategoryIcon("📦")).toThrow(CategoryValidationError);
+    });
+
+    test("連続ハイフンはエラー", () => {
+      expect(() => validateCategoryIcon("shopping--cart")).toThrow(
+        CategoryValidationError,
+      );
+    });
+
+    test("先頭・末尾ハイフンはエラー", () => {
+      expect(() => validateCategoryIcon("-home")).toThrow(
+        CategoryValidationError,
+      );
+      expect(() => validateCategoryIcon("home-")).toThrow(
+        CategoryValidationError,
+      );
     });
   });
 });

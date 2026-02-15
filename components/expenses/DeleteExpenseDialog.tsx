@@ -2,6 +2,7 @@
 
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { formatDateJapanese, formatAmount } from "@/lib/formatters";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
 
 type DeleteExpenseDialogProps = {
   open: boolean;
@@ -36,7 +37,11 @@ export function DeleteExpenseDialog({
       <div className="bg-slate-50 rounded-lg p-4 my-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200">
-            <span className="text-lg">{expense.categoryIcon}</span>
+            <CategoryIcon
+              name={expense.categoryIcon}
+              size="md"
+              className="text-slate-600"
+            />
           </div>
           <div>
             <div className="font-medium text-slate-800">

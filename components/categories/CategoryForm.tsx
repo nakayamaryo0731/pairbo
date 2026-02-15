@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { EmojiPicker } from "./EmojiPicker";
+import { IconPicker } from "./IconPicker";
+import { CategoryIcon } from "./CategoryIcon";
+import { DEFAULT_ICON } from "@/lib/categoryIcons";
 
 type CategoryFormProps = {
   mode: "create" | "edit";
@@ -18,14 +20,14 @@ type CategoryFormProps = {
 export function CategoryForm({
   mode,
   initialName = "",
-  initialIcon = "📦",
+  initialIcon = DEFAULT_ICON,
   onSubmit,
   onCancel,
   isLoading = false,
 }: CategoryFormProps) {
   const [name, setName] = useState(initialName);
   const [icon, setIcon] = useState(initialIcon);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,16 +48,16 @@ export function CategoryForm({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowEmojiPicker(true)}
-            className="w-12 h-12 text-2xl border rounded-lg flex items-center justify-center hover:bg-slate-50 transition-colors"
+            onClick={() => setShowIconPicker(true)}
+            className="w-12 h-12 border rounded-lg flex items-center justify-center hover:bg-slate-50 transition-colors"
           >
-            {icon}
+            <CategoryIcon name={icon} size="lg" className="text-slate-700" />
           </button>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setShowEmojiPicker(true)}
+            onClick={() => setShowIconPicker(true)}
           >
             変更
           </Button>
@@ -94,9 +96,9 @@ export function CategoryForm({
         </Button>
       </div>
 
-      <EmojiPicker
-        open={showEmojiPicker}
-        onOpenChange={setShowEmojiPicker}
+      <IconPicker
+        open={showIconPicker}
+        onOpenChange={setShowIconPicker}
         onSelect={setIcon}
       />
     </form>

@@ -7,7 +7,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 export const FALLBACK = {
   USER_NAME: "不明なユーザー",
   CATEGORY_NAME: "不明なカテゴリ",
-  CATEGORY_ICON: "❓",
+  CATEGORY_ICON: "package",
   GROUP_NAME: "不明なグループ",
 } as const;
 

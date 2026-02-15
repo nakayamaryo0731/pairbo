@@ -36,7 +36,7 @@ describe("categories", () => {
         .mutation(api.categories.create, {
           groupId,
           name: "カスタムカテゴリ",
-          icon: "🎮",
+          icon: "gamepad-2",
         });
 
       expect(categoryId).toBeDefined();
@@ -48,7 +48,7 @@ describe("categories", () => {
 
       expect(category).not.toBeNull();
       expect(category?.name).toBe("カスタムカテゴリ");
-      expect(category?.icon).toBe("🎮");
+      expect(category?.icon).toBe("gamepad-2");
       expect(category?.isPreset).toBe(false);
     });
 
@@ -67,7 +67,7 @@ describe("categories", () => {
         t.withIdentity(testIdentity2).mutation(api.categories.create, {
           groupId,
           name: "不正なカテゴリ",
-          icon: "🚫",
+          icon: "cross",
         }),
       ).rejects.toThrow("このグループにアクセスする権限がありません");
     });
@@ -85,7 +85,7 @@ describe("categories", () => {
       await t.withIdentity(testIdentity).mutation(api.categories.create, {
         groupId,
         name: "カスタムカテゴリ",
-        icon: "🎮",
+        icon: "gamepad-2",
       });
 
       // 同名のカテゴリを作成しようとする
@@ -93,7 +93,7 @@ describe("categories", () => {
         t.withIdentity(testIdentity).mutation(api.categories.create, {
           groupId,
           name: "カスタムカテゴリ",
-          icon: "🎲",
+          icon: "star",
         }),
       ).rejects.toThrow("同じ名前のカテゴリが既に存在します");
     });
@@ -110,14 +110,14 @@ describe("categories", () => {
       await t.withIdentity(testIdentity).mutation(api.categories.create, {
         groupId,
         name: "Test",
-        icon: "🎮",
+        icon: "gamepad-2",
       });
 
       await expect(
         t.withIdentity(testIdentity).mutation(api.categories.create, {
           groupId,
           name: "TEST",
-          icon: "🎲",
+          icon: "star",
         }),
       ).rejects.toThrow("同じ名前のカテゴリが既に存在します");
     });
@@ -135,12 +135,12 @@ describe("categories", () => {
         t.withIdentity(testIdentity).mutation(api.categories.create, {
           groupId,
           name: "",
-          icon: "🎮",
+          icon: "gamepad-2",
         }),
       ).rejects.toThrow("カテゴリ名を入力してください");
     });
 
-    test("複数の絵文字はエラー", async () => {
+    test("不正なアイコン名はエラー", async () => {
       const t = convexTest(schema, modules);
 
       const groupId = await t
@@ -153,9 +153,9 @@ describe("categories", () => {
         t.withIdentity(testIdentity).mutation(api.categories.create, {
           groupId,
           name: "テスト",
-          icon: "🎮🎲",
+          icon: "Invalid Icon",
         }),
-      ).rejects.toThrow("アイコンは絵文字1文字で入力してください");
+      ).rejects.toThrow("アイコン名の形式が正しくありません");
     });
   });
 
@@ -174,13 +174,13 @@ describe("categories", () => {
         .mutation(api.categories.create, {
           groupId,
           name: "元の名前",
-          icon: "🎮",
+          icon: "gamepad-2",
         });
 
       await t.withIdentity(testIdentity).mutation(api.categories.update, {
         categoryId,
         name: "新しい名前",
-        icon: "🎲",
+        icon: "star",
       });
 
       const category = await t.run(async (ctx) => {
@@ -188,7 +188,7 @@ describe("categories", () => {
       });
 
       expect(category?.name).toBe("新しい名前");
-      expect(category?.icon).toBe("🎲");
+      expect(category?.icon).toBe("star");
     });
 
     test("プリセットカテゴリは更新できない", async () => {
@@ -215,7 +215,7 @@ describe("categories", () => {
         t.withIdentity(testIdentity).mutation(api.categories.update, {
           categoryId: presetCategory!._id,
           name: "変更した名前",
-          icon: "🔧",
+          icon: "wrench",
         }),
       ).rejects.toThrow("プリセットカテゴリは編集できません");
     });
@@ -234,14 +234,14 @@ describe("categories", () => {
         .mutation(api.categories.create, {
           groupId,
           name: "テスト",
-          icon: "🎮",
+          icon: "gamepad-2",
         });
 
       await expect(
         t.withIdentity(testIdentity2).mutation(api.categories.update, {
           categoryId,
           name: "不正な更新",
-          icon: "🚫",
+          icon: "cross",
         }),
       ).rejects.toThrow("このグループにアクセスする権限がありません");
     });
@@ -262,7 +262,7 @@ describe("categories", () => {
         .mutation(api.categories.create, {
           groupId,
           name: "削除対象",
-          icon: "🗑️",
+          icon: "folder",
         });
 
       await t.withIdentity(testIdentity).mutation(api.categories.remove, {
@@ -316,7 +316,7 @@ describe("categories", () => {
         .mutation(api.categories.create, {
           groupId,
           name: "使用中カテゴリ",
-          icon: "📌",
+          icon: "tag",
         });
 
       // ユーザー情報を取得
@@ -361,7 +361,7 @@ describe("categories", () => {
         .mutation(api.categories.create, {
           groupId,
           name: "テスト",
-          icon: "🎮",
+          icon: "gamepad-2",
         });
 
       await expect(
@@ -387,7 +387,7 @@ describe("categories", () => {
         .mutation(api.categories.create, {
           groupId,
           name: "未使用カテゴリ",
-          icon: "✅",
+          icon: "heart",
         });
 
       const result = await t
@@ -443,7 +443,7 @@ describe("categories", () => {
         .mutation(api.categories.create, {
           groupId,
           name: "使用中カテゴリ",
-          icon: "📌",
+          icon: "tag",
         });
 
       const user = await t.run(async (ctx) => {

@@ -22,6 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import { CategoryIcon } from "./CategoryIcon";
 import {
   Dialog,
   DialogContent,
@@ -90,7 +91,7 @@ function SortableCategoryItem({
       >
         <GripVertical className="h-4 w-4" />
       </button>
-      <span className="text-lg">{category.icon}</span>
+      <CategoryIcon name={category.icon} size="md" className="text-slate-700" />
       <span className="flex-1">{category.name}</span>
       {!category.isPreset && (
         <>
