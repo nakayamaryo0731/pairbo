@@ -26,12 +26,7 @@ import {
   Check,
 } from "lucide-react";
 import { useInlineEdit } from "@/hooks/useInlineEdit";
-import {
-  InlineEditText,
-  InlineEditDisplay,
-  InlineEditControls,
-  InlineEditButton,
-} from "@/components/ui/InlineEdit";
+import { InlineEditText, InlineEditDisplay } from "@/components/ui/InlineEdit";
 
 type Category = {
   _id: Id<"categories">;
@@ -142,7 +137,7 @@ export function GroupSettings({
               </div>
             ) : (
               <InlineEditDisplay
-                showEditButton={myRole === "owner"}
+                editable={myRole === "owner"}
                 onEdit={groupNameEdit.startEditing}
               >
                 <p className="font-medium text-slate-800">{group.name}</p>
@@ -185,9 +180,9 @@ export function GroupSettings({
                 <span className="text-sm text-slate-600">毎月</span>
                 <select
                   value={closingDayEdit.value}
-                  onChange={(e) =>
-                    closingDayEdit.setValue(Number(e.target.value))
-                  }
+                  onChange={(e) => {
+                    closingDayEdit.saveWithValue(Number(e.target.value));
+                  }}
                   className="px-2 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
                   disabled={closingDayEdit.isSaving}
@@ -199,15 +194,10 @@ export function GroupSettings({
                   ))}
                 </select>
                 <span className="text-sm text-slate-600">日</span>
-                <InlineEditControls
-                  onSave={closingDayEdit.save}
-                  onCancel={closingDayEdit.cancelEditing}
-                  isSaving={closingDayEdit.isSaving}
-                />
               </div>
             ) : (
               <InlineEditDisplay
-                showEditButton={myRole === "owner"}
+                editable={myRole === "owner"}
                 onEdit={closingDayEdit.startEditing}
               >
                 <p className="font-medium text-slate-800">
@@ -301,7 +291,10 @@ export function GroupSettings({
                     isSaving={displayNameEdit.isSaving}
                   />
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <InlineEditDisplay
+                    editable={member.isMe}
+                    onEdit={displayNameEdit.startEditing}
+                  >
                     <p className="text-sm font-medium text-slate-800">
                       {member.displayName}
                       {member.isMe && (
@@ -310,12 +303,7 @@ export function GroupSettings({
                         </span>
                       )}
                     </p>
-                    {member.isMe && (
-                      <InlineEditButton
-                        onClick={displayNameEdit.startEditing}
-                      />
-                    )}
-                  </div>
+                  </InlineEditDisplay>
                 )}
                 <p className="text-xs text-slate-500">
                   {member.role === "owner" ? "オーナー" : "メンバー"}
