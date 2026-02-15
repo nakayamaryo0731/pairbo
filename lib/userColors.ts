@@ -1,4 +1,4 @@
-const MEMBER_COLORS = [
+export const MEMBER_COLORS = [
   "#fca5a5", // red
   "#93c5fd", // blue
   "#86efac", // green
@@ -15,11 +15,11 @@ const MEMBER_COLORS = [
  * メンバーのuserIdリスト（joinedAt順）からカラーマップを生成
  */
 export function buildMemberColorMap(
-  memberUserIds: string[],
+  members: { userId: string; color?: string }[],
 ): Record<string, string> {
   const map: Record<string, string> = {};
-  memberUserIds.forEach((id, i) => {
-    map[id] = MEMBER_COLORS[i % MEMBER_COLORS.length];
+  members.forEach((m, i) => {
+    map[m.userId] = m.color ?? MEMBER_COLORS[i % MEMBER_COLORS.length];
   });
   return map;
 }

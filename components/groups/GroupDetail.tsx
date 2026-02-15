@@ -22,6 +22,7 @@ type TabType = "expenses" | "settlement";
 
 type Member = {
   userId: Id<"users">;
+  color?: string;
   joinedAt: number;
 };
 
@@ -57,10 +58,7 @@ export function GroupDetail({ group, members }: GroupDetailProps) {
     period,
   } = usePeriodNavigation({ closingDay: group.closingDay });
 
-  const memberColors = useMemo(
-    () => buildMemberColorMap(members.map((m) => m.userId)),
-    [members],
-  );
+  const memberColors = useMemo(() => buildMemberColorMap(members), [members]);
 
   const [activeTab, setActiveTab] = useState<TabType>("expenses");
 

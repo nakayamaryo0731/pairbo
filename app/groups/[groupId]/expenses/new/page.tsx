@@ -97,9 +97,7 @@ export default function ExpenseNewPage({ params }: PageProps) {
               isMe: m.isMe,
             }))}
             isPremium={isPremium}
-            memberColors={buildMemberColorMap(
-              detail.members.map((m) => m.userId),
-            )}
+            memberColors={buildMemberColorMap(detail.members)}
           />
         </div>
       </main>

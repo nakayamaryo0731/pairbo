@@ -49,9 +49,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
             members={detail.members}
             categories={detail.categories}
             myRole={detail.myRole}
-            memberColors={buildMemberColorMap(
-              detail.members.map((m) => m.userId),
-            )}
+            memberColors={buildMemberColorMap(detail.members)}
           />
         </div>
       </main>

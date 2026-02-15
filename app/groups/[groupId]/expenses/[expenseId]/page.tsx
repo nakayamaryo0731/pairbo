@@ -82,8 +82,7 @@ export default function ExpensePage({ params }: PageProps) {
   const isPremium = subscription?.plan === "premium";
 
   const memberColors = useMemo(
-    () =>
-      detail ? buildMemberColorMap(detail.members.map((m) => m.userId)) : {},
+    () => (detail ? buildMemberColorMap(detail.members) : {}),
     [detail],
   );
 

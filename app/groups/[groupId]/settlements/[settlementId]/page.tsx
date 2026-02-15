@@ -23,10 +23,7 @@ export default function SettlementDetailPage({ params }: PageProps) {
   const settlement = useQuery(api.settlements.getById, { settlementId });
   const groupDetail = useQuery(api.groups.getDetail, { groupId });
   const memberColors = useMemo(
-    () =>
-      groupDetail
-        ? buildMemberColorMap(groupDetail.members.map((m) => m.userId))
-        : {},
+    () => (groupDetail ? buildMemberColorMap(groupDetail.members) : {}),
     [groupDetail],
   );
 
