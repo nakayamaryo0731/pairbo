@@ -22,26 +22,28 @@ export default function GroupDetailPage({ params }: PageProps) {
   });
 
   const rightIcons = detail ? (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       <Link
         href={`/groups/${detail.group._id}/analytics`}
-        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 rounded-lg transition-colors"
       >
         <BarChart3 className="h-5 w-5 text-slate-600" />
       </Link>
       <Link
         href={`/groups/${detail.group._id}/settings`}
-        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 rounded-lg transition-colors"
       >
         <Settings className="h-5 w-5 text-slate-600" />
       </Link>
-      <UserButton />
+      <div className="w-9 h-9 flex items-center justify-center">
+        <UserButton />
+      </div>
     </div>
   ) : (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       <div className="w-9 h-9" />
       <div className="w-9 h-9" />
-      <div className="w-8 h-8" />
+      <div className="w-9 h-9" />
     </div>
   );
 
