@@ -89,9 +89,21 @@ export const listPurchasedByMonth = authQuery({
     const userMap = new Map(users.filter(Boolean).map((u) => [u!._id, u!]));
 
     return purchased.map((item) => ({
-      ...item,
+      _id: item._id,
+      name: item.name,
+      purchasedAt: item.purchasedAt,
+      linkedExpenseId: item.linkedExpenseId,
+      createdAt: item.createdAt,
       purchasedByUser: item.purchasedBy
-        ? userMap.get(item.purchasedBy)
+        ? (() => {
+            const user = userMap.get(item.purchasedBy);
+            if (!user) return undefined;
+            return {
+              _id: user._id,
+              displayName: user.displayName,
+              avatarUrl: user.avatarUrl,
+            };
+          })()
         : undefined,
     }));
   },

@@ -208,8 +208,13 @@ export const markPaid = authMutation({
       args.paymentId,
       "支払い情報が見つかりません",
     );
-    // 精算存在確認
-    await getOrThrow(ctx, payment.settlementId, "精算情報が見つかりません");
+    const settlement = await getOrThrow(
+      ctx,
+      payment.settlementId,
+      "精算情報が見つかりません",
+    );
+
+    await requireGroupMember(ctx, settlement.groupId);
 
     if (payment.toUserId !== ctx.user._id) {
       ctx.logger.warn("SETTLEMENT", "mark_paid_failed", {

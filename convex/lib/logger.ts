@@ -15,6 +15,7 @@ export const LOG_TOPICS = {
   SHOPPING: "SHOPPING",
   CATEGORY: "CATEGORY",
   TAG: "TAG",
+  SUBSCRIPTION: "SUBSCRIPTION",
   SYSTEM: "SYSTEM",
 } as const;
 

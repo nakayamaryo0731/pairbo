@@ -61,6 +61,7 @@ export const getMe = authQuery({
       displayName: ctx.user.displayName,
       avatarUrl: ctx.user.avatarUrl,
       defaultGroupId: ctx.user.defaultGroupId,
+      isAdmin: ctx.user.isAdmin === true,
     };
   },
 });
