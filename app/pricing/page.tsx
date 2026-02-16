@@ -7,6 +7,7 @@ import { useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { UserButton } from "@clerk/nextjs";
+import { trackEvent } from "@/lib/analytics";
 
 type PriceType = "monthly" | "yearly";
 
@@ -45,6 +46,11 @@ function PricingContent() {
         priceType,
         successUrl: `${window.location.origin}/pricing?success=true`,
         cancelUrl: `${window.location.origin}/pricing`,
+      });
+      trackEvent("upgrade_premium", {
+        price_type: priceType,
+        value: priceType === "monthly" ? 300 : 2400,
+        currency: "JPY",
       });
       window.location.href = url;
     } catch {

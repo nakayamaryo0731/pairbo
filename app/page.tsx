@@ -9,6 +9,7 @@ import { GroupList } from "@/components/groups";
 import { GroupListSkeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { LandingPage } from "@/components/landing";
+import { trackEvent } from "@/lib/analytics";
 
 function HomeContent() {
   const router = useRouter();
@@ -42,6 +43,14 @@ function HomeContent() {
       setIsUserReady(false);
     };
   }, [isAuthenticated, ensureUser]);
+
+  // サインアップ直後の GA イベント送信
+  useEffect(() => {
+    if (searchParams.get("from") === "signup" && isUserReady) {
+      trackEvent("sign_up", { method: "clerk" });
+      router.replace("/", { scroll: false });
+    }
+  }, [searchParams, isUserReady, router]);
 
   // 自動遷移処理（?list=true の場合はスキップ）
   useEffect(() => {

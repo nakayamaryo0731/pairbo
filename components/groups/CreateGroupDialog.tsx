@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFormDialog } from "@/hooks/useFormDialog";
+import { trackEvent } from "@/lib/analytics";
 
 type CreateGroupDialogProps = {
   children: React.ReactNode;
@@ -36,12 +37,16 @@ export function CreateGroupDialog({ children }: CreateGroupDialogProps) {
     e.preventDefault();
     if (!name.trim() || isLoading) return;
 
-    await execute(() =>
+    const result = await execute(() =>
       createGroup({
         name: name.trim(),
         description: description.trim() || undefined,
       }),
     );
+
+    if (result.success) {
+      trackEvent("create_group");
+    }
   };
 
   return (
