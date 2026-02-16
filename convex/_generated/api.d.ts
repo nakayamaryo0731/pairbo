@@ -49,6 +49,7 @@ import type * as lib_groupHelper from "../lib/groupHelper.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as lib_presetCategories from "../lib/presetCategories.js";
 import type * as lib_seedData from "../lib/seedData.js";
+import type * as lib_stripeHelpers from "../lib/stripeHelpers.js";
 import type * as lib_subscription from "../lib/subscription.js";
 import type * as lib_tagAnalyticsHelper from "../lib/tagAnalyticsHelper.js";
 import type * as lib_validators from "../lib/validators.js";
@@ -107,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   "lib/logger": typeof lib_logger;
   "lib/presetCategories": typeof lib_presetCategories;
   "lib/seedData": typeof lib_seedData;
+  "lib/stripeHelpers": typeof lib_stripeHelpers;
   "lib/subscription": typeof lib_subscription;
   "lib/tagAnalyticsHelper": typeof lib_tagAnalyticsHelper;
   "lib/validators": typeof lib_validators;

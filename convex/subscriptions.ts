@@ -116,6 +116,13 @@ export const createCheckoutSession = action({
       { userId: user._id },
     );
 
+    if (
+      existingSubscription?.status === "active" ||
+      existingSubscription?.status === "trialing"
+    ) {
+      throw new Error("既にアクティブなサブスクリプションがあります");
+    }
+
     if (existingSubscription?.stripeCustomerId) {
       stripeCustomerId = existingSubscription.stripeCustomerId;
     } else {

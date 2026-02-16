@@ -2,6 +2,7 @@ import { convexTest, TestConvex } from "convex-test";
 import { describe, expect, test } from "vitest";
 import schema from "../schema";
 import { internal } from "../_generated/api";
+import { getUserPlan } from "../lib/subscription";
 
 const modules = import.meta.glob<Record<string, unknown>>("../**/*.ts");
 
@@ -200,6 +201,99 @@ describe("subscriptions mutations", () => {
           stripeSubscriptionId: "sub_nonexistent",
         }),
       ).resolves.not.toThrow();
+    });
+  });
+
+  describe("ステータス遷移", () => {
+    test("past_due → active 復帰: getUserPlanがpremiumを返す", async () => {
+      const t = convexTest(schema, modules);
+      const userId = await setupUser(t);
+
+      await t.mutation(
+        internal.subscriptions.upsertSubscription,
+        makeSubscriptionArgs(userId, { status: "past_due" as const }),
+      );
+
+      // past_due → active に復帰
+      await t.mutation(internal.subscriptions.updateSubscriptionStatus, {
+        stripeSubscriptionId: "sub_test_123",
+        status: "active",
+        currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+      });
+
+      const plan = await t.run(async (ctx) => {
+        return await getUserPlan(ctx, userId);
+      });
+
+      expect(plan).toBe("premium");
+    });
+
+    test("active → canceled → deleted: ライフサイクル全体", async () => {
+      const t = convexTest(schema, modules);
+      const userId = await setupUser(t);
+
+      // active で作成
+      await t.mutation(
+        internal.subscriptions.upsertSubscription,
+        makeSubscriptionArgs(userId),
+      );
+
+      // canceled に変更
+      await t.mutation(internal.subscriptions.updateSubscriptionStatus, {
+        stripeSubscriptionId: "sub_test_123",
+        status: "canceled",
+        cancelAtPeriodEnd: true,
+      });
+
+      const subAfterCancel = await t.run(async (ctx) => {
+        return await ctx.db
+          .query("subscriptions")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .unique();
+      });
+      expect(subAfterCancel?.status).toBe("canceled");
+      expect(subAfterCancel?.cancelAtPeriodEnd).toBe(true);
+
+      // deleted（論理削除）
+      await t.mutation(internal.subscriptions.deleteSubscription, {
+        stripeSubscriptionId: "sub_test_123",
+      });
+
+      const subAfterDelete = await t.run(async (ctx) => {
+        return await ctx.db
+          .query("subscriptions")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .unique();
+      });
+      expect(subAfterDelete?.plan).toBe("free");
+      expect(subAfterDelete?.status).toBe("canceled");
+      expect(subAfterDelete?.stripeSubscriptionId).toBeUndefined();
+    });
+  });
+
+  describe("upsertSubscription 追加ケース", () => {
+    test("stripeCustomerIdはupsert時に更新されない（初回作成時のみ設定）", async () => {
+      const t = convexTest(schema, modules);
+      const userId = await setupUser(t);
+
+      await t.mutation(
+        internal.subscriptions.upsertSubscription,
+        makeSubscriptionArgs(userId, { stripeCustomerId: "cus_old_123" }),
+      );
+
+      await t.mutation(
+        internal.subscriptions.upsertSubscription,
+        makeSubscriptionArgs(userId, { stripeCustomerId: "cus_new_456" }),
+      );
+
+      const sub = await t.run(async (ctx) => {
+        return await ctx.db
+          .query("subscriptions")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .unique();
+      });
+
+      expect(sub?.stripeCustomerId).toBe("cus_old_123");
     });
   });
 });

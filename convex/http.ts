@@ -3,6 +3,7 @@ import { httpAction, ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import Stripe from "stripe";
 import { Id } from "./_generated/dataModel";
+import { mapSubscriptionStatus } from "./lib/stripeHelpers";
 
 // Stripe Invoice の拡張型
 type StripeInvoiceWithSubscription = Stripe.Invoice & {
@@ -174,26 +175,5 @@ async function handlePaymentFailed(ctx: ActionCtx, invoice: Stripe.Invoice) {
 // ========================================
 // ヘルパー関数
 // ========================================
-
-function mapSubscriptionStatus(
-  status: Stripe.Subscription.Status,
-): "active" | "canceled" | "past_due" | "trialing" {
-  switch (status) {
-    case "active":
-      return "active";
-    case "canceled":
-      return "canceled";
-    case "past_due":
-      return "past_due";
-    case "trialing":
-      return "trialing";
-    case "incomplete":
-    case "incomplete_expired":
-    case "unpaid":
-    case "paused":
-    default:
-      return "past_due";
-  }
-}
 
 export default http;
