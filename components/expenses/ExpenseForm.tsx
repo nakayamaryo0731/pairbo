@@ -13,6 +13,7 @@ import {
 import { TagSelector } from "./TagSelector";
 import { ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 import { CategoryIcon } from "@/components/categories/CategoryIcon";
+import { trackEvent } from "@/lib/analytics";
 
 type Category = {
   _id: Id<"categories">;
@@ -307,6 +308,11 @@ export function ExpenseForm({
           shoppingItemIds:
             shoppingItemIds.length > 0 ? shoppingItemIds : undefined,
           tagIds: tagIds.length > 0 ? tagIds : undefined,
+        });
+        trackEvent("create_expense", {
+          value: amountNum,
+          currency: "JPY",
+          split_method: splitMethod,
         });
       }
 

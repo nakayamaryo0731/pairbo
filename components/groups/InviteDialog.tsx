@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { useFormDialog } from "@/hooks/useFormDialog";
+import { trackEvent } from "@/lib/analytics";
 
 type InviteDialogProps = {
   groupId: Id<"groups">;
@@ -45,6 +46,7 @@ export function InviteDialog({ groupId, groupName }: InviteDialogProps) {
 
     if (result.success && result.data) {
       setInviteUrl(result.data);
+      trackEvent("invite_sent");
     }
   };
 
