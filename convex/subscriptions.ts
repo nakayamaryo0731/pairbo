@@ -116,7 +116,10 @@ export const createCheckoutSession = action({
       { userId: user._id },
     );
 
-    if (existingSubscription?.stripeCustomerId) {
+    if (
+      existingSubscription?.stripeCustomerId &&
+      existingSubscription.stripeCustomerId.startsWith("cus_")
+    ) {
       stripeCustomerId = existingSubscription.stripeCustomerId;
     } else {
       // 新規顧客作成
