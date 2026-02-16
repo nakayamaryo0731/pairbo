@@ -5,7 +5,7 @@ import {
   requireUserIsGroupMember,
 } from "./lib/authorization";
 import { getGroupMemberIds } from "./lib/groupHelper";
-import { getExpensesByPeriod } from "./lib/expenseHelper";
+import { getExpensesByPeriod, isExpenseSettled } from "./lib/expenseHelper";
 import { getOrThrow } from "./lib/dataHelpers";
 import { enrichExpenseList, FALLBACK } from "./lib/enrichment";
 import { canUseTags } from "./lib/subscription";
@@ -21,10 +21,7 @@ import {
   type SplitDetails,
   type SplitResult,
 } from "./domain/expense";
-import {
-  getSettlementPeriod,
-  getSettlementYearMonthForDate,
-} from "./domain/settlement";
+import { getSettlementPeriod } from "./domain/settlement";
 import { TAG_LIMITS } from "./domain/tag";
 import type { Id } from "./_generated/dataModel";
 
@@ -721,36 +718,6 @@ export const listByTagAllTime = authQuery({
 });
 
 /**
- * 支出が精算済みかどうかをチェック
- */
-async function isExpenseSettled(
-  ctx: { db: import("./_generated/server").DatabaseReader },
-  expenseDate: string,
-  groupId: import("./_generated/dataModel").Id<"groups">,
-  closingDay: number,
-): Promise<boolean> {
-  const { year, month } = getSettlementYearMonthForDate(
-    expenseDate,
-    closingDay,
-  );
-  const period = getSettlementPeriod(closingDay, year, month);
-
-  const existingSettlement = await ctx.db
-    .query("settlements")
-    .withIndex("by_group_and_period", (q) =>
-      q.eq("groupId", groupId).eq("periodStart", period.startDate),
-    )
-    .unique();
-
-  // 精算レコードが存在し、かつstatus="reopened"でない場合は精算済みとみなす
-  // "pending"（支払い待ち）や"settled"（完了）は編集不可
-  // "reopened"（再オープン）の場合のみ編集・削除が可能
-  return (
-    existingSettlement !== null && existingSettlement.status !== "reopened"
-  );
-}
-
-/**
  * 支出更新
  */
 export const update = authMutation({
@@ -1011,6 +978,131 @@ export const remove = authMutation({
       expenseId: args.expenseId,
       groupId: expense.groupId,
       amount: expense.amount,
+    });
+  },
+});
+
+export const updateCategory = authMutation({
+  args: {
+    expenseId: v.id("expenses"),
+    categoryId: v.id("categories"),
+  },
+  handler: async (ctx, args) => {
+    const expense = await getOrThrow(
+      ctx,
+      args.expenseId,
+      "支出が見つかりません",
+    );
+    const group = await getOrThrow(
+      ctx,
+      expense.groupId,
+      "グループが見つかりません",
+    );
+
+    await requireGroupMember(ctx, expense.groupId);
+
+    const isSettled = await isExpenseSettled(
+      ctx,
+      expense.date,
+      expense.groupId,
+      group.closingDay,
+    );
+    if (isSettled) {
+      throw new ConvexError("精算済みの期間の支出は編集できません");
+    }
+
+    const category = await ctx.db.get(args.categoryId);
+    if (!category || category.groupId !== expense.groupId) {
+      throw new ConvexError("カテゴリが見つかりません");
+    }
+
+    await ctx.db.patch(args.expenseId, {
+      categoryId: args.categoryId,
+      updatedAt: Date.now(),
+    });
+
+    ctx.logger.audit("EXPENSE", "category_updated", {
+      expenseId: args.expenseId,
+      groupId: expense.groupId,
+      categoryName: category.name,
+    });
+  },
+});
+
+export const updateTags = authMutation({
+  args: {
+    expenseId: v.id("expenses"),
+    tagIds: v.array(v.id("tags")),
+  },
+  handler: async (ctx, args) => {
+    const expense = await getOrThrow(
+      ctx,
+      args.expenseId,
+      "支出が見つかりません",
+    );
+    const group = await getOrThrow(
+      ctx,
+      expense.groupId,
+      "グループが見つかりません",
+    );
+
+    await requireGroupMember(ctx, expense.groupId);
+
+    const isSettled = await isExpenseSettled(
+      ctx,
+      expense.date,
+      expense.groupId,
+      group.closingDay,
+    );
+    if (isSettled) {
+      throw new ConvexError("精算済みの期間の支出は編集できません");
+    }
+
+    if (args.tagIds.length > 0) {
+      const canUse = await canUseTags(ctx, ctx.user._id);
+      if (!canUse) {
+        throw new ConvexError("タグ機能はPremiumプランでご利用いただけます");
+      }
+
+      if (args.tagIds.length > TAG_LIMITS.MAX_TAGS_PER_EXPENSE) {
+        throw new ConvexError(
+          `1つの支出につき最大${TAG_LIMITS.MAX_TAGS_PER_EXPENSE}個のタグを設定できます`,
+        );
+      }
+    }
+
+    // 既存のexpenseTagsを削除
+    const existingExpenseTags = await ctx.db
+      .query("expenseTags")
+      .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
+      .collect();
+
+    await Promise.all(existingExpenseTags.map((et) => ctx.db.delete(et._id)));
+
+    // 新しいタグを追加
+    const now = Date.now();
+    for (const tagId of args.tagIds) {
+      const tag = await ctx.db.get(tagId);
+      if (!tag || tag.groupId !== expense.groupId) {
+        throw new ConvexError("無効なタグが指定されました");
+      }
+
+      await ctx.db.insert("expenseTags", {
+        expenseId: args.expenseId,
+        tagId,
+      });
+
+      await ctx.db.patch(tagId, { lastUsedAt: now });
+    }
+
+    await ctx.db.patch(args.expenseId, {
+      updatedAt: Date.now(),
+    });
+
+    ctx.logger.audit("EXPENSE", "tags_updated", {
+      expenseId: args.expenseId,
+      groupId: expense.groupId,
+      tagCount: args.tagIds.length,
     });
   },
 });

@@ -1023,4 +1023,275 @@ describe("expenses", () => {
       expect(result.periodLabel).toBe("2025年");
     });
   });
+
+  describe("updateCategory", () => {
+    test("カテゴリを変更できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const newCategoryId = detail.categories[1]._id;
+      const payerId = detail.members[0].userId;
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId,
+          paidBy: payerId,
+          date: "2024-12-30",
+        });
+
+      await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.updateCategory, {
+          expenseId,
+          categoryId: newCategoryId,
+        });
+
+      const expense = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.getById, { expenseId });
+
+      expect(expense.category?._id).toBe(newCategoryId);
+    });
+
+    test("グループに属さないカテゴリには変更できない", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId1 = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "グループ1",
+        });
+
+      const groupId2 = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "グループ2",
+        });
+
+      const detail1 = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId: groupId1 });
+      const detail2 = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId: groupId2 });
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId: groupId1,
+          amount: 1000,
+          categoryId: detail1.categories[0]._id,
+          paidBy: detail1.members[0].userId,
+          date: "2024-12-30",
+        });
+
+      await expect(
+        t.withIdentity(userAIdentity).mutation(api.expenses.updateCategory, {
+          expenseId,
+          categoryId: detail2.categories[0]._id,
+        }),
+      ).rejects.toThrow("カテゴリが見つかりません");
+    });
+
+    test("非メンバーはカテゴリを変更できない", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId: detail.categories[0]._id,
+          paidBy: detail.members[0].userId,
+          date: "2024-12-30",
+        });
+
+      await expect(
+        t.withIdentity(userBIdentity).mutation(api.expenses.updateCategory, {
+          expenseId,
+          categoryId: detail.categories[1]._id,
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("updateTags", () => {
+    test("タグを設定できる（Premium）", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId: detail.categories[0]._id,
+          paidBy: detail.members[0].userId,
+          date: "2024-12-30",
+        });
+
+      // Premium設定（DBに直接subscription挿入）
+      const userId = detail.members[0].userId;
+      const now = Date.now();
+      await t.run(async (ctx) => {
+        await ctx.db.insert("subscriptions", {
+          userId,
+          stripeCustomerId: "cus_test",
+          stripeSubscriptionId: "sub_test",
+          plan: "premium",
+          status: "active",
+          currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+          currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+          cancelAtPeriodEnd: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      // タグを作成
+      const tagId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.tags.create, {
+          groupId,
+          name: "テストタグ",
+        });
+
+      await t.withIdentity(userAIdentity).mutation(api.expenses.updateTags, {
+        expenseId,
+        tagIds: [tagId],
+      });
+
+      const expense = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.getById, { expenseId });
+
+      expect(expense.tags).toHaveLength(1);
+      expect(expense.tags[0].name).toBe("テストタグ");
+    });
+
+    test("タグをクリアできる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      // Premium設定（DBに直接subscription挿入）
+      const userId = detail.members[0].userId;
+      const now = Date.now();
+      await t.run(async (ctx) => {
+        await ctx.db.insert("subscriptions", {
+          userId,
+          stripeCustomerId: "cus_test",
+          stripeSubscriptionId: "sub_test",
+          plan: "premium",
+          status: "active",
+          currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+          currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+          cancelAtPeriodEnd: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      const tagId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.tags.create, {
+          groupId,
+          name: "テストタグ",
+        });
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId: detail.categories[0]._id,
+          paidBy: detail.members[0].userId,
+          date: "2024-12-30",
+          tagIds: [tagId],
+        });
+
+      // タグをクリア
+      await t.withIdentity(userAIdentity).mutation(api.expenses.updateTags, {
+        expenseId,
+        tagIds: [],
+      });
+
+      const expense = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.getById, { expenseId });
+
+      expect(expense.tags).toHaveLength(0);
+    });
+
+    test("非メンバーはタグを変更できない", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 1000,
+          categoryId: detail.categories[0]._id,
+          paidBy: detail.members[0].userId,
+          date: "2024-12-30",
+        });
+
+      await expect(
+        t.withIdentity(userBIdentity).mutation(api.expenses.updateTags, {
+          expenseId,
+          tagIds: [],
+        }),
+      ).rejects.toThrow();
+    });
+  });
 });

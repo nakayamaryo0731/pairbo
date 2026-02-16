@@ -1,16 +1,22 @@
 "use client";
 
-import { use } from "react";
-import { useQuery } from "convex/react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { use, useState } from "react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { getTagColorClasses } from "@/lib/tagColors";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CategoryIcon } from "@/components/categories/CategoryIcon";
+import { ExpenseCard } from "@/components/expenses/ExpenseCard";
+import { CategoryPicker } from "@/components/expenses/CategoryPicker";
+import { TagSelector } from "@/components/expenses/TagSelector";
+import { buildMemberColorMap } from "@/lib/userColors";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -19,6 +25,7 @@ type PageProps = {
 export default function ExpenseListPage({ params }: PageProps) {
   const { groupId } = use(params);
   const searchParams = useSearchParams();
+  const { isAuthenticated } = useConvexAuth();
 
   const categoryId = searchParams.get("category") as Id<"categories"> | null;
   const tagId = searchParams.get("tag") as Id<"tags"> | "untagged" | null;
@@ -26,7 +33,19 @@ export default function ExpenseListPage({ params }: PageProps) {
   const month = searchParams.get("month");
   const isAllTime = searchParams.get("all") === "true";
 
-  // カテゴリ別支出一覧
+  const detail = useQuery(api.groups.getDetail, {
+    groupId: groupId as Id<"groups">,
+  });
+
+  const subscription = useQuery(
+    api.subscriptions.getMySubscription,
+    isAuthenticated ? {} : "skip",
+  );
+  const isPremium = subscription?.plan === "premium";
+
+  const updateCategory = useMutation(api.expenses.updateCategory);
+  const updateTags = useMutation(api.expenses.updateTags);
+
   const categoryExpenses = useQuery(
     api.expenses.listByCategory,
     categoryId && year && !isAllTime
@@ -49,7 +68,6 @@ export default function ExpenseListPage({ params }: PageProps) {
       : "skip",
   );
 
-  // タグ別支出一覧
   const tagExpenses = useQuery(
     api.expenses.listByTag,
     tagId && year && !isAllTime
@@ -72,7 +90,6 @@ export default function ExpenseListPage({ params }: PageProps) {
       : "skip",
   );
 
-  // データ取得
   const data = categoryId
     ? isAllTime
       ? categoryExpensesAllTime
@@ -83,9 +100,10 @@ export default function ExpenseListPage({ params }: PageProps) {
         : tagExpenses
       : null;
 
-  const isLoading = data === undefined;
+  const isLoading = data === undefined || detail === undefined;
 
-  // ページタイトルの構築
+  const memberColors = detail ? buildMemberColorMap(detail.members) : undefined;
+
   let title = "支出一覧";
   let subtitle = "";
 
@@ -139,13 +157,20 @@ export default function ExpenseListPage({ params }: PageProps) {
               ) : (
                 <div className="space-y-2">
                   {data.expenses.map((expense) => (
-                    <Link
+                    <DrilldownExpenseCard
                       key={expense._id}
-                      href={`/groups/${groupId}/expenses/${expense._id}`}
-                      className="block"
-                    >
-                      <ExpenseItem expense={expense} />
-                    </Link>
+                      expense={expense}
+                      groupId={groupId as Id<"groups">}
+                      categories={detail?.categories ?? []}
+                      memberColors={memberColors}
+                      isPremium={isPremium}
+                      onUpdateCategory={(expenseId, catId) =>
+                        updateCategory({ expenseId, categoryId: catId })
+                      }
+                      onUpdateTags={(expenseId, tagIds) =>
+                        updateTags({ expenseId, tagIds })
+                      }
+                    />
                   ))}
                 </div>
               )}
@@ -159,64 +184,89 @@ export default function ExpenseListPage({ params }: PageProps) {
   );
 }
 
-type ExpenseItemProps = {
+type DrilldownExpenseCardProps = {
   expense: {
     _id: Id<"expenses">;
     amount: number;
     date: string;
     title?: string;
-    category: { name: string; icon: string } | null;
-    payer: { displayName: string; avatarUrl?: string | null } | null;
-    tags?: { _id: Id<"tags">; name: string; color: string }[];
+    memo?: string;
+    splitMethod: string;
+    category: {
+      _id: Id<"categories">;
+      name: string;
+      icon: string;
+    } | null;
+    payer: {
+      _id: Id<"users">;
+      displayName: string;
+      avatarUrl?: string;
+    } | null;
+    splits: {
+      userId: Id<"users">;
+      displayName: string;
+      amount: number;
+    }[];
+    tags: { _id: Id<"tags">; name: string; color: string }[];
   };
+  groupId: Id<"groups">;
+  categories: { _id: Id<"categories">; name: string; icon: string }[];
+  memberColors?: Record<string, string>;
+  isPremium: boolean;
+  onUpdateCategory: (
+    expenseId: Id<"expenses">,
+    categoryId: Id<"categories">,
+  ) => void;
+  onUpdateTags: (expenseId: Id<"expenses">, tagIds: Id<"tags">[]) => void;
 };
 
-function ExpenseItem({ expense }: ExpenseItemProps) {
+function DrilldownExpenseCard({
+  expense,
+  groupId,
+  categories,
+  memberColors,
+  isPremium,
+  onUpdateCategory,
+  onUpdateTags,
+}: DrilldownExpenseCardProps) {
+  const router = useRouter();
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
+
   return (
-    <div className="bg-white rounded-lg p-4 border border-slate-100 hover:bg-slate-50 transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <CategoryIcon
-              name={expense.category?.icon ?? "package"}
-              size="md"
-              className="text-slate-600"
-            />
-            <span className="font-medium text-slate-800 truncate">
-              {expense.title || expense.category?.name || "不明"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
-            <span>{expense.date}</span>
-            {expense.payer && (
-              <>
-                <span>·</span>
-                <span>{expense.payer.displayName}</span>
-              </>
-            )}
-          </div>
-          {expense.tags && expense.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {expense.tags.map((tag) => {
-                const colors = getTagColorClasses(tag.color);
-                return (
-                  <span
-                    key={tag._id}
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs ${colors.bg} ${colors.text}`}
-                  >
-                    #{tag.name}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        <div className="text-right shrink-0">
-          <p className="font-semibold text-slate-800">
-            ¥{expense.amount.toLocaleString()}
-          </p>
-        </div>
-      </div>
+    <div className="relative">
+      <ExpenseCard
+        expense={expense}
+        tags={expense.tags}
+        memberColors={memberColors}
+        onEdit={() => router.push(`/groups/${groupId}/expenses/${expense._id}`)}
+        onCategoryClick={() => setCategoryPickerOpen(true)}
+        onTagsClick={() => setTagPopoverOpen(true)}
+      />
+
+      <CategoryPicker
+        categories={categories}
+        currentCategoryId={expense.category?._id ?? null}
+        onSelect={(catId) => onUpdateCategory(expense._id, catId)}
+        open={categoryPickerOpen}
+        onOpenChange={setCategoryPickerOpen}
+      />
+
+      <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+        <PopoverTrigger asChild>
+          <span />
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-3" align="start">
+          <TagSelector
+            groupId={groupId}
+            selectedTagIds={expense.tags.map((t) => t._id)}
+            onSelectionChange={(tagIds) => {
+              onUpdateTags(expense._id, tagIds);
+            }}
+            isPremium={isPremium}
+          />
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
