@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFormDialog } from "@/hooks/useFormDialog";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { trackEvent } from "@/lib/analytics";
 
 type CreateGroupDialogProps = {
@@ -57,11 +58,7 @@ export function CreateGroupDialog({ children }: CreateGroupDialogProps) {
           <DialogTitle>グループを作成</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-              {error}
-            </div>
-          )}
+          <ErrorAlert message={error} className="rounded-md" />
           <div className="space-y-2">
             <Label htmlFor="name">グループ名 *</Label>
             <Input

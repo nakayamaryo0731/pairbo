@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { CategoryForm } from "./CategoryForm";
 import { DeleteCategoryDialog } from "./DeleteCategoryDialog";
 import { useFormDialog } from "@/hooks/useFormDialog";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 
 type Category = {
   _id: Id<"categories">;
@@ -200,11 +201,7 @@ export function CategoryManager({ groupId, categories }: CategoryManagerProps) {
 
           {mode === "list" && (
             <div className="space-y-4">
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                  {error}
-                </p>
-              )}
+              <ErrorAlert message={error} className="p-2 rounded border-0" />
 
               <p className="text-xs text-slate-500">
                 ドラッグして並び替えできます

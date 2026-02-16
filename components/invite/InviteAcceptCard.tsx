@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Home, User, Users } from "lucide-react";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 
 interface InvitationInfo {
   groupId: Id<"groups">;
@@ -87,11 +88,7 @@ export function InviteAcceptCard({ token, invitation }: InviteAcceptCardProps) {
       <div className="border-t border-slate-200 my-4" />
 
       {/* エラー表示 */}
-      {error && (
-        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md mb-4">
-          {error}
-        </div>
-      )}
+      <ErrorAlert message={error} className="rounded-md mb-4" />
 
       {/* ボタン */}
       <div className="space-y-3">

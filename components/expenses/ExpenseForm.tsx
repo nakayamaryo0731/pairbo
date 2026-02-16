@@ -13,6 +13,8 @@ import {
 import { TagSelector } from "./TagSelector";
 import { ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 import { CategoryIcon } from "@/components/categories/CategoryIcon";
+import { MemberColorDot } from "@/components/ui/MemberColorDot";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { trackEvent } from "@/lib/analytics";
 
 type Category = {
@@ -444,12 +446,10 @@ export function ExpenseForm({
                   : "bg-blue-50 text-blue-600 hover:bg-blue-100"
               }`}
             >
-              {memberColors?.[member.userId] && (
-                <span
-                  className="inline-block w-2.5 h-2.5 rounded-full shrink-0 border border-white/30"
-                  style={{ backgroundColor: memberColors[member.userId] }}
-                />
-              )}
+              <MemberColorDot
+                color={memberColors?.[member.userId]}
+                className="border border-white/30"
+              />
               {member.displayName}
               {member.isMe && " ✓"}
             </button>
@@ -540,11 +540,7 @@ export function ExpenseForm({
       )}
 
       {/* エラー表示 */}
-      {error && (
-        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl">
-          {error}
-        </div>
-      )}
+      <ErrorAlert message={error} />
 
       {/* ボタン */}
       <div className="flex gap-3 pt-2">
