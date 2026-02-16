@@ -17,6 +17,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pairbo.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
   title: "Pairbo - 2人のための共有家計簿",
   description:
     "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
@@ -112,6 +116,65 @@ export default function RootLayout({
                 name: "Pairbo",
                 url: "https://pairbo.vercel.app",
               },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "本当に無料で使えますか？",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "基本機能はすべて無料です。傾斜折半や詳細分析が使えるPremiumプランもあります。",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "アプリのインストールは必要ですか？",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "不要です。ブラウザからアクセスするだけで使えます。ホーム画面に追加すればネイティブアプリのように使えます（PWA対応）。",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "共有口座が必要ですか？",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "いいえ。お財布は別々のままでOKです。それぞれが支払った支出を記録し、月末に差額を精算する仕組みです。",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "2人以上でも使えますか？",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "はい。シェアハウスなど複数人のグループにも対応しています。",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "いつでも解約できますか？",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "はい、いつでも解約できます。解約後も期間終了まではPremiumプランをご利用いただけます。",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "データのセキュリティは？",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "データは暗号化して保存しています。クレジットカード情報はStripe社が安全に管理します。",
+                  },
+                },
+              ],
             }),
           }}
         />
