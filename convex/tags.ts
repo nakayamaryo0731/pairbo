@@ -7,6 +7,7 @@ import {
   TAG_LIMITS,
   validateTagName,
   normalizeTagName,
+  TagValidationError,
   isValidTagColor,
   getRandomTagColor,
 } from "./domain/tag";
@@ -57,13 +58,15 @@ export const create = authMutation({
       throw new ConvexError("タグ機能はPremiumプランでご利用いただけます");
     }
 
-    // バリデーション
-    const nameValidation = validateTagName(args.name);
-    if (!nameValidation.valid) {
-      throw new ConvexError(nameValidation.error!);
+    let normalizedName: string;
+    try {
+      normalizedName = validateTagName(args.name);
+    } catch (error) {
+      if (error instanceof TagValidationError) {
+        throw new ConvexError(error.message);
+      }
+      throw error;
     }
-
-    const normalizedName = normalizeTagName(args.name);
 
     // 色のバリデーション（指定されていればチェック、なければランダム）
     let color: string;
@@ -141,12 +144,15 @@ export const update = authMutation({
       };
 
     if (args.name !== undefined) {
-      const nameValidation = validateTagName(args.name);
-      if (!nameValidation.valid) {
-        throw new ConvexError(nameValidation.error!);
+      let normalizedName: string;
+      try {
+        normalizedName = validateTagName(args.name);
+      } catch (error) {
+        if (error instanceof TagValidationError) {
+          throw new ConvexError(error.message);
+        }
+        throw error;
       }
-
-      const normalizedName = normalizeTagName(args.name);
 
       // 重複チェック（自分以外）
       const existingTags = await ctx.db

@@ -27,6 +27,9 @@ export const getPreview = authQuery({
       validateSettlementPeriodInput(args.year, args.month);
     } catch (error) {
       if (error instanceof SettlementValidationError) {
+        ctx.logger.warn("SETTLEMENT", "preview_validation_failed", {
+          reason: error.message,
+        });
         throw new ConvexError(error.message);
       }
       throw error;
