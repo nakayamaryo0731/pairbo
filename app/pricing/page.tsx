@@ -141,37 +141,6 @@ function PricingContent() {
             </div>
           )}
 
-          {/* プラン切り替えトグル（Freeユーザーのみ） */}
-          {!isPremium && (
-            <div className="flex justify-center mb-6">
-              <div className="bg-white border border-slate-200 rounded-full p-1 flex">
-                <button
-                  onClick={() => setSelectedPrice("monthly")}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedPrice === "monthly"
-                      ? "bg-slate-800 text-white"
-                      : "text-slate-600 hover:text-slate-800"
-                  }`}
-                >
-                  月払い
-                </button>
-                <button
-                  onClick={() => setSelectedPrice("yearly")}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedPrice === "yearly"
-                      ? "bg-slate-800 text-white"
-                      : "text-slate-600 hover:text-slate-800"
-                  }`}
-                >
-                  年払い
-                  <span className="ml-1 text-xs text-emerald-500">
-                    2ヶ月分お得
-                  </span>
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* プランカード */}
           <div className="space-y-4">
             {/* Free プラン */}
@@ -243,6 +212,33 @@ function PricingContent() {
                   )}
                 </div>
               </div>
+              {!isPremium && (
+                <div className="flex mb-4 bg-slate-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setSelectedPrice("monthly")}
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                      selectedPrice === "monthly"
+                        ? "bg-white text-slate-800 shadow-sm"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    月払い
+                  </button>
+                  <button
+                    onClick={() => setSelectedPrice("yearly")}
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                      selectedPrice === "yearly"
+                        ? "bg-white text-slate-800 shadow-sm"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    年払い
+                    <span className="ml-1 text-xs text-emerald-500">
+                      2ヶ月分お得
+                    </span>
+                  </button>
+                </div>
+              )}
               <ul className="space-y-3 mb-6 text-slate-600">
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-emerald-500" />
