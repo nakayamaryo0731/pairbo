@@ -129,8 +129,8 @@ Phase 1-2 を1-2ヶ月実施後、Search Console と GA のデータを見て判
 | Google Analytics (GA4)    | 導入済み（ページビューのみ） |
 | OG画像                    | `/public/og-image.png` 存在  |
 | Google Search Console     | **未設定**                   |
-| 構造化データ (JSON-LD)    | **未設定**                   |
-| カスタム GA イベント      | **未設定**                   |
+| 構造化データ (JSON-LD)    | 設定済み（WebApplication）   |
+| カスタム GA イベント      | 設定済み（5イベント）        |
 
 ## キャッチコピー
 

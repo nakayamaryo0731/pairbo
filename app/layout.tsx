@@ -72,6 +72,49 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <GoogleAdSense />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "Pairbo",
+              url: "https://pairbo.vercel.app",
+              description:
+                "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
+              applicationCategory: "FinanceApplication",
+              operatingSystem: "All",
+              browserRequirements: "Requires JavaScript",
+              inLanguage: "ja",
+              image: "https://pairbo.vercel.app/og-image.png",
+              offers: [
+                {
+                  "@type": "Offer",
+                  price: "0",
+                  priceCurrency: "JPY",
+                  name: "Free",
+                },
+                {
+                  "@type": "Offer",
+                  price: "300",
+                  priceCurrency: "JPY",
+                  name: "Premium（月払い）",
+                },
+                {
+                  "@type": "Offer",
+                  price: "2400",
+                  priceCurrency: "JPY",
+                  name: "Premium（年払い）",
+                },
+              ],
+              provider: {
+                "@type": "Organization",
+                name: "Pairbo",
+                url: "https://pairbo.vercel.app",
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
