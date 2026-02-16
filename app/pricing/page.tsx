@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAction, useQuery } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -11,7 +11,16 @@ import { UserButton } from "@clerk/nextjs";
 type PriceType = "monthly" | "yearly";
 
 export default function PricingPage() {
+  return (
+    <Suspense>
+      <PricingContent />
+    </Suspense>
+  );
+}
+
+function PricingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated } = useConvexAuth();
   const subscription = useQuery(
     api.subscriptions.getMySubscription,
@@ -76,14 +85,13 @@ export default function PricingPage() {
           </div>
 
           {/* 成功メッセージ */}
-          {typeof window !== "undefined" &&
-            new URLSearchParams(window.location.search).get("success") && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800 text-center font-medium">
-                  Premiumプランへのアップグレードありがとうございます！
-                </p>
-              </div>
-            )}
+          {searchParams.get("success") && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-800 text-center font-medium">
+                Premiumプランへのアップグレードありがとうございます！
+              </p>
+            </div>
+          )}
 
           {/* 決済失敗警告 */}
           {isAuthenticated && subscription?.status === "past_due" && (
