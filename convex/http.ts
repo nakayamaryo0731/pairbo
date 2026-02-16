@@ -4,17 +4,20 @@ import { internal } from "./_generated/api";
 import Stripe from "stripe";
 import { Id } from "./_generated/dataModel";
 
-// Stripe Subscription の拡張型（current_period_start等を含む）
-type StripeSubscriptionWithPeriod = Stripe.Subscription & {
-  current_period_start: number;
-  current_period_end: number;
-  cancel_at_period_end: boolean;
-};
-
 // Stripe Invoice の拡張型
 type StripeInvoiceWithSubscription = Stripe.Invoice & {
   subscription?: string;
 };
+
+/** サブスクリプションから期間情報を取得（items.data[0] から取得） */
+function getSubscriptionPeriod(subscription: Stripe.Subscription) {
+  const item = subscription.items.data[0];
+  return {
+    currentPeriodStart: item.current_period_start * 1000,
+    currentPeriodEnd: item.current_period_end * 1000,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+  };
+}
 
 const http = httpRouter();
 
@@ -44,7 +47,11 @@ http.route({
     const body = await request.text();
 
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      event = await stripe.webhooks.constructEventAsync(
+        body,
+        signature,
+        webhookSecret,
+      );
     } catch (err) {
       console.error("Webhook signature verification failed:", err);
       return new Response("Webhook signature verification failed", {
@@ -109,19 +116,16 @@ async function handleCheckoutSessionCompleted(
 
   // サブスクリプション詳細を取得
   const subscriptionId = session.subscription as string;
-  const subscriptionResponse = (await stripe.subscriptions.retrieve(
-    subscriptionId,
-  )) as unknown as StripeSubscriptionWithPeriod;
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const period = getSubscriptionPeriod(subscription);
 
   await ctx.runMutation(internal.subscriptions.upsertSubscription, {
     userId: userId as Id<"users">,
     stripeCustomerId: session.customer as string,
     stripeSubscriptionId: subscriptionId,
     plan: "premium" as const,
-    status: mapSubscriptionStatus(subscriptionResponse.status),
-    currentPeriodStart: subscriptionResponse.current_period_start * 1000,
-    currentPeriodEnd: subscriptionResponse.current_period_end * 1000,
-    cancelAtPeriodEnd: subscriptionResponse.cancel_at_period_end,
+    status: mapSubscriptionStatus(subscription.status),
+    ...period,
   });
 
   console.log(`Subscription created for user ${userId}`);
@@ -131,13 +135,13 @@ async function handleSubscriptionUpdated(
   ctx: ActionCtx,
   subscription: Stripe.Subscription,
 ) {
-  const sub = subscription as StripeSubscriptionWithPeriod;
+  const period = getSubscriptionPeriod(subscription);
 
   await ctx.runMutation(internal.subscriptions.updateSubscriptionStatus, {
     stripeSubscriptionId: subscription.id,
     status: mapSubscriptionStatus(subscription.status),
-    cancelAtPeriodEnd: sub.cancel_at_period_end,
-    currentPeriodEnd: sub.current_period_end * 1000,
+    cancelAtPeriodEnd: period.cancelAtPeriodEnd,
+    currentPeriodEnd: period.currentPeriodEnd,
   });
 
   console.log(`Subscription updated: ${subscription.id}`);
