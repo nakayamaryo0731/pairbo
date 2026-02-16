@@ -535,26 +535,25 @@ graph LR
 ## 開発者アカウント
 
 開発者はStripe課金なしでPremium機能を利用できる。
+`users`テーブルの`planOverride`フィールドで制御する（`subscriptions`テーブルにダミーレコードは作らない）。
 
 ### 設定方法
 
-1. Convexダッシュボード → Data → `users`テーブル → 対象ユーザーの`_id`をコピー
-2. `subscriptions`テーブル → 「Add document」で以下を追加:
+1. 対象ユーザーにadminフラグを付与:
+   ```bash
+   npx convex run subscriptions:setAdminFlag '{"userId":"<user_id>", "isAdmin": true}'
+   ```
+2. アプリのUI（設定画面）からPremium/Freeを切り替え（`setAdminPlanOverride`が呼ばれる）
 
-| フィールド        | 値                              |
-| ----------------- | ------------------------------- |
-| userId            | コピーしたユーザーID            |
-| stripeCustomerId  | `dev_admin`（開発者用ダミー値） |
-| plan              | `premium`                       |
-| status            | `active`                        |
-| cancelAtPeriodEnd | `false`                         |
-| createdAt         | 現在のタイムスタンプ（ミリ秒）  |
-| updatedAt         | 現在のタイムスタンプ（ミリ秒）  |
+### 仕組み
 
-### 識別方法
+- `getUserPlan`は`subscriptions`テーブルより先に`users.planOverride`を評価する
+- `planOverride: "premium"` なら、Stripeサブスクリプションの有無に関係なくPremium扱い
+- `subscriptions`テーブルにはダミーレコードを作らないため、実際のStripe決済フローと競合しない
 
-- `stripeCustomerId`が`dev_admin`のレコードは開発者用
-- 通常のStripe課金ユーザーは`cus_`で始まるID
+### 注意
+
+- 過去に`stripeCustomerId: "dev_admin"`でダミーレコードを作成していた場合は、Convexダッシュボードから手動削除すること
 
 ---
 
