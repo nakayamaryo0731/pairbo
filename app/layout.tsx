@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  verification: {
+    google: "WlzApyG_0w14M7XXCTaIrsShDFdFqfuK72W_w15m8kY",
+  },
   title: "Pairbo - 2人のための共有家計簿",
   description:
     "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
