@@ -31,3 +31,35 @@ export async function getExpensesByPeriod(
     (e) => e.date >= period.startDate && e.date <= period.endDate,
   );
 }
+
+import {
+  getSettlementPeriod,
+  getSettlementYearMonthForDate,
+} from "../domain/settlement";
+
+export async function isExpenseSettled(
+  ctx: { db: DatabaseReader },
+  expenseDate: string,
+  groupId: Id<"groups">,
+  closingDay: number,
+): Promise<boolean> {
+  const { year, month } = getSettlementYearMonthForDate(
+    expenseDate,
+    closingDay,
+  );
+  const period = getSettlementPeriod(closingDay, year, month);
+
+  const existingSettlement = await ctx.db
+    .query("settlements")
+    .withIndex("by_group_and_period", (q) =>
+      q.eq("groupId", groupId).eq("periodStart", period.startDate),
+    )
+    .unique();
+
+  // 精算レコードが存在し、かつstatus="reopened"でない場合は精算済みとみなす
+  // "pending"（支払い待ち）や"settled"（完了）は編集不可
+  // "reopened"（再オープン）の場合のみ編集・削除が可能
+  return (
+    existingSettlement !== null && existingSettlement.status !== "reopened"
+  );
+}

@@ -162,6 +162,7 @@ export interface EnrichedExpenseItem {
     displayName: string;
     amount: number;
   }[];
+  tags: { _id: Id<"tags">; name: string; color: string }[];
   createdAt: number;
 }
 
@@ -188,22 +189,42 @@ export async function enrichExpenseList(
     createUserMap(ctx, payerIds),
   ]);
 
-  const allSplits = await Promise.all(
-    expenses.map((expense) =>
-      ctx.db
-        .query("expenseSplits")
-        .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
-        .collect(),
+  const [allSplits, allExpenseTags] = await Promise.all([
+    Promise.all(
+      expenses.map((expense) =>
+        ctx.db
+          .query("expenseSplits")
+          .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
+          .collect(),
+      ),
     ),
-  );
+    Promise.all(
+      expenses.map((expense) =>
+        ctx.db
+          .query("expenseTags")
+          .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
+          .collect(),
+      ),
+    ),
+  ]);
 
   const splitUserIds = allSplits.flat().map((s) => s.userId);
   await extendUserMap(ctx, userMap, splitUserIds);
+
+  // タグ情報を一括取得
+  const allTagIds = [...new Set(allExpenseTags.flat().map((et) => et.tagId))];
+  const tagDocs = await Promise.all(allTagIds.map((id) => ctx.db.get(id)));
+  const tagMap = new Map(
+    tagDocs
+      .filter((t): t is NonNullable<typeof t> => t !== null)
+      .map((t) => [t._id, { _id: t._id, name: t.name, color: t.color }]),
+  );
 
   return expenses.map((expense, index) => {
     const category = categoryMap.get(expense.categoryId);
     const payer = userMap.get(expense.paidBy);
     const splits = allSplits[index];
+    const expenseTags = allExpenseTags[index];
 
     return {
       _id: expense._id,
@@ -222,6 +243,9 @@ export async function enrichExpenseList(
           amount: split.amount,
         };
       }),
+      tags: expenseTags
+        .map((et) => tagMap.get(et.tagId))
+        .filter((t): t is NonNullable<typeof t> => t !== undefined),
       createdAt: expense.createdAt,
     };
   });
