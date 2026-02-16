@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { formatTimestamp, formatAmount } from "@/lib/formatters";
 import { CircleCheck, Circle } from "lucide-react";
+import { MemberColorDot } from "@/components/ui/MemberColorDot";
 
 type PaymentCardProps = {
   payment: {
@@ -40,19 +41,9 @@ export function PaymentCard({ payment, memberColors }: PaymentCardProps) {
     <div className="bg-white border border-slate-200 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-slate-600 flex items-center gap-1">
-          {memberColors?.[payment.fromUserId] && (
-            <span
-              className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: memberColors[payment.fromUserId] }}
-            />
-          )}
+          <MemberColorDot color={memberColors?.[payment.fromUserId]} />
           {payment.fromUserName} →{" "}
-          {memberColors?.[payment.toUserId] && (
-            <span
-              className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: memberColors[payment.toUserId] }}
-            />
-          )}
+          <MemberColorDot color={memberColors?.[payment.toUserId]} />
           {payment.toUserName}
         </span>
         <span className="font-medium">¥{formatAmount(payment.amount)}</span>

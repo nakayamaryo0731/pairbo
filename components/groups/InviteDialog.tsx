@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { useFormDialog } from "@/hooks/useFormDialog";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { trackEvent } from "@/lib/analytics";
 
 type InviteDialogProps = {
@@ -103,11 +104,7 @@ export function InviteDialog({ groupId, groupName }: InviteDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-              {error}
-            </div>
-          )}
+          <ErrorAlert message={error} className="rounded-md" />
 
           {!inviteUrl ? (
             <div className="text-center py-4">
