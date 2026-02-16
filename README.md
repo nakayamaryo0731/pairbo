@@ -21,4 +21,4 @@ pnpm dev
 
 ## デプロイ
 
-- **本番**: https://pairbo.vercel.app
+- **本番**: https://pairbo.app

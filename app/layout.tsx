@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://pairbo.vercel.app"),
+  metadataBase: new URL("https://pairbo.app"),
   alternates: {
     canonical: "/",
   },
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: "Pairbo - 2人のための共有家計簿",
     description:
       "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
-    url: "https://pairbo.vercel.app",
+    url: "https://pairbo.app",
     siteName: "Pairbo",
     locale: "ja_JP",
     type: "website",
@@ -86,14 +86,14 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebApplication",
               name: "Pairbo",
-              url: "https://pairbo.vercel.app",
+              url: "https://pairbo.app",
               description:
                 "割り勘・傾斜折半ができる共有家計簿。アプリ不要、URLだけですぐ始められます。",
               applicationCategory: "FinanceApplication",
               operatingSystem: "All",
               browserRequirements: "Requires JavaScript",
               inLanguage: "ja",
-              image: "https://pairbo.vercel.app/og-image.png",
+              image: "https://pairbo.app/og-image.png",
               offers: [
                 {
                   "@type": "Offer",
@@ -117,7 +117,7 @@ export default function RootLayout({
               provider: {
                 "@type": "Organization",
                 name: "Pairbo",
-                url: "https://pairbo.vercel.app",
+                url: "https://pairbo.app",
               },
             }),
           }}

@@ -237,7 +237,7 @@ Deploy: Vercel + Convex
 
 | 環境           | URL                                       |
 | -------------- | ----------------------------------------- |
-| 本番（Vercel） | https://pairbo.vercel.app                 |
+| 本番（Vercel） | https://pairbo.app                        |
 | Convex本番     | https://hip-moose-165.convex.cloud        |
 | GitHub         | https://github.com/nakayamaryo0731/pairbo |
 | Stripe         | https://dashboard.stripe.com              |
