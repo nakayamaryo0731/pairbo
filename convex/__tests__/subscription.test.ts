@@ -1,6 +1,7 @@
 import { convexTest, TestConvex } from "convex-test";
 import { describe, expect, test } from "vitest";
 import schema from "../schema";
+import { api } from "../_generated/api";
 import {
   getUserPlan,
   isPremium,
@@ -294,6 +295,32 @@ describe("subscription helpers", () => {
       });
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe("getMySubscription エッジケース", () => {
+    test("未認証ユーザー → { plan: 'free' }", async () => {
+      const t = convexTest(schema, modules);
+
+      const result = await t.query(api.subscriptions.getMySubscription, {});
+
+      expect(result.plan).toBe("free");
+      expect(result.status).toBeNull();
+    });
+
+    test("usersテーブルにレコードなし → { plan: 'free' }", async () => {
+      const t = convexTest(schema, modules);
+
+      const result = await t
+        .withIdentity({
+          subject: "nonexistent_clerk_id",
+          name: "存在しないユーザー",
+          email: "no@example.com",
+        })
+        .query(api.subscriptions.getMySubscription, {});
+
+      expect(result.plan).toBe("free");
+      expect(result.status).toBeNull();
     });
   });
 });
