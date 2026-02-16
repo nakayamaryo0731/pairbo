@@ -1,26 +1,30 @@
 import { TAG_COLORS, TAG_LIMITS, TagColor } from "./types";
 
+export class TagValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TagValidationError";
+  }
+}
+
 /**
- * タグ名のバリデーション
+ * タグ名のバリデーション（不正な場合は TagValidationError をスロー）
+ * @returns トリム済みのタグ名
  */
-export function validateTagName(name: string): {
-  valid: boolean;
-  error?: string;
-} {
+export function validateTagName(name: string): string {
   const trimmed = name.trim();
 
   if (trimmed.length < TAG_LIMITS.MIN_NAME_LENGTH) {
-    return { valid: false, error: "タグ名を入力してください" };
+    throw new TagValidationError("タグ名を入力してください");
   }
 
   if (trimmed.length > TAG_LIMITS.MAX_NAME_LENGTH) {
-    return {
-      valid: false,
-      error: `タグ名は${TAG_LIMITS.MAX_NAME_LENGTH}文字以内で入力してください`,
-    };
+    throw new TagValidationError(
+      `タグ名は${TAG_LIMITS.MAX_NAME_LENGTH}文字以内で入力してください`,
+    );
   }
 
-  return { valid: true };
+  return trimmed;
 }
 
 /**

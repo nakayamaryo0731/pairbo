@@ -6,10 +6,13 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Pairbo",
     description: "割り勘・傾斜折半ができる共有家計簿アプリ",
     start_url: "/",
+    scope: "/",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#3b82f6",
     orientation: "portrait",
+    categories: ["finance", "productivity"],
+    prefer_related_applications: false,
     icons: [
       {
         src: "/icons/icon-72x72.png",

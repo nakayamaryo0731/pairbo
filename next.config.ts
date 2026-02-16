@@ -17,8 +17,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Turbopack config (Serwist uses webpack, so we build with webpack)
-  turbopack: {},
 };
 
 export default withSentryConfig(withSerwist(nextConfig), {

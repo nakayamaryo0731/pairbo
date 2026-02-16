@@ -4,9 +4,9 @@ import { requireGroupMember } from "./lib/authorization";
 import { getSettlementPeriod, getSettlementLabel } from "./domain/settlement";
 import { getExpensesByPeriod } from "./lib/expenseHelper";
 import { getOrThrow } from "./lib/dataHelpers";
+import { buildCategoryBreakdown } from "./lib/analyticsHelper";
 import { canUseTags } from "./lib/subscription";
 import { calculateTagBreakdown } from "./lib/tagAnalyticsHelper";
-import type { Id } from "./_generated/dataModel";
 
 /**
  * カテゴリ別支出集計
@@ -43,36 +43,7 @@ export const getCategoryBreakdown = authQuery({
       };
     }
 
-    // カテゴリ別に集計
-    const categoryTotals = new Map<Id<"categories">, number>();
-    for (const expense of expenses) {
-      const categoryId = expense.categoryId;
-      const current = categoryTotals.get(categoryId) ?? 0;
-      categoryTotals.set(categoryId, current + expense.amount);
-    }
-
-    // カテゴリ情報を取得
-    const categoryIds = [...categoryTotals.keys()];
-    const categories = await Promise.all(
-      categoryIds.map((id) => ctx.db.get(id)),
-    );
-
-    const breakdown = categoryIds
-      .map((categoryId, index) => {
-        const category = categories[index];
-        const amount = categoryTotals.get(categoryId) ?? 0;
-        const percentage =
-          totalAmount > 0 ? Math.round((amount / totalAmount) * 1000) / 10 : 0;
-
-        return {
-          categoryId,
-          categoryName: category?.name ?? "不明なカテゴリ",
-          categoryIcon: category?.icon ?? "package",
-          amount,
-          percentage,
-        };
-      })
-      .sort((a, b) => b.amount - a.amount);
+    const breakdown = await buildCategoryBreakdown(ctx, expenses, totalAmount);
 
     return {
       period: {
@@ -121,36 +92,7 @@ export const getYearlyCategoryBreakdown = authQuery({
       };
     }
 
-    // カテゴリ別に集計
-    const categoryTotals = new Map<Id<"categories">, number>();
-    for (const expense of expenses) {
-      const categoryId = expense.categoryId;
-      const current = categoryTotals.get(categoryId) ?? 0;
-      categoryTotals.set(categoryId, current + expense.amount);
-    }
-
-    // カテゴリ情報を取得
-    const categoryIds = [...categoryTotals.keys()];
-    const categories = await Promise.all(
-      categoryIds.map((id) => ctx.db.get(id)),
-    );
-
-    const breakdown = categoryIds
-      .map((categoryId, index) => {
-        const category = categories[index];
-        const amount = categoryTotals.get(categoryId) ?? 0;
-        const percentage =
-          totalAmount > 0 ? Math.round((amount / totalAmount) * 1000) / 10 : 0;
-
-        return {
-          categoryId,
-          categoryName: category?.name ?? "不明なカテゴリ",
-          categoryIcon: category?.icon ?? "package",
-          amount,
-          percentage,
-        };
-      })
-      .sort((a, b) => b.amount - a.amount);
+    const breakdown = await buildCategoryBreakdown(ctx, expenses, totalAmount);
 
     return {
       year: args.year,
@@ -373,36 +315,11 @@ export const getAllTimeCategoryBreakdown = authQuery({
     const dates = allExpenses.map((e) => e.date).sort();
     const periodLabel = `${dates[0]} 〜 ${dates[dates.length - 1]}`;
 
-    // カテゴリ別に集計
-    const categoryTotals = new Map<Id<"categories">, number>();
-    for (const expense of allExpenses) {
-      const categoryId = expense.categoryId;
-      const current = categoryTotals.get(categoryId) ?? 0;
-      categoryTotals.set(categoryId, current + expense.amount);
-    }
-
-    // カテゴリ情報を取得
-    const categoryIds = [...categoryTotals.keys()];
-    const categories = await Promise.all(
-      categoryIds.map((id) => ctx.db.get(id)),
+    const breakdown = await buildCategoryBreakdown(
+      ctx,
+      allExpenses,
+      totalAmount,
     );
-
-    const breakdown = categoryIds
-      .map((categoryId, index) => {
-        const category = categories[index];
-        const amount = categoryTotals.get(categoryId) ?? 0;
-        const percentage =
-          totalAmount > 0 ? Math.round((amount / totalAmount) * 1000) / 10 : 0;
-
-        return {
-          categoryId,
-          categoryName: category?.name ?? "不明なカテゴリ",
-          categoryIcon: category?.icon ?? "package",
-          amount,
-          percentage,
-        };
-      })
-      .sort((a, b) => b.amount - a.amount);
 
     return {
       totalAmount,

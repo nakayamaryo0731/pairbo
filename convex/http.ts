@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import Stripe from "stripe";
 import { Id } from "./_generated/dataModel";
 import { mapSubscriptionStatus } from "./lib/stripeHelpers";
+import { Logger } from "./lib/logger";
 
 // Stripe Invoice の拡張型
 type StripeInvoiceWithSubscription = Stripe.Invoice & {
@@ -30,11 +31,12 @@ http.route({
   path: "/stripe/webhook",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    const logger = new Logger();
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
-      console.error("STRIPE_WEBHOOK_SECRET is not set");
+      logger.error("SUBSCRIPTION", "webhook_secret_missing");
       return new Response("Webhook secret not configured", { status: 500 });
     }
 
@@ -54,7 +56,9 @@ http.route({
         webhookSecret,
       );
     } catch (err) {
-      console.error("Webhook signature verification failed:", err);
+      logger.error("SUBSCRIPTION", "webhook_signature_failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return new Response("Webhook signature verification failed", {
         status: 400,
       });
@@ -88,10 +92,15 @@ http.route({
         }
 
         default:
-          console.log(`Unhandled event type: ${event.type}`);
+          logger.debug("SUBSCRIPTION", "webhook_unhandled_event", {
+            eventType: event.type,
+          });
       }
     } catch (err) {
-      console.error("Error processing webhook:", err);
+      logger.error("SUBSCRIPTION", "webhook_processing_failed", {
+        eventType: event.type,
+        error: err instanceof Error ? err.message : String(err),
+      });
       return new Response("Webhook processing failed", { status: 500 });
     }
 
@@ -107,9 +116,10 @@ async function handleCheckoutSessionCompleted(
   ctx: ActionCtx,
   session: Stripe.Checkout.Session,
 ) {
+  const logger = new Logger();
   const userId = session.metadata?.userId;
   if (!userId) {
-    console.error("No userId in session metadata");
+    logger.error("SUBSCRIPTION", "checkout_missing_user_id");
     return;
   }
 
@@ -129,13 +139,14 @@ async function handleCheckoutSessionCompleted(
     ...period,
   });
 
-  console.log(`Subscription created for user ${userId}`);
+  logger.audit("SUBSCRIPTION", "created", { userId });
 }
 
 async function handleSubscriptionUpdated(
   ctx: ActionCtx,
   subscription: Stripe.Subscription,
 ) {
+  const logger = new Logger();
   const period = getSubscriptionPeriod(subscription);
 
   await ctx.runMutation(internal.subscriptions.updateSubscriptionStatus, {
@@ -145,21 +156,27 @@ async function handleSubscriptionUpdated(
     currentPeriodEnd: period.currentPeriodEnd,
   });
 
-  console.log(`Subscription updated: ${subscription.id}`);
+  logger.audit("SUBSCRIPTION", "updated", {
+    stripeSubscriptionId: subscription.id,
+  });
 }
 
 async function handleSubscriptionDeleted(
   ctx: ActionCtx,
   subscription: Stripe.Subscription,
 ) {
+  const logger = new Logger();
   await ctx.runMutation(internal.subscriptions.deleteSubscription, {
     stripeSubscriptionId: subscription.id,
   });
 
-  console.log(`Subscription deleted: ${subscription.id}`);
+  logger.audit("SUBSCRIPTION", "deleted", {
+    stripeSubscriptionId: subscription.id,
+  });
 }
 
 async function handlePaymentFailed(ctx: ActionCtx, invoice: Stripe.Invoice) {
+  const logger = new Logger();
   const inv = invoice as StripeInvoiceWithSubscription;
   const subscriptionId = inv.subscription;
   if (!subscriptionId) return;
@@ -169,7 +186,9 @@ async function handlePaymentFailed(ctx: ActionCtx, invoice: Stripe.Invoice) {
     status: "past_due" as const,
   });
 
-  console.log(`Payment failed for subscription: ${subscriptionId}`);
+  logger.warn("SUBSCRIPTION", "payment_failed", {
+    stripeSubscriptionId: subscriptionId,
+  });
 }
 
 // ========================================
