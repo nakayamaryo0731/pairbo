@@ -191,7 +191,7 @@ describe("categories", () => {
       expect(category?.icon).toBe("star");
     });
 
-    test("プリセットカテゴリは更新できない", async () => {
+    test("プリセットカテゴリも更新できる", async () => {
       const t = convexTest(schema, modules);
 
       const groupId = await t
@@ -211,13 +211,19 @@ describe("categories", () => {
 
       expect(presetCategory).not.toBeNull();
 
-      await expect(
-        t.withIdentity(testIdentity).mutation(api.categories.update, {
-          categoryId: presetCategory!._id,
-          name: "変更した名前",
-          icon: "wrench",
-        }),
-      ).rejects.toThrow("プリセットカテゴリは編集できません");
+      await t.withIdentity(testIdentity).mutation(api.categories.update, {
+        categoryId: presetCategory!._id,
+        name: "変更した名前",
+        icon: "wrench",
+      });
+
+      const updated = await t.run(async (ctx) => {
+        return await ctx.db.get(presetCategory!._id);
+      });
+
+      expect(updated?.name).toBe("変更した名前");
+      expect(updated?.icon).toBe("wrench");
+      expect(updated?.isPreset).toBe(true);
     });
 
     test("メンバーでないユーザーは更新できない", async () => {

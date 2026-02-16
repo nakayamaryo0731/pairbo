@@ -92,10 +92,6 @@ export const update = authMutation({
     // 認可チェック
     await requireGroupMember(ctx, category.groupId);
 
-    if (category.isPreset) {
-      throw new ConvexError("プリセットカテゴリは編集できません");
-    }
-
     let validatedName: string;
     let validatedIcon: string;
     try {

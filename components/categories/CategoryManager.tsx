@@ -93,20 +93,18 @@ function SortableCategoryItem({
       </button>
       <CategoryIcon name={category.icon} size="md" className="text-slate-700" />
       <span className="flex-1">{category.name}</span>
+      <Button variant="ghost" size="sm" onClick={onEdit}>
+        編集
+      </Button>
       {!category.isPreset && (
-        <>
-          <Button variant="ghost" size="sm" onClick={onEdit}>
-            編集
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={onDelete}
-          >
-            削除
-          </Button>
-        </>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          onClick={onDelete}
+        >
+          削除
+        </Button>
       )}
     </div>
   );
