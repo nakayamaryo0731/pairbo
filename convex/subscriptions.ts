@@ -383,58 +383,6 @@ export const listUsers = internalMutation({
   },
 });
 
-export const setDeveloperPremium = internalMutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    // ユーザーの存在確認
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("ユーザーが見つかりません");
-    }
-
-    // 既存のサブスクリプションを確認
-    const existing = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .unique();
-
-    const now = Date.now();
-
-    if (existing) {
-      // 既存のサブスクリプションを更新
-      await ctx.db.patch(existing._id, {
-        plan: "premium",
-        status: "active",
-        updatedAt: now,
-      });
-      return {
-        success: true,
-        action: "updated",
-        userId: args.userId,
-        displayName: user.displayName,
-      };
-    }
-
-    // 新規作成
-    await ctx.db.insert("subscriptions", {
-      userId: args.userId,
-      stripeCustomerId: "dev_admin",
-      plan: "premium",
-      status: "active",
-      cancelAtPeriodEnd: false,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    return {
-      success: true,
-      action: "created",
-      userId: args.userId,
-      displayName: user.displayName,
-    };
-  },
-});
-
 /**
  * 管理者プラン切替（フロントエンドから呼び出し）
  * isAdmin=true のユーザーのみ実行可能
