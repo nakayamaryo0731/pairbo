@@ -149,15 +149,14 @@ describe("subscription helpers", () => {
       expect(plan).toBe("free");
     });
 
-    test("admin planOverride → オーバーライドの値を返す", async () => {
+    test("planOverride → オーバーライドの値を返す", async () => {
       const t = convexTest(schema, modules);
       const userId = await t.run(async (ctx) => {
         const now = Date.now();
         return await ctx.db.insert("users", {
-          clerkId: "admin_user",
-          displayName: "管理者",
+          clerkId: "override_user",
+          displayName: "オーバーライドユーザー",
           avatarUrl: undefined,
-          isAdmin: true,
           planOverride: "premium",
           createdAt: now,
           updatedAt: now,
@@ -171,21 +170,20 @@ describe("subscription helpers", () => {
       expect(plan).toBe("premium");
     });
 
-    test("admin planOverride はサブスクリプションより優先される", async () => {
+    test("planOverride はサブスクリプションより優先される", async () => {
       const t = convexTest(schema, modules);
       const userId = await t.run(async (ctx) => {
         const now = Date.now();
         return await ctx.db.insert("users", {
-          clerkId: "admin_user",
-          displayName: "管理者",
+          clerkId: "override_user",
+          displayName: "オーバーライドユーザー",
           avatarUrl: undefined,
-          isAdmin: true,
           planOverride: "premium",
           createdAt: now,
           updatedAt: now,
         });
       });
-      // freeのサブスクリプションがあっても、adminのオーバーライドが優先
+      // freeのサブスクリプションがあっても、オーバーライドが優先
       await setupSubscription(t, userId, {
         plan: "free",
         status: "active",

@@ -18,7 +18,7 @@ export async function getUserPlan(
   userId: Id<"users">,
 ): Promise<"free" | "premium"> {
   const user = await ctx.db.get(userId);
-  if (user?.isAdmin && user.planOverride) {
+  if (user?.planOverride) {
     return user.planOverride;
   }
 
