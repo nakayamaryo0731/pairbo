@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Link2,
@@ -109,17 +110,23 @@ const steps = [
     step: "1",
     title: "グループを作成",
     description: "招待URLをパートナーに送るだけ。アプリのインストールは不要。",
+    image: "/screenshots/screenshot-step1.png",
+    alt: "Pairbo グループ作成画面 - グループ名を入力して作成",
   },
   {
     step: "2",
     title: "支出を記録",
     description:
       "買い物したら金額とカテゴリを選んで記録。負担方法もその場で選べる。",
+    image: "/screenshots/screenshot-step2.png",
+    alt: "Pairbo 支出登録フォーム - カテゴリ選択と負担方法の設定",
   },
   {
     step: "3",
     title: "月末に精算",
     description: "自動計算された精算額を確認して送金するだけ。",
+    image: "/screenshots/screenshot-step3.png",
+    alt: "Pairbo 精算プレビュー - 自動計算された精算額の確認",
   },
 ];
 
@@ -285,10 +292,14 @@ function HeroSection() {
                 <div className="w-20 h-5 bg-slate-800 rounded-b-xl" />
               </div>
               <div className="bg-white rounded-[1.25rem] overflow-hidden">
-                {/* TODO: 実際のアプリスクリーンショットに差し替え */}
-                <div className="aspect-[9/16] bg-slate-100 flex items-center justify-center text-sm text-slate-400">
-                  スクリーンショット
-                </div>
+                <Image
+                  src="/screenshots/screenshot-hero.png"
+                  alt="Pairbo アプリの支出一覧画面 - カップルの共有家計簿"
+                  width={360}
+                  height={640}
+                  className="w-full h-auto"
+                  priority
+                />
               </div>
             </div>
           </div>
@@ -435,9 +446,14 @@ function HowItWorksSection() {
               <div className="pb-2">
                 <h3 className="font-bold text-slate-800 mb-1">{item.title}</h3>
                 <p className="text-slate-600 text-sm">{item.description}</p>
-                {/* TODO: 各ステップのスクリーンショットを追加 */}
-                <div className="mt-3 h-40 bg-slate-100 rounded-lg flex items-center justify-center text-sm text-slate-400">
-                  スクリーンショット
+                <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
+                  <Image
+                    src={item.image}
+                    alt={item.alt}
+                    width={600}
+                    height={400}
+                    className="w-full h-auto"
+                  />
                 </div>
               </div>
             </div>

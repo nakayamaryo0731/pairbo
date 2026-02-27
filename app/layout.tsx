@@ -38,8 +38,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/og-image.png",
-        width: 612,
-        height: 408,
+        width: 1200,
+        height: 630,
         alt: "Pairbo - 2人のための支出管理",
       },
     ],

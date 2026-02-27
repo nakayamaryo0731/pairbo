@@ -51,7 +51,7 @@ export function InviteAcceptCard({ token, invitation }: InviteAcceptCardProps) {
   };
 
   const handleCancel = () => {
-    router.push("/");
+    router.push("/groups");
   };
 
   return (
