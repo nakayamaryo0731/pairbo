@@ -309,7 +309,7 @@ function PricingContent() {
           {/* 戻るボタン */}
           <div className="mt-8 text-center">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/groups")}
               className="text-slate-600 hover:text-slate-800 text-sm"
             >
               ← ホームに戻る
