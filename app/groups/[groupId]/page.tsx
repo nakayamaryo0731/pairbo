@@ -51,7 +51,7 @@ export default function GroupDetailPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-slate-50">
         <PageHeader
-          backHref="/?list=true"
+          backHref="/groups?list=true"
           isLoading
           rightElement={rightIcons}
         />
@@ -67,7 +67,7 @@ export default function GroupDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <PageHeader
-        backHref="/?list=true"
+        backHref="/groups?list=true"
         title={detail.group.name}
         rightElement={rightIcons}
       />
