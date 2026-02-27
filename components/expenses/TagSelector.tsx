@@ -71,7 +71,7 @@ export function TagSelector({
     (t: Tag) => t.name.toLowerCase() === normalizedQuery,
   );
 
-  // 表示するタグ（入力なしの場合は最近使用順で5件）
+  // 表示するタグ（入力なしの場合は並び順で先頭5件）
   const displayTags =
     normalizedQuery === ""
       ? (tags?.slice(0, 5) ?? [])

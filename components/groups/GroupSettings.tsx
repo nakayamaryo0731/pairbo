@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { InviteDialog } from "./InviteDialog";
 import { CategoryManager } from "@/components/categories";
+import { TagManager } from "@/components/tags";
 import { Switch } from "@/components/ui/switch";
 import {
   Popover,
@@ -18,6 +19,7 @@ import {
   Calendar,
   Users,
   Tag,
+  Tags,
   Home,
   ChevronRight,
   CreditCard,
@@ -329,6 +331,31 @@ export function GroupSettings({
             </div>
           </div>
           <CategoryManager groupId={group._id} categories={categories} />
+        </div>
+      </section>
+
+      {/* タグ */}
+      <section className="bg-white border border-slate-200 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+              <Tags className="h-5 w-5 text-slate-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">タグ</p>
+              {subscription?.plan === "premium" ? (
+                <p className="font-medium text-slate-800">Premiumで利用可能</p>
+              ) : (
+                <p className="text-sm text-slate-400 flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 text-yellow-500" />
+                  Premiumプラン限定
+                </p>
+              )}
+            </div>
+          </div>
+          {subscription?.plan === "premium" && (
+            <TagManager groupId={group._id} />
+          )}
         </div>
       </section>
 

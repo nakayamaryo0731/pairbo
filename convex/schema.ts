@@ -154,7 +154,8 @@ export default defineSchema({
     groupId: v.id("groups"),
     name: v.string(),
     color: v.string(), // Tailwind色名: "red", "blue", "green", etc.
-    lastUsedAt: v.optional(v.number()), // 最近使用日時（上位表示用）
+    sortOrder: v.optional(v.number()),
+    lastUsedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
