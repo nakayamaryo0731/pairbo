@@ -28,14 +28,11 @@ export const list = authQuery({
       .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
       .collect();
 
-    // lastUsedAt降順でソート（未使用はcreatedAt順で末尾）
     return tags.sort((a, b) => {
-      const aTime = a.lastUsedAt ?? 0;
-      const bTime = b.lastUsedAt ?? 0;
-      if (aTime !== bTime) {
-        return bTime - aTime; // 降順
-      }
-      return b.createdAt - a.createdAt;
+      const aOrder = a.sortOrder ?? Infinity;
+      const bOrder = b.sortOrder ?? Infinity;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return a.createdAt - b.createdAt;
     });
   },
 });
@@ -104,6 +101,7 @@ export const create = authMutation({
       groupId: args.groupId,
       name: normalizedName,
       color,
+      sortOrder: existingTags.length,
       createdAt: now,
       updatedAt: now,
     });
@@ -317,5 +315,36 @@ export const existsExact = authQuery({
       exists: !!exactMatch,
       tag: exactMatch ?? null,
     };
+  },
+});
+
+/**
+ * タグ並び替え
+ */
+export const reorder = authMutation({
+  args: {
+    groupId: v.id("groups"),
+    tagIds: v.array(v.id("tags")),
+  },
+  handler: async (ctx, args) => {
+    await requireGroupMember(ctx, args.groupId);
+
+    const canUse = await canUseTags(ctx, ctx.user._id);
+    if (!canUse) {
+      throw new ConvexError("タグ機能はPremiumプランでご利用いただけます");
+    }
+
+    for (let i = 0; i < args.tagIds.length; i++) {
+      const tag = await ctx.db.get(args.tagIds[i]);
+      if (!tag || tag.groupId !== args.groupId) {
+        throw new ConvexError("無効なタグが指定されました");
+      }
+      await ctx.db.patch(args.tagIds[i], { sortOrder: i });
+    }
+
+    ctx.logger.audit("TAG", "reordered", {
+      groupId: args.groupId,
+      tagCount: args.tagIds.length,
+    });
   },
 });
