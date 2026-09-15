@@ -44,8 +44,14 @@ export function ReleaseModal({
       const result = await claimTrial();
       if (result.granted) {
         trackEvent("trial_claimed", { source: "release_modal" });
+        setJustClaimed(true);
+      } else {
+        setError(
+          result.reason === "already_claimed"
+            ? "無料体験はすでにご利用済みです"
+            : "Premiumをご利用中のため、無料体験の対象外です",
+        );
       }
-      setJustClaimed(true);
     } catch (err) {
       setError(getErrorMessage(err, "エラーが発生しました"));
     } finally {
