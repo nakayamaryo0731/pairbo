@@ -59,6 +59,15 @@ export const releases: Release[] = [
     title: "Premiumがグループ全員で使えるようになりました",
     body: "グループ内のどちらか1人がPremiumなら、グループの全員が傾斜折半・タグ・年次分析などのPremium機能を使えるようになりました。\n1人分の課金で2人とも使えます。",
   },
+  {
+    id: "2026-09-16-recurring-expenses",
+    publishedAt: Date.UTC(2026, 8, 16),
+    title: "定期支出の自動記録ができるようになりました",
+    body: "家賃やサブスクなど、毎月決まった支出を自動で記録できるようになりました。\n支出の記録画面で「毎月自動で記録」をONにするか、グループ設定の「定期支出」から登録すると、毎月決まった日に自動で記録されます。\nPremium機能です。グループのどちらか1人が加入していれば、2人とも使えます。",
+    cta: { label: "Premiumを30日間無料で試す", action: "claim_trial" },
+    expiresAt: Date.UTC(2026, 9, 16),
+    autoOpen: true,
+  },
 ];
 
 /** リリース可視性判定で必要となる、ユーザーの支払い状況コンテキスト */
