@@ -132,16 +132,16 @@ export function TagSelector({
 
   if (!isPremium) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
           タグ
         </span>
         <a
           href="/pricing"
           onClick={() => trackEvent("premium_gate_hit", { feature: "tags" })}
-          className="block p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
+          className="block p-2.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
         >
-          <div className="flex flex-wrap gap-1.5 mb-2">
+          <div className="flex flex-wrap gap-1.5 mb-1.5">
             {TAG_EXAMPLES.map((t) => {
               const colors = getTagColorClasses(t.color);
               return (
@@ -164,7 +164,7 @@ export function TagSelector({
   }
 
   return (
-    <div className="space-y-2" ref={containerRef}>
+    <div className="space-y-1.5" ref={containerRef}>
       <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
         タグ
       </span>
