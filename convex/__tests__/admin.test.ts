@@ -1,7 +1,7 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import schema from "../schema";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 
 const modules = import.meta.glob("../**/*.ts");
 
@@ -150,5 +150,41 @@ describe("admin", () => {
         t.withIdentity(userIdentity).query(api.admin.getGroups, {}),
       ).rejects.toThrow("管理者権限が必要です");
     });
+  });
+});
+
+describe("clearExpiredTrials", () => {
+  test("期限切れ trial のみ削除し、有効な trial は残す", async () => {
+    const t = convexTest(schema, modules);
+    await setupAdmin(t);
+    await setupNormalUser(t);
+
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      const users = await ctx.db.query("users").collect();
+      for (const u of users) {
+        await ctx.db.patch(u._id, {
+          trialExpiresAt:
+            u.clerkId === "admin_clerk_id" ? now - 1000 : now + 1000000,
+        });
+      }
+    });
+
+    const result = await t.mutation(internal.admin.clearExpiredTrials, {});
+    expect(result.cleared).toBe(1);
+
+    const users = await t.run(async (ctx) => ctx.db.query("users").collect());
+    const expired = users.find((u) => u.clerkId === "admin_clerk_id");
+    const active = users.find((u) => u.clerkId === "user_clerk_id");
+    expect(expired?.trialExpiresAt).toBeUndefined();
+    expect(active?.trialExpiresAt).toBeDefined();
+  });
+
+  test("trial 未取得ユーザーがいても何もしない", async () => {
+    const t = convexTest(schema, modules);
+    await setupNormalUser(t);
+
+    const result = await t.mutation(internal.admin.clearExpiredTrials, {});
+    expect(result.cleared).toBe(0);
   });
 });
