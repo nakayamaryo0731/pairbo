@@ -1,5 +1,6 @@
 import { ConvexError } from "convex/values";
 import { authQuery } from "./lib/auth";
+import { internalMutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
 /**
@@ -207,5 +208,29 @@ export const getGroups = authQuery({
       expenseCount: expenseCountMap.get(g._id) ?? 0,
       totalAmount: totalAmountMap.get(g._id) ?? 0,
     }));
+  },
+});
+
+/**
+ * 期限切れ trial の trialExpiresAt を全ユーザーから削除する。
+ * 終了したキャンペーンの claim 履歴を無効化し、次回キャンペーンの
+ * 自動表示・再 claim を可能にする。ダッシュボードから手動実行する。
+ */
+export const clearExpiredTrials = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const users = await ctx.db.query("users").collect();
+    let cleared = 0;
+    for (const user of users) {
+      if (user.trialExpiresAt != null && user.trialExpiresAt <= now) {
+        await ctx.db.patch(user._id, {
+          trialExpiresAt: undefined,
+          updatedAt: now,
+        });
+        cleared++;
+      }
+    }
+    return { cleared };
   },
 });
