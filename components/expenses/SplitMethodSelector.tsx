@@ -183,8 +183,14 @@ function RatioInput({
 
   const handleRatioChange = (userId: Id<"users">, value: string) => {
     const numValue = parseInt(value, 10) || 0;
+    const clamped = Math.max(0, Math.min(100, numValue));
     const newRatios = new Map(ratios);
-    newRatios.set(userId, Math.max(0, Math.min(100, numValue)));
+    newRatios.set(userId, clamped);
+    // 2人のときは合計100%になるようもう片方を自動補完
+    if (members.length === 2) {
+      const other = members.find((m) => m.userId !== userId);
+      if (other) newRatios.set(other.userId, 100 - clamped);
+    }
     onRatiosChange(newRatios);
   };
 
@@ -238,8 +244,15 @@ function AmountInput({
 
   const handleAmountChange = (userId: Id<"users">, value: string) => {
     const numValue = parseInt(value, 10) || 0;
+    const clamped = Math.max(0, numValue);
     const newAmounts = new Map(amounts);
-    newAmounts.set(userId, Math.max(0, numValue));
+    newAmounts.set(userId, clamped);
+    // 2人のときは合計が支出額になるようもう片方を自動補完
+    if (members.length === 2) {
+      const other = members.find((m) => m.userId !== userId);
+      if (other)
+        newAmounts.set(other.userId, Math.max(0, totalAmount - clamped));
+    }
     onAmountsChange(newAmounts);
   };
 
