@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { Bell } from "lucide-react";
 import { api } from "@/convex/_generated/api";
@@ -60,14 +60,6 @@ function NotificationBellReady({
     return auto ? { type: "detail", release: auto } : { type: "closed" };
   });
 
-  // 自動オープンで起動したかを mount 時点でスナップショットする。
-  // 以降の view 変化で flag が動かないため、effect の依存に含めても再発火しない。
-  const wasAutoOpenedRef = useRef(view.type === "detail");
-  useEffect(() => {
-    if (!wasAutoOpenedRef.current) return;
-    markRead().catch(() => {});
-  }, [markRead]);
-
   const all = getVisibleReleasesDesc(audienceCtx);
 
   if (all.length === 0) {
@@ -82,7 +74,13 @@ function NotificationBellReady({
     markRead().catch(() => {});
   };
 
-  const handleClose = () => setView({ type: "closed" });
+  // 既読化は閉じた時に行う。開いた瞬間に既読化すると、ログイン直後の
+  // ページ遷移で再マウントされた際に initializer が既読と判定し、
+  // 自動表示中のモーダルが一瞬で消えてしまう
+  const handleClose = () => {
+    setView({ type: "closed" });
+    markRead().catch(() => {});
+  };
   const handleShowList = () => setView({ type: "list" });
   const handleItemClick = (r: Release) =>
     setView({ type: "detail", release: r });
