@@ -15,9 +15,7 @@ import {
   Globe,
   Clock,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
-import { getActiveTrialCampaign } from "@/lib/releases";
 
 /* ---------- data ---------- */
 
@@ -232,10 +230,8 @@ const faqs = [
 /* ---------- component ---------- */
 
 export function LandingPage() {
-  const campaign = getActiveTrialCampaign();
   return (
     <div className="min-h-screen bg-white">
-      {campaign && <CampaignBanner expiresAt={campaign.expiresAt} />}
       <HeroSection />
       <PainPointsSection />
       <SolutionSection />
@@ -252,34 +248,6 @@ export function LandingPage() {
 }
 
 /* ========== Campaign Banner ========== */
-
-function formatCampaignEnd(ts: number): string {
-  // 終了日 = expiresAt の直前の日（expiresAt = 2026-06-01 00:00 UTC → 表示は「5月末」）
-  const d = new Date(ts - 1);
-  return `${d.getMonth() + 1}月${d.getDate()}日`;
-}
-
-function CampaignBanner({ expiresAt }: { expiresAt?: number }) {
-  return (
-    <Link
-      href="/sign-up"
-      className="block bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border-b border-amber-200 hover:from-amber-200 hover:to-amber-200 transition-colors"
-    >
-      <div className="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-center gap-2 text-sm text-amber-900">
-        <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
-        <span className="font-medium">
-          Premium 1ヶ月無料体験キャンペーン実施中
-        </span>
-        {expiresAt && (
-          <span className="text-xs text-amber-700">
-            （{formatCampaignEnd(expiresAt)}まで）
-          </span>
-        )}
-        <ArrowRight className="w-4 h-4 text-amber-600 shrink-0" />
-      </div>
-    </Link>
-  );
-}
 
 /* ========== 1. Hero ========== */
 

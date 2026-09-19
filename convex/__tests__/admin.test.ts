@@ -188,3 +188,33 @@ describe("clearExpiredTrials", () => {
     expect(result.cleared).toBe(0);
   });
 });
+
+describe("resetReleaseSeenSince", () => {
+  test("since 以降の既読のみリセットし、それ以前は残す", async () => {
+    const t = convexTest(schema, modules);
+    await setupAdmin(t);
+    await setupNormalUser(t);
+
+    const since = Date.now();
+    await t.run(async (ctx) => {
+      const users = await ctx.db.query("users").collect();
+      for (const u of users) {
+        await ctx.db.patch(u._id, {
+          lastSeenReleaseAt:
+            u.clerkId === "admin_clerk_id" ? since + 1000 : since - 1000,
+        });
+      }
+    });
+
+    const result = await t.mutation(internal.admin.resetReleaseSeenSince, {
+      since,
+    });
+    expect(result.reset).toBe(1);
+
+    const users = await t.run(async (ctx) => ctx.db.query("users").collect());
+    const after = users.find((u) => u.clerkId === "admin_clerk_id");
+    const before = users.find((u) => u.clerkId === "user_clerk_id");
+    expect(after?.lastSeenReleaseAt).toBeUndefined();
+    expect(before?.lastSeenReleaseAt).toBe(since - 1000);
+  });
+});
