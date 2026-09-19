@@ -1,4 +1,4 @@
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { authQuery } from "./lib/auth";
 import { internalMutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
@@ -216,6 +216,30 @@ export const getGroups = authQuery({
  * 終了したキャンペーンの claim 履歴を無効化し、次回キャンペーンの
  * 自動表示・再 claim を可能にする。ダッシュボードから手動実行する。
  */
+/**
+ * 指定時刻以降に既読化された lastSeenReleaseAt をリセットする。
+ * リリース告知の自動表示バグ（表示直後に既読化され再マウントで消える）で
+ * 既読扱いになったユーザーへ再表示するための復旧用。ダッシュボードから手動実行する。
+ */
+export const resetReleaseSeenSince = internalMutation({
+  args: { since: v.number() },
+  handler: async (ctx, { since }) => {
+    const users = await ctx.db.query("users").collect();
+    const now = Date.now();
+    let reset = 0;
+    for (const user of users) {
+      if (user.lastSeenReleaseAt != null && user.lastSeenReleaseAt >= since) {
+        await ctx.db.patch(user._id, {
+          lastSeenReleaseAt: undefined,
+          updatedAt: now,
+        });
+        reset++;
+      }
+    }
+    return { reset };
+  },
+});
+
 export const clearExpiredTrials = internalMutation({
   args: {},
   handler: async (ctx) => {
