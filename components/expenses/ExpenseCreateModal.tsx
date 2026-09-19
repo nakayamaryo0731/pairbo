@@ -92,7 +92,7 @@ export function ExpenseCreateModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white rounded-2xl p-4 max-h-[95dvh] overflow-y-auto overflow-x-hidden shadow-xl">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold text-slate-800">支出を記録</h3>
           <button
             onClick={onClose}

@@ -70,15 +70,21 @@ export function SplitMethodSelector({
 
   const premiumMethods: SplitMethod[] = ["ratio", "amount"];
 
+  // 2人グループで全員選択なら、メンバー選択は「全額」と重複するため非表示
+  const showMemberSelector =
+    members.length > 2 || selectedMemberIds.size !== members.length;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* メンバー選択 */}
-      <MemberSelector
-        members={members}
-        selectedIds={selectedMemberIds}
-        onChange={onSelectedMemberIdsChange}
-        memberColors={memberColors}
-      />
+      {showMemberSelector && (
+        <MemberSelector
+          members={members}
+          selectedIds={selectedMemberIds}
+          onChange={onSelectedMemberIdsChange}
+          memberColors={memberColors}
+        />
+      )}
 
       {/* 分割方法選択 */}
       <div className="flex gap-2">
@@ -128,14 +134,6 @@ export function SplitMethodSelector({
           </a>
           で割合・金額指定が利用可能
         </p>
-      )}
-
-      {/* 均等分割プレビュー */}
-      {method === "equal" && selectedMembers.length > 0 && totalAmount > 0 && (
-        <EqualPreview
-          memberCount={selectedMembers.length}
-          totalAmount={totalAmount}
-        />
       )}
 
       {method === "ratio" && (
@@ -404,29 +402,6 @@ function MemberSelector({
           ? "1人以上選択してください"
           : `${selectedIds.size}人で分割`}
       </p>
-    </div>
-  );
-}
-
-function EqualPreview({
-  memberCount,
-  totalAmount,
-}: {
-  memberCount: number;
-  totalAmount: number;
-}) {
-  const perPerson = Math.floor(totalAmount / memberCount);
-  const remainder = totalAmount % memberCount;
-
-  return (
-    <div className="p-3 bg-blue-50 rounded-xl text-sm text-slate-600">
-      {memberCount}人で均等分割: 1人あたり ¥{perPerson.toLocaleString()}
-      {remainder > 0 && (
-        <span className="text-slate-500">
-          {" "}
-          (端数 ¥{remainder} は1人目に加算)
-        </span>
-      )}
     </div>
   );
 }

@@ -441,6 +441,17 @@ export function ExpenseForm({
     (isRecurring ? title.trim() !== "" : date !== "") &&
     isSplitValid();
 
+  const previewAmount = parseInt(amount, 10) || 0;
+  const previewCount = selectedMemberIds.size;
+  const equalPreview =
+    splitMethod === "equal" && previewAmount > 0 && previewCount > 0
+      ? `${previewCount}人 · 1人あたり ¥${Math.floor(previewAmount / previewCount).toLocaleString()}${
+          previewAmount % previewCount > 0
+            ? `（端数¥${previewAmount % previewCount}は1人目）`
+            : ""
+        }`
+      : null;
+
   const submitLabel = isLoading
     ? isEditMode
       ? "更新中..."
@@ -456,11 +467,11 @@ export function ExpenseForm({
         : "記録する";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 py-2">
+    <form onSubmit={handleSubmit} className="space-y-4 py-1">
       {/* 金額 */}
       <div className="text-center">
         <div className="inline-flex items-baseline gap-1">
-          <span className="text-3xl text-slate-400">¥</span>
+          <span className="text-2xl text-slate-400">¥</span>
           <input
             ref={amountInputRef}
             type="number"
@@ -469,7 +480,7 @@ export function ExpenseForm({
             placeholder="0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="text-5xl font-light text-slate-800 w-48 text-center bg-transparent border-none outline-none placeholder:text-slate-300"
+            className="text-4xl font-light text-slate-800 w-48 text-center bg-transparent border-none outline-none placeholder:text-slate-300"
             min={1}
             max={100000000}
             required
@@ -511,7 +522,7 @@ export function ExpenseForm({
       </div>
 
       {/* カテゴリ - 横スクロールチップ */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
           カテゴリ
         </span>
@@ -521,7 +532,7 @@ export function ExpenseForm({
               key={category._id}
               type="button"
               onClick={() => setCategoryId(category._id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap transition-all shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all shrink-0 ${
                 categoryId === category._id
                   ? "bg-blue-500 text-white"
                   : "bg-blue-50 text-blue-600 hover:bg-blue-100"
@@ -535,7 +546,7 @@ export function ExpenseForm({
       </div>
 
       {/* 支払者 - 横スクロールチップ */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
           支払った人
         </span>
@@ -545,7 +556,7 @@ export function ExpenseForm({
               key={member.userId}
               type="button"
               onClick={() => setPaidBy(member.userId)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
                 paidBy === member.userId
                   ? "bg-blue-500 text-white"
                   : "bg-blue-50 text-blue-600 hover:bg-blue-100"
@@ -563,10 +574,15 @@ export function ExpenseForm({
       </div>
 
       {/* 負担方法 */}
-      <div className="space-y-2">
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-          負担方法
-        </span>
+      <div className="space-y-1.5">
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            負担方法
+          </span>
+          {equalPreview && (
+            <span className="text-xs text-slate-500">{equalPreview}</span>
+          )}
+        </div>
         <SplitMethodSelector
           method={splitMethod}
           onMethodChange={handleMethodChange}
@@ -597,47 +613,49 @@ export function ExpenseForm({
       )}
 
       {/* 定期支出として登録 */}
-      {!isRecurring && !isEditMode && (
-        <div className="rounded-xl border border-slate-200 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
+      {!isRecurring &&
+        !isEditMode &&
+        (isPremium ? (
+          <div className="rounded-xl border border-slate-200 px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <RefreshCw className="h-4 w-4 text-slate-400 shrink-0" />
+                <span className="text-sm font-medium text-slate-700">
+                  毎月自動で記録
+                </span>
+              </div>
+              <Switch
+                checked={registerRecurring}
+                onCheckedChange={setRegisterRecurring}
+              />
+            </div>
+            {registerRecurring && (
+              <p className="mt-1 text-xs text-slate-500">
+                来月から毎月{toDayOfMonth(date)}
+                日に同じ内容で自動記録します（タイトル必須）
+              </p>
+            )}
+          </div>
+        ) : (
+          <a
+            href="/pricing"
+            onClick={() =>
+              trackEvent("premium_gate_hit", { feature: "recurring_expense" })
+            }
+            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+          >
             <div className="flex items-center gap-2 min-w-0">
               <RefreshCw className="h-4 w-4 text-slate-400 shrink-0" />
               <span className="text-sm font-medium text-slate-700">
                 毎月自動で記録
               </span>
-              {!isPremium && <span className="text-xs">🔒</span>}
+              <span className="text-xs">🔒</span>
             </div>
-            <Switch
-              checked={registerRecurring}
-              disabled={!isPremium}
-              onCheckedChange={(checked) => {
-                if (!isPremium) {
-                  trackEvent("premium_gate_hit", {
-                    feature: "recurring_expense",
-                  });
-                  return;
-                }
-                setRegisterRecurring(checked);
-              }}
-            />
-          </div>
-          {isPremium ? (
-            registerRecurring && (
-              <p className="mt-1.5 text-xs text-slate-500">
-                来月から毎月{toDayOfMonth(date)}
-                日に同じ内容で自動記録します（タイトル必須）
-              </p>
-            )
-          ) : (
-            <p className="mt-1.5 text-xs text-slate-500">
-              <a href="/pricing" className="text-blue-600 hover:underline">
-                Premiumプラン
-              </a>
-              で定期支出の自動記録が利用可能
-            </p>
-          )}
-        </div>
-      )}
+            <span className="text-xs text-blue-600 shrink-0">
+              Premiumで利用可
+            </span>
+          </a>
+        ))}
 
       {/* 買い物リスト連携（現在非表示）
       {!isEditMode && (
@@ -693,18 +711,18 @@ export function ExpenseForm({
       <ErrorAlert message={error} />
 
       {/* ボタン */}
-      <div className="sticky bottom-0 bg-white pt-3 pb-1 -mx-1 px-1 border-t border-slate-100">
+      <div className="sticky bottom-0 bg-white pt-2 pb-1 -mx-1 px-1 border-t border-slate-100">
         <div className="flex gap-3">
           <button
             type="submit"
             disabled={isLoading || !isFormValid}
-            className="flex-1 py-4 bg-blue-500 text-white font-medium rounded-2xl hover:bg-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 bg-blue-500 text-white font-medium rounded-2xl hover:bg-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitLabel}
           </button>
           <button
             type="button"
-            className="px-6 py-4 text-sm text-slate-500 hover:text-slate-700 transition-colors rounded-2xl bg-slate-100 hover:bg-slate-200"
+            className="px-6 py-3 text-sm text-slate-500 hover:text-slate-700 transition-colors rounded-2xl bg-slate-100 hover:bg-slate-200"
             onClick={handleCancel}
             disabled={isLoading}
           >
