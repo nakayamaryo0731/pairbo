@@ -319,6 +319,46 @@ describe("settlement/calculator", () => {
         endDate: "2024-06-15",
       });
     });
+
+    test("末日締め、31日の月", () => {
+      const period = getSettlementPeriod("end_of_month", 2026, 1);
+      expect(period).toEqual({
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+    });
+
+    test("末日締め、30日の月", () => {
+      const period = getSettlementPeriod("end_of_month", 2026, 4);
+      expect(period).toEqual({
+        startDate: "2026-04-01",
+        endDate: "2026-04-30",
+      });
+    });
+
+    test("末日締め、平年の2月", () => {
+      const period = getSettlementPeriod("end_of_month", 2026, 2);
+      expect(period).toEqual({
+        startDate: "2026-02-01",
+        endDate: "2026-02-28",
+      });
+    });
+
+    test("末日締め、うるう年の2月", () => {
+      const period = getSettlementPeriod("end_of_month", 2028, 2);
+      expect(period).toEqual({
+        startDate: "2028-02-01",
+        endDate: "2028-02-29",
+      });
+    });
+
+    test("末日締め、年をまたぐ12月分", () => {
+      const period = getSettlementPeriod("end_of_month", 2026, 12);
+      expect(period).toEqual({
+        startDate: "2026-12-01",
+        endDate: "2026-12-31",
+      });
+    });
   });
 
   describe("isDateInPeriod", () => {
@@ -504,6 +544,30 @@ describe("settlement/calculator", () => {
       expect(getSettlementYearMonthForDate("2024-01-10", 25)).toEqual({
         year: 2024,
         month: 1,
+      });
+    });
+
+    test("末日締めの場合は常に当月分", () => {
+      // 月末日（30日の月）
+      expect(
+        getSettlementYearMonthForDate("2026-04-30", "end_of_month"),
+      ).toEqual({
+        year: 2026,
+        month: 4,
+      });
+      // 31日の月の31日
+      expect(
+        getSettlementYearMonthForDate("2026-12-31", "end_of_month"),
+      ).toEqual({
+        year: 2026,
+        month: 12,
+      });
+      // 月初
+      expect(
+        getSettlementYearMonthForDate("2026-04-01", "end_of_month"),
+      ).toEqual({
+        year: 2026,
+        month: 4,
       });
     });
 

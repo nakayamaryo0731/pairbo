@@ -39,6 +39,7 @@ import { useGroupPremium } from "@/hooks/useGroupPremium";
 import { InlineEditText, InlineEditDisplay } from "@/components/ui/InlineEdit";
 import { APP_VERSION } from "@/lib/version";
 import { readTrialState } from "@/lib/trial";
+import type { ClosingDay } from "@/convex/domain/group/types";
 
 type Category = {
   _id: Id<"categories">;
@@ -63,7 +64,7 @@ type GroupSettingsProps = {
     _id: Id<"groups">;
     name: string;
     description?: string;
-    closingDay: number;
+    closingDay: ClosingDay;
   };
   members: Member[];
   categories: Category[];
@@ -136,7 +137,7 @@ export function GroupSettings({
     onSave: async (closingDay) => {
       await updateClosingDay({ groupId: group._id, closingDay });
     },
-    validate: (day) => day >= 1 && day <= 28,
+    validate: (day) => day === "end_of_month" || (day >= 1 && day <= 28),
   });
 
   const displayNameEdit = useInlineEdit({
@@ -188,7 +189,10 @@ export function GroupSettings({
               <select
                 value={closingDayEdit.value}
                 onChange={(e) => {
-                  closingDayEdit.saveWithValue(Number(e.target.value));
+                  const value = e.target.value;
+                  closingDayEdit.saveWithValue(
+                    value === "end_of_month" ? value : Number(value),
+                  );
                 }}
                 className="px-2 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoFocus
@@ -196,11 +200,11 @@ export function GroupSettings({
               >
                 {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
                   <option key={day} value={day}>
-                    {day}
+                    {day}日
                   </option>
                 ))}
+                <option value="end_of_month">末日</option>
               </select>
-              <span className="text-sm text-slate-600">日</span>
             </div>
           ) : (
             <InlineEditDisplay
@@ -208,7 +212,10 @@ export function GroupSettings({
               onEdit={closingDayEdit.startEditing}
             >
               <p className="font-medium text-slate-800">
-                毎月 {group.closingDay} 日
+                毎月{" "}
+                {group.closingDay === "end_of_month"
+                  ? "末日"
+                  : `${group.closingDay} 日`}
               </p>
             </InlineEditDisplay>
           )}

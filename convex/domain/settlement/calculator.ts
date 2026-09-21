@@ -1,4 +1,5 @@
 import type { Id } from "../../_generated/dataModel";
+import type { ClosingDay } from "../group/types";
 import type { MemberBalance, Payment, SettlementPeriod } from "./types";
 
 /**
@@ -168,7 +169,7 @@ function formatDate(date: Date): string {
 /**
  * 締め日と年月から精算期間を計算
  *
- * @param closingDay 締め日（1-28）
+ * @param closingDay 締め日（1-28 または "end_of_month"=末日）
  * @param year 対象年
  * @param month 対象月（1-12）
  * @returns 精算期間（開始日、終了日）
@@ -179,10 +180,18 @@ function formatDate(date: Date): string {
  * // → { startDate: "2024-11-26", endDate: "2024-12-25" }
  */
 export function getSettlementPeriod(
-  closingDay: number,
+  closingDay: ClosingDay,
   year: number,
   month: number,
 ): SettlementPeriod {
+  // 末日締め: 当月1日〜当月末日（月の日数はDateの正規化で解決）
+  if (closingDay === "end_of_month") {
+    return {
+      startDate: formatDate(new Date(year, month - 1, 1)),
+      endDate: formatDate(new Date(year, month, 0)),
+    };
+  }
+
   // 終了日 = 当月の締め日
   const endDate = new Date(year, month - 1, closingDay);
 
@@ -223,7 +232,7 @@ export function getSettlementLabel(year: number, month: number): string {
 /**
  * 今日が含まれる精算期間の年月を取得
  *
- * @param closingDay 締め日（1-28）
+ * @param closingDay 締め日（1-28 または "end_of_month"=末日）
  * @returns 精算期間の年月
  *
  * @example
@@ -235,7 +244,7 @@ export function getSettlementLabel(year: number, month: number): string {
  * getCurrentSettlementYearMonth(25)
  * // → { year: 2024, month: 12 }（11/26〜12/25の期間 = 12月分）
  */
-export function getCurrentSettlementYearMonth(closingDay: number): {
+export function getCurrentSettlementYearMonth(closingDay: ClosingDay): {
   year: number;
   month: number;
 } {
@@ -244,8 +253,8 @@ export function getCurrentSettlementYearMonth(closingDay: number): {
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
-  // 締め日を過ぎている場合は翌月分
-  if (today > closingDay) {
+  // 末日締めは常に当月分。固定日は締め日を過ぎている場合に翌月分
+  if (closingDay !== "end_of_month" && today > closingDay) {
     if (currentMonth === 12) {
       return { year: currentYear + 1, month: 1 };
     }
@@ -260,7 +269,7 @@ export function getCurrentSettlementYearMonth(closingDay: number): {
  * 指定した日付が属する精算期間の年月を取得
  *
  * @param date 日付（YYYY-MM-DD）
- * @param closingDay 締め日（1-28）
+ * @param closingDay 締め日（1-28 または "end_of_month"=末日）
  * @returns 精算期間の年月
  *
  * @example
@@ -274,15 +283,15 @@ export function getCurrentSettlementYearMonth(closingDay: number): {
  */
 export function getSettlementYearMonthForDate(
   date: string,
-  closingDay: number,
+  closingDay: ClosingDay,
 ): { year: number; month: number } {
   const [yearStr, monthStr, dayStr] = date.split("-");
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
   const day = parseInt(dayStr, 10);
 
-  // 締め日を過ぎている場合は翌月分
-  if (day > closingDay) {
+  // 末日締めは常に当月分。固定日は締め日を過ぎている場合に翌月分
+  if (closingDay !== "end_of_month" && day > closingDay) {
     if (month === 12) {
       return { year: year + 1, month: 1 };
     }

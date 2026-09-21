@@ -1,4 +1,4 @@
-import { GROUP_RULES, type GroupInput } from "./types";
+import { GROUP_RULES, type ClosingDay, type GroupInput } from "./types";
 
 /**
  * グループバリデーションエラー
@@ -80,7 +80,11 @@ export function validateGroupInput(input: GroupInput): {
  * @param closingDay 締め日
  * @throws {GroupValidationError} バリデーションエラーの場合
  */
-export function validateClosingDay(closingDay: number): void {
+export function validateClosingDay(closingDay: ClosingDay): void {
+  if (closingDay === "end_of_month") {
+    return;
+  }
+
   if (!Number.isInteger(closingDay)) {
     throw new GroupValidationError("締め日は整数で入力してください");
   }
@@ -89,6 +93,6 @@ export function validateClosingDay(closingDay: number): void {
     closingDay < GROUP_RULES.MIN_CLOSING_DAY ||
     closingDay > GROUP_RULES.MAX_CLOSING_DAY
   ) {
-    throw new GroupValidationError("締め日は1〜28の間で設定してください");
+    throw new GroupValidationError("締め日は1〜28または末日で設定してください");
   }
 }

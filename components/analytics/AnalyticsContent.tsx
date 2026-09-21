@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import type { ClosingDay } from "@/convex/domain/group/types";
 import { usePeriodNavigation, useGroupPremium } from "@/hooks";
 import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
@@ -40,7 +41,7 @@ type ViewType = "month" | "year" | "all";
 
 type AnalyticsContentProps = {
   groupId: string;
-  closingDay?: number;
+  closingDay?: ClosingDay;
 };
 
 export function AnalyticsContent({

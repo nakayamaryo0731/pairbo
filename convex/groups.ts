@@ -275,7 +275,7 @@ export const updateName = authMutation({
 export const updateClosingDay = authMutation({
   args: {
     groupId: v.id("groups"),
-    closingDay: v.number(),
+    closingDay: v.union(v.number(), v.literal("end_of_month")),
   },
   handler: async (ctx, args) => {
     const group = await getOrThrow(

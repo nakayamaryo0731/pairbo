@@ -124,6 +124,10 @@ describe("group/rules", () => {
       expect(() => validateClosingDay(28)).not.toThrow();
     });
 
+    test("末日（end_of_month）は通過する", () => {
+      expect(() => validateClosingDay("end_of_month")).not.toThrow();
+    });
+
     test("小数はエラー", () => {
       expect(() => validateClosingDay(15.5)).toThrow(GroupValidationError);
       expect(() => validateClosingDay(15.5)).toThrow(
@@ -134,14 +138,16 @@ describe("group/rules", () => {
     test("0以下はエラー", () => {
       expect(() => validateClosingDay(0)).toThrow(GroupValidationError);
       expect(() => validateClosingDay(-1)).toThrow(
-        "締め日は1〜28の間で設定してください",
+        "締め日は1〜28または末日で設定してください",
       );
     });
 
-    test("28超はエラー", () => {
+    test("29〜31はエラー（末日は数値ではなく end_of_month で指定）", () => {
       expect(() => validateClosingDay(29)).toThrow(GroupValidationError);
+      expect(() => validateClosingDay(30)).toThrow(GroupValidationError);
+      expect(() => validateClosingDay(31)).toThrow(GroupValidationError);
       expect(() => validateClosingDay(29)).toThrow(
-        "締め日は1〜28の間で設定してください",
+        "締め日は1〜28または末日で設定してください",
       );
     });
   });

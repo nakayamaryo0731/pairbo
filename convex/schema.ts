@@ -35,7 +35,7 @@ export default defineSchema({
   groups: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
-    closingDay: v.number(), // 1-28
+    closingDay: v.union(v.number(), v.literal("end_of_month")), // 1-28 または末日締め
     inviteReminderDismissedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),

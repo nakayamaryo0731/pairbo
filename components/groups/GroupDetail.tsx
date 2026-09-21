@@ -21,6 +21,7 @@ const ExpenseCreateModal = dynamic(() =>
 import { SettlementPreview, PeriodNavigator } from "@/components/settlements";
 import { FAB } from "@/components/ui/FAB";
 import { Plus } from "lucide-react";
+import type { ClosingDay } from "@/convex/domain/group/types";
 import { buildMemberColorMap } from "@/lib/userColors";
 import { getErrorMessage } from "@/lib/errors";
 import { InviteCtaBanner } from "./InviteCtaBanner";
@@ -45,7 +46,7 @@ type GroupDetailProps = {
     _id: Id<"groups">;
     name: string;
     description?: string;
-    closingDay: number;
+    closingDay: ClosingDay;
   };
   members: Member[];
   categories: Category[];

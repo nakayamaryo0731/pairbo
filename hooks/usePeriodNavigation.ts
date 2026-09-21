@@ -1,18 +1,19 @@
 import { useState, useMemo, useCallback } from "react";
 import { formatDateISO } from "@/lib/formatters";
+import type { ClosingDay } from "@/convex/domain/group/types";
 
 type YearMonth = { year: number; month: number };
 
 /**
  * 今日が含まれる精算期間の年月を計算
  */
-function getCurrentSettlementYearMonth(closingDay: number): YearMonth {
+function getCurrentSettlementYearMonth(closingDay: ClosingDay): YearMonth {
   const now = new Date();
   const today = now.getDate();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
-  if (today > closingDay) {
+  if (closingDay !== "end_of_month" && today > closingDay) {
     if (currentMonth === 12) {
       return { year: currentYear + 1, month: 1 };
     }
@@ -34,10 +35,18 @@ function getCurrentYearMonth(): YearMonth {
  * 精算期間を計算（開始日〜終了日）
  */
 function getSettlementPeriod(
-  closingDay: number,
+  closingDay: ClosingDay,
   year: number,
   month: number,
 ): { startDate: string; endDate: string } {
+  // 末日締め: 当月1日〜当月末日
+  if (closingDay === "end_of_month") {
+    return {
+      startDate: formatDateISO(new Date(year, month - 1, 1)),
+      endDate: formatDateISO(new Date(year, month, 0)),
+    };
+  }
+
   const endDate = new Date(year, month - 1, closingDay);
   const startDate = new Date(year, month - 2, closingDay + 1);
 
@@ -51,7 +60,7 @@ type UsePeriodNavigationOptions = {
   /**
    * 締め日（指定すると精算期間ベースのナビゲーションになる）
    */
-  closingDay?: number;
+  closingDay?: ClosingDay;
   /**
    * 初期の年
    */
