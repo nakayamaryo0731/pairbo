@@ -53,36 +53,40 @@ describe("admin", () => {
       expect(summary.totalGroups).toBe(0);
       expect(summary.totalExpenses).toBe(0);
       expect(summary.premiumCount).toBe(0);
-      expect(summary.trialClaimedCount).toBe(0);
+      expect(summary.inquiryCount7d).toBe(0);
     });
 
-    test("trial claim 数をカウントできる", async () => {
+    test("直近7日の問い合わせ数をカウントできる", async () => {
       const t = convexTest(schema, modules);
       await setupAdmin(t);
+      await setupNormalUser(t);
 
       const now = Date.now();
       const oneDay = 24 * 60 * 60 * 1000;
 
-      await t.withIdentity(userIdentity).mutation(api.users.ensureUser, {});
-      await t
-        .withIdentity({ subject: "expired_user", email: "e@example.com" })
-        .mutation(api.users.ensureUser, {});
-
       await t.run(async (ctx) => {
         const users = await ctx.db.query("users").collect();
-        const active = users.find((u) => u.clerkId === "user_clerk_id");
-        const expired = users.find((u) => u.clerkId === "expired_user");
-        if (active)
-          await ctx.db.patch(active._id, { trialExpiresAt: now + oneDay });
-        if (expired)
-          await ctx.db.patch(expired._id, { trialExpiresAt: now - oneDay });
+        const user = users.find((u) => u.clerkId === "user_clerk_id");
+        if (!user) throw new Error("user not found");
+        await ctx.db.insert("inquiries", {
+          userId: user._id,
+          category: "bug_report",
+          body: "最近の問い合わせ",
+          createdAt: now - oneDay,
+        });
+        await ctx.db.insert("inquiries", {
+          userId: user._id,
+          category: "other",
+          body: "古い問い合わせ",
+          createdAt: now - 10 * oneDay,
+        });
       });
 
       const summary = await t
         .withIdentity(adminIdentity)
         .query(api.admin.getSummary, {});
 
-      expect(summary.trialClaimedCount).toBe(2);
+      expect(summary.inquiryCount7d).toBe(1);
     });
 
     test("非管理者はサマリーを取得できない", async () => {
@@ -153,42 +157,6 @@ describe("admin", () => {
   });
 });
 
-describe("clearExpiredTrials", () => {
-  test("期限切れ trial のみ削除し、有効な trial は残す", async () => {
-    const t = convexTest(schema, modules);
-    await setupAdmin(t);
-    await setupNormalUser(t);
-
-    const now = Date.now();
-    await t.run(async (ctx) => {
-      const users = await ctx.db.query("users").collect();
-      for (const u of users) {
-        await ctx.db.patch(u._id, {
-          trialExpiresAt:
-            u.clerkId === "admin_clerk_id" ? now - 1000 : now + 1000000,
-        });
-      }
-    });
-
-    const result = await t.mutation(internal.admin.clearExpiredTrials, {});
-    expect(result.cleared).toBe(1);
-
-    const users = await t.run(async (ctx) => ctx.db.query("users").collect());
-    const expired = users.find((u) => u.clerkId === "admin_clerk_id");
-    const active = users.find((u) => u.clerkId === "user_clerk_id");
-    expect(expired?.trialExpiresAt).toBeUndefined();
-    expect(active?.trialExpiresAt).toBeDefined();
-  });
-
-  test("trial 未取得ユーザーがいても何もしない", async () => {
-    const t = convexTest(schema, modules);
-    await setupNormalUser(t);
-
-    const result = await t.mutation(internal.admin.clearExpiredTrials, {});
-    expect(result.cleared).toBe(0);
-  });
-});
-
 describe("resetReleaseSeenSince", () => {
   test("since 以降の既読のみリセットし、それ以前は残す", async () => {
     const t = convexTest(schema, modules);
@@ -216,5 +184,51 @@ describe("resetReleaseSeenSince", () => {
     const before = users.find((u) => u.clerkId === "user_clerk_id");
     expect(after?.lastSeenReleaseAt).toBeUndefined();
     expect(before?.lastSeenReleaseAt).toBe(since - 1000);
+  });
+});
+
+describe("getInquiries", () => {
+  test("管理者は問い合わせ一覧を新しい順で取得できる", async () => {
+    const t = convexTest(schema, modules);
+    await setupAdmin(t);
+    await setupNormalUser(t);
+
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      const users = await ctx.db.query("users").collect();
+      const user = users.find((u) => u.clerkId === "user_clerk_id");
+      if (!user) throw new Error("user not found");
+      await ctx.db.insert("inquiries", {
+        userId: user._id,
+        category: "feature_request",
+        body: "古い方",
+        createdAt: now - 1000,
+      });
+      await ctx.db.insert("inquiries", {
+        userId: user._id,
+        category: "bug_report",
+        body: "新しい方",
+        createdAt: now,
+      });
+    });
+
+    const inquiries = await t
+      .withIdentity(adminIdentity)
+      .query(api.admin.getInquiries, {});
+
+    expect(inquiries).toHaveLength(2);
+    expect(inquiries[0].body).toBe("新しい方");
+    expect(inquiries[0].category).toBe("bug_report");
+    expect(inquiries[0].displayName).toBe("一般ユーザー");
+    expect(inquiries[1].body).toBe("古い方");
+  });
+
+  test("非管理者は取得できない", async () => {
+    const t = convexTest(schema, modules);
+    await setupNormalUser(t);
+
+    await expect(
+      t.withIdentity(userIdentity).query(api.admin.getInquiries, {}),
+    ).rejects.toThrow("管理者権限が必要です");
   });
 });

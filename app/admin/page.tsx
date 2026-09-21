@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const summary = useQuery(api.admin.getSummary);
   const users = useQuery(api.admin.getUsers);
   const groups = useQuery(api.admin.getGroups);
+  const inquiries = useQuery(api.admin.getInquiries);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -58,6 +59,7 @@ export default function AdminDashboard() {
 
       <main className="max-w-6xl mx-auto p-4 space-y-6">
         <SummaryCards summary={summary} />
+        <InquiryList inquiries={inquiries} />
         <UserTable users={users} />
         <GroupTable groups={groups} />
       </main>
@@ -75,7 +77,7 @@ type Summary = {
   totalGroups: number;
   totalExpenses: number;
   premiumCount: number;
-  trialClaimedCount: number;
+  inquiryCount7d: number;
 };
 
 function SummaryCards({ summary }: { summary: Summary | undefined }) {
@@ -88,7 +90,7 @@ function SummaryCards({ summary }: { summary: Summary | undefined }) {
         { label: "グループ数", value: summary.totalGroups },
         { label: "支出件数", value: summary.totalExpenses.toLocaleString() },
         { label: "Premium", value: summary.premiumCount },
-        { label: "Trial claim", value: summary.trialClaimedCount },
+        { label: "問い合わせ（7日）", value: summary.inquiryCount7d },
       ]
     : null;
 
@@ -114,6 +116,78 @@ function SummaryCards({ summary }: { summary: Summary | undefined }) {
             </div>
           ))}
     </div>
+  );
+}
+
+/* ========== Inquiry List ========== */
+
+type InquiryRow = {
+  _id: string;
+  category: "feature_request" | "bug_report" | "other";
+  body: string;
+  createdAt: number;
+  displayName: string;
+};
+
+const INQUIRY_CATEGORY_LABELS: Record<
+  InquiryRow["category"],
+  { label: string; className: string }
+> = {
+  feature_request: {
+    label: "機能要望",
+    className: "bg-blue-100 text-blue-700",
+  },
+  bug_report: { label: "不具合", className: "bg-red-100 text-red-700" },
+  other: { label: "その他", className: "bg-slate-100 text-slate-600" },
+};
+
+function InquiryList({ inquiries }: { inquiries: InquiryRow[] | undefined }) {
+  return (
+    <section>
+      <h2 className="text-lg font-bold text-slate-800 mb-3">
+        問い合わせ
+        {inquiries && (
+          <span className="text-sm font-normal text-slate-500 ml-2">
+            ({inquiries.length}件)
+          </span>
+        )}
+      </h2>
+      <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100">
+        {inquiries === undefined ? (
+          <div className="px-4 py-8 text-center">
+            <Skeleton className="h-4 w-48 mx-auto" />
+          </div>
+        ) : inquiries.length === 0 ? (
+          <p className="px-4 py-8 text-center text-slate-500">
+            問い合わせはありません
+          </p>
+        ) : (
+          inquiries.map((inquiry) => {
+            const category = INQUIRY_CATEGORY_LABELS[inquiry.category];
+            return (
+              <div key={inquiry._id} className="px-4 py-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span
+                    className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${category.className}`}
+                  >
+                    {category.label}
+                  </span>
+                  <span className="text-sm text-slate-600">
+                    {inquiry.displayName}
+                  </span>
+                  <span className="text-xs text-slate-400 ml-auto">
+                    {formatDate(inquiry.createdAt)}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                  {inquiry.body}
+                </p>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </section>
   );
 }
 

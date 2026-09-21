@@ -54,15 +54,23 @@ export const getSummary = authQuery({
     const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
     const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
 
-    const [users, expenses, settlements, shoppingItems, groups, subscriptions] =
-      await Promise.all([
-        ctx.db.query("users").collect(),
-        ctx.db.query("expenses").collect(),
-        ctx.db.query("settlements").collect(),
-        ctx.db.query("shoppingItems").collect(),
-        ctx.db.query("groups").collect(),
-        ctx.db.query("subscriptions").collect(),
-      ]);
+    const [
+      users,
+      expenses,
+      settlements,
+      shoppingItems,
+      groups,
+      subscriptions,
+      inquiries,
+    ] = await Promise.all([
+      ctx.db.query("users").collect(),
+      ctx.db.query("expenses").collect(),
+      ctx.db.query("settlements").collect(),
+      ctx.db.query("shoppingItems").collect(),
+      ctx.db.query("groups").collect(),
+      ctx.db.query("subscriptions").collect(),
+      ctx.db.query("inquiries").collect(),
+    ]);
 
     // planOverrideとsubscriptionの重複を避けてユニークなPremiumユーザー数を算出
     const premiumUserIds = new Set<string>();
@@ -74,8 +82,8 @@ export const getSummary = authQuery({
         premiumUserIds.add(s.userId);
     }
 
-    const trialClaimedCount = users.filter(
-      (u) => u.trialExpiresAt != null,
+    const inquiryCount7d = inquiries.filter(
+      (i) => i.createdAt >= oneWeekAgo,
     ).length;
 
     return {
@@ -89,8 +97,40 @@ export const getSummary = authQuery({
       totalGroups: groups.length,
       totalExpenses: expenses.length,
       premiumCount: premiumUserIds.size,
-      trialClaimedCount,
+      inquiryCount7d,
     };
+  },
+});
+
+/**
+ * 問い合わせ一覧（管理者用、新しい順）
+ */
+export const getInquiries = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    requireAdmin(ctx.user.isAdmin);
+
+    const inquiries = await ctx.db.query("inquiries").collect();
+    inquiries.sort((a, b) => b.createdAt - a.createdAt);
+
+    const userNameCache = new Map<string, string>();
+    const results = [];
+    for (const inquiry of inquiries.slice(0, 50)) {
+      let displayName = userNameCache.get(inquiry.userId);
+      if (displayName === undefined) {
+        const user = await ctx.db.get(inquiry.userId);
+        displayName = user?.displayName ?? "（退会済み）";
+        userNameCache.set(inquiry.userId, displayName);
+      }
+      results.push({
+        _id: inquiry._id,
+        category: inquiry.category,
+        body: inquiry.body,
+        createdAt: inquiry.createdAt,
+        displayName,
+      });
+    }
+    return results;
   },
 });
 
@@ -212,11 +252,6 @@ export const getGroups = authQuery({
 });
 
 /**
- * 期限切れ trial の trialExpiresAt を全ユーザーから削除する。
- * 終了したキャンペーンの claim 履歴を無効化し、次回キャンペーンの
- * 自動表示・再 claim を可能にする。ダッシュボードから手動実行する。
- */
-/**
  * 指定時刻以降に既読化された lastSeenReleaseAt をリセットする。
  * リリース告知の自動表示バグ（表示直後に既読化され再マウントで消える）で
  * 既読扱いになったユーザーへ再表示するための復旧用。ダッシュボードから手動実行する。
@@ -237,24 +272,5 @@ export const resetReleaseSeenSince = internalMutation({
       }
     }
     return { reset };
-  },
-});
-
-export const clearExpiredTrials = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const now = Date.now();
-    const users = await ctx.db.query("users").collect();
-    let cleared = 0;
-    for (const user of users) {
-      if (user.trialExpiresAt != null && user.trialExpiresAt <= now) {
-        await ctx.db.patch(user._id, {
-          trialExpiresAt: undefined,
-          updatedAt: now,
-        });
-        cleared++;
-      }
-    }
-    return { cleared };
   },
 });
