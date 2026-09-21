@@ -3,14 +3,19 @@
 import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatPeriodLabel, formatPeriod } from "@/lib/formatters";
-import { CircleCheck, Clock, ChevronRight } from "lucide-react";
+import {
+  CircleCheck,
+  Clock,
+  ChevronRight,
+  ArrowRightToLine,
+} from "lucide-react";
 
 type SettlementCardProps = {
   settlement: {
     _id: Id<"settlements">;
     periodStart: string;
     periodEnd: string;
-    status: "pending" | "settled" | "reopened";
+    status: "pending" | "settled" | "reopened" | "carried_over";
     settledAt?: number;
     createdAt: number;
     paymentCount: number;
@@ -34,6 +39,13 @@ export function SettlementCard({ settlement, groupId }: SettlementCardProps) {
           <span className="flex items-center gap-1 text-blue-600 text-sm">
             <Clock className="h-4 w-4" />
             再オープン
+          </span>
+        );
+      case "carried_over":
+        return (
+          <span className="flex items-center gap-1 text-amber-700 text-sm">
+            <ArrowRightToLine className="h-4 w-4" />
+            翌月へ繰越
           </span>
         );
       case "pending":

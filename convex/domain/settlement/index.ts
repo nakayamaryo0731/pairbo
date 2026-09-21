@@ -18,6 +18,7 @@ export {
 export {
   calculateBalances,
   minimizeTransfers,
+  applyCarryover,
   getSettlementPeriod,
   isDateInPeriod,
   getSettlementLabel,

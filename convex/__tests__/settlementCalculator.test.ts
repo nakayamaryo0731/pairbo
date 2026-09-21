@@ -3,6 +3,7 @@ import type { Id } from "../_generated/dataModel";
 import {
   calculateBalances,
   minimizeTransfers,
+  applyCarryover,
   getSettlementPeriod,
   isDateInPeriod,
   getSettlementLabel,
@@ -212,6 +213,69 @@ describe("settlement/calculator", () => {
       // 送金の合計が一致することを確認
       const totalFromDebtors = payments.reduce((sum, p) => sum + p.amount, 0);
       expect(totalFromDebtors).toBe(500); // 債務者の合計債務
+    });
+  });
+
+  describe("applyCarryover", () => {
+    test("繰越分がnetに反映される（ゼロサム維持、paid/owedは不変）", () => {
+      const balances = [
+        { userId: mockUserId(1), paid: 1000, owed: 500, net: 500 },
+        { userId: mockUserId(2), paid: 0, owed: 500, net: -500 },
+      ];
+      // 前月: user2 → user1 に300の繰越
+      const result = applyCarryover(balances, [
+        { fromUserId: mockUserId(2), toUserId: mockUserId(1), amount: 300 },
+      ]);
+
+      const user1 = result.find((b) => b.userId === mockUserId(1))!;
+      const user2 = result.find((b) => b.userId === mockUserId(2))!;
+      expect(user1.net).toBe(800);
+      expect(user2.net).toBe(-800);
+      expect(user1.paid).toBe(1000);
+      expect(user1.owed).toBe(500);
+      expect(result.reduce((sum, b) => sum + b.net, 0)).toBe(0);
+    });
+
+    test("繰越と今月の収支が相殺される", () => {
+      const balances = [
+        { userId: mockUserId(1), paid: 0, owed: 300, net: -300 },
+        { userId: mockUserId(2), paid: 300, owed: 0, net: 300 },
+      ];
+      // 前月: user2 → user1 に300の繰越（今月と逆方向）
+      const result = applyCarryover(balances, [
+        { fromUserId: mockUserId(2), toUserId: mockUserId(1), amount: 300 },
+      ]);
+
+      expect(minimizeTransfers(result)).toHaveLength(0);
+    });
+
+    test("収支にいないユーザー（脱退）はエントリを追加して含める", () => {
+      const balances = [{ userId: mockUserId(1), paid: 0, owed: 0, net: 0 }];
+      const result = applyCarryover(balances, [
+        { fromUserId: mockUserId(9), toUserId: mockUserId(1), amount: 200 },
+      ]);
+
+      const departed = result.find((b) => b.userId === mockUserId(9))!;
+      expect(departed).toEqual({
+        userId: mockUserId(9),
+        paid: 0,
+        owed: 0,
+        net: -200,
+      });
+      expect(result.reduce((sum, b) => sum + b.net, 0)).toBe(0);
+    });
+
+    test("元のbalances配列を変更しない", () => {
+      const balances = [
+        { userId: mockUserId(1), paid: 0, owed: 0, net: 0 },
+        { userId: mockUserId(2), paid: 0, owed: 0, net: 0 },
+      ];
+      applyCarryover(balances, [
+        { fromUserId: mockUserId(2), toUserId: mockUserId(1), amount: 100 },
+      ]);
+
+      expect(balances[0].net).toBe(0);
+      expect(balances[1].net).toBe(0);
     });
   });
 

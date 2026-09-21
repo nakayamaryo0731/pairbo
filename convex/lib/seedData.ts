@@ -136,13 +136,13 @@ export const SAMPLE_SHOPPING_ITEMS = [
 
 /**
  * サンプル精算データ
- * 先月分の精算済みデータを作成
+ * 先々月分の精算済み + 先月分の繰り越しを作成
  */
 export const SAMPLE_SETTLEMENTS = [
   {
-    // 先月分（精算完了）
+    // 先々月分（精算完了）
     yearOffset: 0, // 今年
-    monthOffset: -1, // 先月
+    monthOffset: -2,
     status: "settled" as const,
     payments: [
       {
@@ -150,6 +150,20 @@ export const SAMPLE_SETTLEMENTS = [
         toUserIndex: 0, // パートナーA
         amount: 3000,
         isPaid: true,
+      },
+    ],
+  },
+  {
+    // 先月分（翌月へ繰り越し。今月の精算プレビューに合算される）
+    yearOffset: 0,
+    monthOffset: -1,
+    status: "carried_over" as const,
+    payments: [
+      {
+        fromUserIndex: 1,
+        toUserIndex: 0,
+        amount: 2500,
+        isPaid: false,
       },
     ],
   },

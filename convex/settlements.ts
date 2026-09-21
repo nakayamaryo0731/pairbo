@@ -8,10 +8,109 @@ import { createUserMap, FALLBACK } from "./lib/enrichment";
 import {
   calculateBalances,
   minimizeTransfers,
+  applyCarryover,
   getSettlementPeriod,
   validateSettlementPeriodInput,
   SettlementValidationError,
+  type SettlementPeriod,
 } from "./domain/settlement";
+import type { Id } from "./_generated/dataModel";
+import type { QueryCtx } from "./_generated/server";
+import type { Logger } from "./lib/logger";
+
+function validatePeriodInputOrThrow(
+  logger: Logger,
+  year: number,
+  month: number,
+  logEvent: string,
+) {
+  try {
+    validateSettlementPeriodInput(year, month);
+  } catch (error) {
+    if (error instanceof SettlementValidationError) {
+      logger.warn("SETTLEMENT", logEvent, { reason: error.message });
+      throw new ConvexError(error.message);
+    }
+    throw error;
+  }
+}
+
+/**
+ * 直前の精算が「繰り越し」の場合、その精算と送金リストを返す
+ */
+async function getCarryover(
+  ctx: QueryCtx,
+  groupId: Id<"groups">,
+  periodStart: string,
+) {
+  const previous = await ctx.db
+    .query("settlements")
+    .withIndex("by_group_and_period", (q) =>
+      q.eq("groupId", groupId).lt("periodStart", periodStart),
+    )
+    .order("desc")
+    .first();
+
+  if (!previous || previous.status !== "carried_over") {
+    return null;
+  }
+
+  const payments = await ctx.db
+    .query("settlementPayments")
+    .withIndex("by_settlement", (q) => q.eq("settlementId", previous._id))
+    .collect();
+
+  return { settlement: previous, payments };
+}
+
+/**
+ * 指定期間より後の精算を取得（繰り越し・確定の順序整合性チェック用）
+ */
+async function findLaterSettlement(
+  ctx: QueryCtx,
+  groupId: Id<"groups">,
+  periodStart: string,
+) {
+  return await ctx.db
+    .query("settlements")
+    .withIndex("by_group_and_period", (q) =>
+      q.eq("groupId", groupId).gt("periodStart", periodStart),
+    )
+    .first();
+}
+
+/**
+ * 期間内の支出 + 直前の繰越から収支・送金リストを計算する共通処理
+ */
+async function computeSettlementForPeriod(
+  ctx: QueryCtx,
+  groupId: Id<"groups">,
+  period: SettlementPeriod,
+) {
+  const memberIds = await getGroupMemberIds(ctx, groupId);
+  const expenses = await getExpensesByPeriod(ctx, groupId, period);
+
+  const allSplits = await Promise.all(
+    expenses.map((expense) =>
+      ctx.db
+        .query("expenseSplits")
+        .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
+        .collect(),
+    ),
+  );
+  const splits = allSplits.flat();
+
+  let balances = calculateBalances(expenses, splits, memberIds);
+
+  const carryover = await getCarryover(ctx, groupId, period.startDate);
+  if (carryover) {
+    balances = applyCarryover(balances, carryover.payments);
+  }
+
+  const payments = minimizeTransfers(balances);
+
+  return { expenses, balances, payments, carryover };
+}
 
 /**
  * 精算プレビュー取得（未確定の精算額）
@@ -23,17 +122,12 @@ export const getPreview = authQuery({
     month: v.number(),
   },
   handler: async (ctx, args) => {
-    try {
-      validateSettlementPeriodInput(args.year, args.month);
-    } catch (error) {
-      if (error instanceof SettlementValidationError) {
-        ctx.logger.warn("SETTLEMENT", "preview_validation_failed", {
-          reason: error.message,
-        });
-        throw new ConvexError(error.message);
-      }
-      throw error;
-    }
+    validatePeriodInputOrThrow(
+      ctx.logger,
+      args.year,
+      args.month,
+      "preview_validation_failed",
+    );
 
     const group = await getOrThrow(
       ctx,
@@ -46,22 +140,8 @@ export const getPreview = authQuery({
 
     const period = getSettlementPeriod(group.closingDay, args.year, args.month);
 
-    const memberIds = await getGroupMemberIds(ctx, args.groupId);
-    const expenses = await getExpensesByPeriod(ctx, args.groupId, period);
-
-    const expenseIds = expenses.map((e) => e._id);
-    const allSplits = await Promise.all(
-      expenseIds.map((expenseId) =>
-        ctx.db
-          .query("expenseSplits")
-          .withIndex("by_expense", (q) => q.eq("expenseId", expenseId))
-          .collect(),
-      ),
-    );
-    const splits = allSplits.flat();
-
-    const balances = calculateBalances(expenses, splits, memberIds);
-    const payments = minimizeTransfers(balances);
+    const { expenses, balances, payments, carryover } =
+      await computeSettlementForPeriod(ctx, args.groupId, period);
 
     const existingSettlement = await ctx.db
       .query("settlements")
@@ -69,6 +149,11 @@ export const getPreview = authQuery({
         q.eq("groupId", args.groupId).eq("periodStart", period.startDate),
       )
       .unique();
+
+    // この期間が繰越済みの場合、後続の精算ができるまでは取り消せる
+    const canCancelCarryover =
+      existingSettlement?.status === "carried_over" &&
+      !(await findLaterSettlement(ctx, args.groupId, period.startDate));
 
     const allUserIds = [
       ...balances.map((b) => b.userId),
@@ -94,6 +179,15 @@ export const getPreview = authQuery({
       payments: paymentsWithUsers,
       existingSettlementId: existingSettlement?._id ?? null,
       existingSettlementStatus: existingSettlement?.status ?? null,
+      canCancelCarryover,
+      carryover: carryover
+        ? {
+            settlementId: carryover.settlement._id,
+            amount: carryover.payments.reduce((sum, p) => sum + p.amount, 0),
+            periodStart: carryover.settlement.periodStart,
+            periodEnd: carryover.settlement.periodEnd,
+          }
+        : null,
       totalExpenses: expenses.length,
       totalAmount: expenses.reduce((sum, e) => sum + e.amount, 0),
     };
@@ -110,17 +204,12 @@ export const create = authMutation({
     month: v.number(),
   },
   handler: async (ctx, args) => {
-    try {
-      validateSettlementPeriodInput(args.year, args.month);
-    } catch (error) {
-      if (error instanceof SettlementValidationError) {
-        ctx.logger.warn("SETTLEMENT", "create_validation_failed", {
-          reason: error.message,
-        });
-        throw new ConvexError(error.message);
-      }
-      throw error;
-    }
+    validatePeriodInputOrThrow(
+      ctx.logger,
+      args.year,
+      args.month,
+      "create_validation_failed",
+    );
 
     const group = await getOrThrow(
       ctx,
@@ -149,22 +238,18 @@ export const create = authMutation({
       throw new ConvexError("この期間の精算は既に確定されています");
     }
 
-    const memberIds = await getGroupMemberIds(ctx, args.groupId);
-    const expenses = await getExpensesByPeriod(ctx, args.groupId, period);
+    // 後続の精算に繰越が焼き込まれている可能性があるため、期間の逆順での確定は許可しない
+    if (await findLaterSettlement(ctx, args.groupId, period.startDate)) {
+      throw new ConvexError(
+        "これより後の期間の精算が既に存在するため確定できません",
+      );
+    }
 
-    const expenseIds = expenses.map((e) => e._id);
-    const allSplits = await Promise.all(
-      expenseIds.map((expenseId) =>
-        ctx.db
-          .query("expenseSplits")
-          .withIndex("by_expense", (q) => q.eq("expenseId", expenseId))
-          .collect(),
-      ),
+    const { payments, carryover } = await computeSettlementForPeriod(
+      ctx,
+      args.groupId,
+      period,
     );
-    const splits = allSplits.flat();
-
-    const balances = calculateBalances(expenses, splits, memberIds);
-    const payments = minimizeTransfers(balances);
 
     const now = Date.now();
     const settlementId = await ctx.db.insert("settlements", {
@@ -173,6 +258,7 @@ export const create = authMutation({
       periodEnd: period.endDate,
       status: payments.length === 0 ? "settled" : "pending",
       settledAt: payments.length === 0 ? now : undefined,
+      carryoverFrom: carryover?.settlement._id,
       createdBy: ctx.user._id,
       createdAt: now,
     });
@@ -199,6 +285,140 @@ export const create = authMutation({
 });
 
 /**
+ * 差額を翌月に繰り越す（精算せず、次の精算に合算する）
+ */
+export const carryOver = authMutation({
+  args: {
+    groupId: v.id("groups"),
+    year: v.number(),
+    month: v.number(),
+  },
+  handler: async (ctx, args) => {
+    validatePeriodInputOrThrow(
+      ctx.logger,
+      args.year,
+      args.month,
+      "carry_over_validation_failed",
+    );
+
+    const group = await getOrThrow(
+      ctx,
+      args.groupId,
+      "グループが見つかりません",
+    );
+
+    await requireGroupMember(ctx, args.groupId);
+
+    const period = getSettlementPeriod(group.closingDay, args.year, args.month);
+
+    const existingSettlement = await ctx.db
+      .query("settlements")
+      .withIndex("by_group_and_period", (q) =>
+        q.eq("groupId", args.groupId).eq("periodStart", period.startDate),
+      )
+      .unique();
+
+    if (existingSettlement) {
+      throw new ConvexError("この期間の精算は既に確定されています");
+    }
+
+    // 合算先となる後続の精算が既に存在する場合は繰り越せない
+    if (await findLaterSettlement(ctx, args.groupId, period.startDate)) {
+      throw new ConvexError(
+        "これより後の期間の精算が既に存在するため繰り越せません",
+      );
+    }
+
+    const { payments, carryover } = await computeSettlementForPeriod(
+      ctx,
+      args.groupId,
+      period,
+    );
+
+    if (payments.length === 0) {
+      throw new ConvexError("繰り越す差額がありません");
+    }
+
+    const now = Date.now();
+    const settlementId = await ctx.db.insert("settlements", {
+      groupId: args.groupId,
+      periodStart: period.startDate,
+      periodEnd: period.endDate,
+      status: "carried_over",
+      carryoverFrom: carryover?.settlement._id,
+      createdBy: ctx.user._id,
+      createdAt: now,
+    });
+
+    for (const payment of payments) {
+      await ctx.db.insert("settlementPayments", {
+        settlementId,
+        fromUserId: payment.fromUserId,
+        toUserId: payment.toUserId,
+        amount: payment.amount,
+        isPaid: false,
+      });
+    }
+
+    ctx.logger.audit("SETTLEMENT", "carried_over", {
+      settlementId,
+      groupId: args.groupId,
+      period,
+      paymentCount: payments.length,
+    });
+
+    return settlementId;
+  },
+});
+
+/**
+ * 繰り越しの取り消し（後続の精算に合算される前のみ）
+ */
+export const cancelCarryOver = authMutation({
+  args: {
+    settlementId: v.id("settlements"),
+  },
+  handler: async (ctx, args) => {
+    const settlement = await getOrThrow(
+      ctx,
+      args.settlementId,
+      "精算情報が見つかりません",
+    );
+
+    await requireGroupMember(ctx, settlement.groupId);
+
+    if (settlement.status !== "carried_over") {
+      throw new ConvexError("繰り越しされた精算ではありません");
+    }
+
+    if (
+      await findLaterSettlement(ctx, settlement.groupId, settlement.periodStart)
+    ) {
+      throw new ConvexError("後の期間の精算に合算済みのため取り消せません");
+    }
+
+    const payments = await ctx.db
+      .query("settlementPayments")
+      .withIndex("by_settlement", (q) =>
+        q.eq("settlementId", args.settlementId),
+      )
+      .collect();
+
+    for (const payment of payments) {
+      await ctx.db.delete(payment._id);
+    }
+    await ctx.db.delete(args.settlementId);
+
+    ctx.logger.audit("SETTLEMENT", "carry_over_cancelled", {
+      settlementId: args.settlementId,
+      groupId: settlement.groupId,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
  * 支払い完了をマーク
  */
 export const markPaid = authMutation({
@@ -218,6 +438,10 @@ export const markPaid = authMutation({
     );
 
     await requireGroupMember(ctx, settlement.groupId);
+
+    if (settlement.status === "carried_over") {
+      throw new ConvexError("繰り越しされた精算は支払い対象ではありません");
+    }
 
     if (payment.toUserId !== ctx.user._id) {
       ctx.logger.warn("SETTLEMENT", "mark_paid_failed", {
@@ -280,6 +504,12 @@ export const reopen = authMutation({
     );
 
     await requireGroupOwner(ctx, settlement.groupId);
+
+    if (settlement.status === "carried_over") {
+      throw new ConvexError(
+        "繰り越しされた精算は再オープンできません。繰り越しの取り消しを使ってください",
+      );
+    }
 
     if (settlement.status === "reopened") {
       throw new ConvexError("この精算は既に再オープンされています");
@@ -406,7 +636,10 @@ export const getById = authQuery({
       amount: payment.amount,
       isPaid: payment.isPaid,
       paidAt: payment.paidAt,
-      canMarkPaid: payment.toUserId === ctx.user._id && !payment.isPaid,
+      canMarkPaid:
+        settlement.status !== "carried_over" &&
+        payment.toUserId === ctx.user._id &&
+        !payment.isPaid,
     }));
 
     return {

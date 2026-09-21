@@ -147,6 +147,7 @@ export default defineSchema({
     periodEnd: v.string(), // YYYY-MM-DD
     status: settlementStatusValidator,
     settledAt: v.optional(v.number()),
+    carryoverFrom: v.optional(v.id("settlements")), // 合算した繰越元の精算（表示用）
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_group_and_period", ["groupId", "periodStart"]),

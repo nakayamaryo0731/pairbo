@@ -68,6 +68,13 @@ export const releases: Release[] = [
     expiresAt: Date.UTC(2026, 9, 16),
     autoOpen: true,
   },
+  {
+    id: "2026-09-21-settlement-carryover",
+    publishedAt: Date.UTC(2026, 8, 21),
+    title: "精算の差額を翌月に繰り越せるようになりました",
+    body: "精算画面の「翌月に繰り越す」を選ぶと、その月の差額を支払わずに翌月の精算へまとめられます。\n金額が小さい月や忙しい月は、無理に精算せずまとめて翌月に精算できます。",
+    autoOpen: true,
+  },
 ];
 
 /** リリース可視性判定で必要となる、ユーザーの支払い状況コンテキスト */
