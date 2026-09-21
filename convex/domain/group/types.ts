@@ -23,6 +23,12 @@ export const GROUP_RULES = {
 } as const;
 
 /**
+ * 締め日: 固定日（1〜28）または末日締め。
+ * 末日は月ごとの実際の最終日（28〜31日）に自動で追従する。
+ */
+export type ClosingDay = number | "end_of_month";
+
+/**
  * メンバーロール
  */
 export type MemberRole = "owner" | "member";

@@ -18,6 +18,7 @@ import {
   type SplitDetails,
 } from "./domain/expense";
 import { getSettlementPeriod } from "./domain/settlement";
+import type { ClosingDay } from "./domain/group/types";
 import { TAG_LIMITS } from "./domain/tag";
 import type { Id } from "./_generated/dataModel";
 import { splitDetailsValidator } from "./lib/validators";
@@ -987,7 +988,7 @@ export const updateTags = authMutation({
  * - month なし → 1/1〜12/31
  */
 function resolveYearOrMonth(
-  closingDay: number,
+  closingDay: ClosingDay,
   args: { year: number; month?: number },
 ): { period: { startDate: string; endDate: string }; periodLabel: string } {
   if (args.month !== undefined) {

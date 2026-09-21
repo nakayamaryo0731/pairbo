@@ -29,6 +29,7 @@ import {
   FALLBACK,
 } from "./lib/enrichment";
 import { getSettlementPeriod } from "./domain/settlement";
+import type { ClosingDay } from "./domain/group/types";
 import { Logger } from "./lib/logger";
 
 // アクセストークン更新の余裕時間（5分前なら refresh）
@@ -534,7 +535,7 @@ export const collectExportData = internalQuery({
 
 export function resolvePeriod(
   period: ExportPeriod,
-  closingDay: number,
+  closingDay: ClosingDay,
 ): { startDate: string; endDate: string } | null {
   if (period.type === "all") return null;
   if (period.type === "year") {
