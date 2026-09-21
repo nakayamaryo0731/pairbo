@@ -123,6 +123,39 @@ export function minimizeTransfers(balances: MemberBalance[]): Payment[] {
 }
 
 /**
+ * 繰り越された送金リストを収支に合算する
+ *
+ * 繰越の当事者が現メンバーにいない場合（脱退）も、金額を失わないよう
+ * 収支エントリを追加して計算に含める。
+ *
+ * @param balances 期間内の支出から計算した収支
+ * @param carryoverPayments 前の期間から繰り越された送金リスト
+ * @returns 繰越を反映した収支（netのみ調整。paid/owedは実支出の集計を保つ）
+ */
+export function applyCarryover(
+  balances: MemberBalance[],
+  carryoverPayments: Payment[],
+): MemberBalance[] {
+  const merged = new Map(balances.map((b) => [b.userId, { ...b }]));
+
+  const ensure = (userId: Id<"users">): MemberBalance => {
+    let balance = merged.get(userId);
+    if (!balance) {
+      balance = { userId, paid: 0, owed: 0, net: 0 };
+      merged.set(userId, balance);
+    }
+    return balance;
+  };
+
+  for (const payment of carryoverPayments) {
+    ensure(payment.fromUserId).net -= payment.amount;
+    ensure(payment.toUserId).net += payment.amount;
+  }
+
+  return Array.from(merged.values());
+}
+
+/**
  * 日付を YYYY-MM-DD 形式にフォーマット
  */
 function formatDate(date: Date): string {

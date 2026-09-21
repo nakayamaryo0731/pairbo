@@ -47,13 +47,12 @@ async function createGroupWithMembers(
 async function createExpense(
   t: ReturnType<typeof convexTest>,
   identity: typeof userAIdentity,
-  groupId: ReturnType<typeof createGroupWithMembers>,
+  groupId: Awaited<ReturnType<typeof createGroupWithMembers>>,
   amount: number,
   date: string,
 ) {
-  const groupIdResolved = await groupId;
   const detail = await t.withIdentity(identity).query(api.groups.getDetail, {
-    groupId: groupIdResolved,
+    groupId,
   });
   const categoryId = detail.categories[0]._id;
   const payerId = detail.members.find((m) => m.isMe)?.userId;
@@ -61,7 +60,7 @@ async function createExpense(
   if (!payerId) throw new Error("Payer not found");
 
   return t.withIdentity(identity).mutation(api.expenses.create, {
-    groupId: groupIdResolved,
+    groupId,
     amount,
     categoryId,
     paidBy: payerId,
@@ -103,13 +102,7 @@ describe("settlements", () => {
       ]);
 
       // ユーザーAが1000円支出（期間内）
-      await createExpense(
-        t,
-        userAIdentity,
-        Promise.resolve(groupId),
-        1000,
-        "2024-12-01",
-      );
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
 
       const preview = await t
         .withIdentity(userAIdentity)
@@ -152,13 +145,7 @@ describe("settlements", () => {
         userAIdentity,
         userBIdentity,
       ]);
-      await createExpense(
-        t,
-        userAIdentity,
-        Promise.resolve(groupId),
-        1000,
-        "2024-12-01",
-      );
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
 
       const settlementId = await t
         .withIdentity(userAIdentity)
@@ -258,13 +245,7 @@ describe("settlements", () => {
         userAIdentity,
         userBIdentity,
       ]);
-      await createExpense(
-        t,
-        userAIdentity,
-        Promise.resolve(groupId),
-        1000,
-        "2024-12-01",
-      );
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
 
       const settlementId = await t
         .withIdentity(userAIdentity)
@@ -307,13 +288,7 @@ describe("settlements", () => {
         userAIdentity,
         userBIdentity,
       ]);
-      await createExpense(
-        t,
-        userAIdentity,
-        Promise.resolve(groupId),
-        1000,
-        "2024-12-01",
-      );
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
 
       const settlementId = await t
         .withIdentity(userAIdentity)
@@ -378,13 +353,7 @@ describe("settlements", () => {
         userAIdentity,
         userBIdentity,
       ]);
-      await createExpense(
-        t,
-        userAIdentity,
-        Promise.resolve(groupId),
-        1000,
-        "2024-12-01",
-      );
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
 
       const settlementId = await t
         .withIdentity(userAIdentity)
@@ -427,6 +396,299 @@ describe("settlements", () => {
           .withIdentity(userBIdentity)
           .query(api.settlements.getById, { settlementId }),
       ).rejects.toThrow("このグループにアクセスする権限がありません");
+    });
+  });
+
+  describe("carryOver", () => {
+    test("差額を繰り越すと carried_over の精算が作成される", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      // Aが1000円支払い → BはAに500円
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+
+      await t.withIdentity(userAIdentity).mutation(api.settlements.carryOver, {
+        groupId,
+        year: 2024,
+        month: 12,
+      });
+
+      const preview = await t
+        .withIdentity(userAIdentity)
+        .query(api.settlements.getPreview, { groupId, year: 2024, month: 12 });
+      expect(preview.existingSettlementStatus).toBe("carried_over");
+      expect(preview.canCancelCarryover).toBe(true);
+
+      const settlements = await t
+        .withIdentity(userAIdentity)
+        .query(api.settlements.listByGroup, { groupId });
+      expect(settlements).toHaveLength(1);
+      expect(settlements[0].status).toBe("carried_over");
+    });
+
+    test("繰越分が翌月のプレビューに合算される", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+      await t.withIdentity(userAIdentity).mutation(api.settlements.carryOver, {
+        groupId,
+        year: 2024,
+        month: 12,
+      });
+
+      // 翌月にもAが1000円支払い → 繰越500 + 今月500 = B→Aに1000円
+      await createExpense(t, userAIdentity, groupId, 1000, "2025-01-10");
+
+      const preview = await t
+        .withIdentity(userAIdentity)
+        .query(api.settlements.getPreview, { groupId, year: 2025, month: 1 });
+
+      expect(preview.carryover).not.toBeNull();
+      expect(preview.carryover!.amount).toBe(500);
+      expect(preview.payments).toHaveLength(1);
+      expect(preview.payments[0].amount).toBe(1000);
+      expect(preview.payments[0].fromUserName).toBe("ユーザーB");
+      expect(preview.payments[0].toUserName).toBe("ユーザーA");
+    });
+
+    test("繰越の連鎖: 2ヶ月連続で繰り越すと3ヶ月目に全額合算される", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+      await t.withIdentity(userAIdentity).mutation(api.settlements.carryOver, {
+        groupId,
+        year: 2024,
+        month: 12,
+      });
+
+      await createExpense(t, userAIdentity, groupId, 2000, "2025-01-10");
+      await t.withIdentity(userAIdentity).mutation(api.settlements.carryOver, {
+        groupId,
+        year: 2025,
+        month: 1,
+      });
+
+      const preview = await t
+        .withIdentity(userAIdentity)
+        .query(api.settlements.getPreview, { groupId, year: 2025, month: 2 });
+
+      // 12月分500 + 1月分1000 = 1500
+      expect(preview.carryover!.amount).toBe(1500);
+      expect(preview.payments).toHaveLength(1);
+      expect(preview.payments[0].amount).toBe(1500);
+    });
+
+    test("精算のない月を挟んでも繰越が合算される", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+      await t.withIdentity(userAIdentity).mutation(api.settlements.carryOver, {
+        groupId,
+        year: 2024,
+        month: 12,
+      });
+
+      // 1月は支出なし・精算なしのまま2月のプレビュー
+      const preview = await t
+        .withIdentity(userAIdentity)
+        .query(api.settlements.getPreview, { groupId, year: 2025, month: 2 });
+
+      expect(preview.carryover!.amount).toBe(500);
+      expect(preview.payments).toHaveLength(1);
+      expect(preview.payments[0].amount).toBe(500);
+    });
+
+    test("差額ゼロでは繰り越せない", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+
+      await expect(
+        t.withIdentity(userAIdentity).mutation(api.settlements.carryOver, {
+          groupId,
+          year: 2024,
+          month: 12,
+        }),
+      ).rejects.toThrow("繰り越す差額がありません");
+    });
+
+    test("後の期間の精算が存在すると繰り越せない", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+
+      await t.withIdentity(userAIdentity).mutation(api.settlements.create, {
+        groupId,
+        year: 2025,
+        month: 1,
+      });
+
+      await expect(
+        t.withIdentity(userAIdentity).mutation(api.settlements.carryOver, {
+          groupId,
+          year: 2024,
+          month: 12,
+        }),
+      ).rejects.toThrow("後の期間の精算が既に存在するため");
+    });
+
+    test("精算確定時に繰越分が焼き込まれる（carryoverFrom記録）", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+      const carryoverId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.settlements.carryOver, {
+          groupId,
+          year: 2024,
+          month: 12,
+        });
+
+      const settlementId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.settlements.create, {
+          groupId,
+          year: 2025,
+          month: 1,
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.settlements.getById, { settlementId });
+      expect(detail.payments).toHaveLength(1);
+      expect(detail.payments[0].amount).toBe(500);
+
+      const settlement = await t.run(async (ctx) => ctx.db.get(settlementId));
+      expect(settlement?.carryoverFrom).toBe(carryoverId);
+    });
+
+    test("繰り越された精算の支払いはmarkPaidできない", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+      const settlementId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.settlements.carryOver, {
+          groupId,
+          year: 2024,
+          month: 12,
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.settlements.getById, { settlementId });
+      expect(detail.payments[0].canMarkPaid).toBe(false);
+
+      await expect(
+        t.withIdentity(userAIdentity).mutation(api.settlements.markPaid, {
+          paymentId: detail.payments[0]._id,
+        }),
+      ).rejects.toThrow("繰り越しされた精算は支払い対象ではありません");
+    });
+  });
+
+  describe("cancelCarryOver", () => {
+    test("繰り越しを取り消すと未確定に戻る", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+      const settlementId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.settlements.carryOver, {
+          groupId,
+          year: 2024,
+          month: 12,
+        });
+
+      await t
+        .withIdentity(userBIdentity)
+        .mutation(api.settlements.cancelCarryOver, { settlementId });
+
+      const preview = await t
+        .withIdentity(userAIdentity)
+        .query(api.settlements.getPreview, { groupId, year: 2024, month: 12 });
+      expect(preview.existingSettlementId).toBeNull();
+      expect(preview.payments).toHaveLength(1);
+
+      const payments = await t.run(async (ctx) =>
+        ctx.db.query("settlementPayments").collect(),
+      );
+      expect(payments).toHaveLength(0);
+    });
+
+    test("後の期間の精算に合算済みだと取り消せない", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+      const settlementId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.settlements.carryOver, {
+          groupId,
+          year: 2024,
+          month: 12,
+        });
+
+      await t.withIdentity(userAIdentity).mutation(api.settlements.create, {
+        groupId,
+        year: 2025,
+        month: 1,
+      });
+
+      await expect(
+        t
+          .withIdentity(userAIdentity)
+          .mutation(api.settlements.cancelCarryOver, { settlementId }),
+      ).rejects.toThrow("後の期間の精算に合算済みのため取り消せません");
+    });
+
+    test("繰り越し以外の精算は取り消せない", async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await createGroupWithMembers(t, [
+        userAIdentity,
+        userBIdentity,
+      ]);
+      await createExpense(t, userAIdentity, groupId, 1000, "2024-12-01");
+      const settlementId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.settlements.create, {
+          groupId,
+          year: 2024,
+          month: 12,
+        });
+
+      await expect(
+        t
+          .withIdentity(userAIdentity)
+          .mutation(api.settlements.cancelCarryOver, { settlementId }),
+      ).rejects.toThrow("繰り越しされた精算ではありません");
     });
   });
 });

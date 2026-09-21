@@ -1,16 +1,18 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { MemberBalanceList } from "./MemberBalanceList";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { useState, useMemo } from "react";
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight, X, ArrowRightToLine } from "lucide-react";
 import { buildMemberColorMap } from "@/lib/userColors";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { PayPayButton } from "./PayPayButton";
 import { trackEvent } from "@/lib/analytics";
+import { getErrorMessage } from "@/lib/errors";
 import { MemberNameLabel } from "@/components/ui/MemberNameLabel";
 
 type SettlementPreviewProps = {
@@ -76,6 +78,8 @@ export function SettlementPreview({
         </div>
       </div>
 
+      <CarryoverNote carryover={preview.carryover} />
+
       {/* 収支一覧 */}
       {preview.balances.length > 0 && (
         <div className="mb-4">
@@ -138,8 +142,15 @@ export function SettlementPreview({
         </div>
       )}
 
+      <CarryoverActions
+        preview={preview}
+        groupId={groupId}
+        year={year}
+        month={month}
+      />
+
       {/* 支出がない場合 */}
-      {preview.totalExpenses === 0 && (
+      {preview.totalExpenses === 0 && !preview.carryover && (
         <div className="text-center text-sm text-slate-500 py-2">
           この期間の支出はありません
         </div>
@@ -148,25 +159,160 @@ export function SettlementPreview({
   );
 }
 
-type CompactSettlementProps = {
-  preview: {
-    totalExpenses: number;
-    totalAmount: number;
-    balances: {
-      userId: Id<"users">;
-      displayName: string;
-      net: number;
-      paid: number;
-      owed: number;
-    }[];
-    payments: {
-      fromUserId: Id<"users">;
-      fromUserName: string;
-      toUserId: Id<"users">;
-      toUserName: string;
-      amount: number;
-    }[];
+type PreviewData = {
+  totalExpenses: number;
+  totalAmount: number;
+  balances: {
+    userId: Id<"users">;
+    displayName: string;
+    net: number;
+    paid: number;
+    owed: number;
+  }[];
+  payments: {
+    fromUserId: Id<"users">;
+    fromUserName: string;
+    toUserId: Id<"users">;
+    toUserName: string;
+    amount: number;
+  }[];
+  existingSettlementId: Id<"settlements"> | null;
+  existingSettlementStatus:
+    "pending" | "settled" | "reopened" | "carried_over" | null;
+  canCancelCarryover: boolean;
+  carryover: {
+    settlementId: Id<"settlements">;
+    amount: number;
+    periodStart: string;
+    periodEnd: string;
+  } | null;
+};
+
+/** 前の期間からの繰越を含むことの注記 */
+function CarryoverNote({ carryover }: { carryover: PreviewData["carryover"] }) {
+  if (!carryover) return null;
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+      <ArrowRightToLine className="w-3.5 h-3.5 shrink-0" />
+      先月までの繰越 ¥{carryover.amount.toLocaleString()} を含んでいます
+    </div>
+  );
+}
+
+/**
+ * 繰り越し操作（実行 / 繰越済み表示 + 取り消し）
+ */
+function CarryoverActions({
+  preview,
+  groupId,
+  year,
+  month,
+  onDone,
+}: {
+  preview: PreviewData;
+  groupId: Id<"groups">;
+  year: number;
+  month: number;
+  onDone?: () => void;
+}) {
+  const carryOver = useMutation(api.settlements.carryOver);
+  const cancelCarryOver = useMutation(api.settlements.cancelCarryOver);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isCarriedOver = preview.existingSettlementStatus === "carried_over";
+  const totalPayment = preview.payments.reduce((sum, p) => sum + p.amount, 0);
+
+  const handleCarryOver = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await carryOver({ groupId, year, month });
+      trackEvent("carry_over_settlement");
+      setConfirmOpen(false);
+      onDone?.();
+    } catch (e) {
+      setError(getErrorMessage(e, "繰り越しに失敗しました"));
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleCancel = async () => {
+    if (!preview.existingSettlementId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await cancelCarryOver({ settlementId: preview.existingSettlementId });
+      onDone?.();
+    } catch (e) {
+      setError(getErrorMessage(e, "取り消しに失敗しました"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 繰越済み: 状態表示 + 取り消し
+  if (isCarriedOver) {
+    return (
+      <div className="mb-1">
+        <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <span className="flex items-center gap-1.5 text-sm text-amber-700">
+            <ArrowRightToLine className="w-4 h-4 shrink-0" />
+            この期間の差額は翌月に繰り越されています
+          </span>
+          {preview.canCancelCarryover && (
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isLoading}
+              className="text-xs text-slate-500 hover:text-slate-700 underline shrink-0 disabled:opacity-50"
+            >
+              取り消す
+            </button>
+          )}
+        </div>
+        {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
+      </div>
+    );
+  }
+
+  // 未確定 & 差額あり: 繰り越しボタン
+  if (preview.existingSettlementId !== null || preview.payments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={() => setConfirmOpen(true)}
+        className="w-full flex items-center justify-center gap-1.5 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+      >
+        <ArrowRightToLine className="w-4 h-4" />
+        翌月に繰り越す
+      </button>
+      {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
+
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="翌月に繰り越す"
+        description={`この期間の差額 ¥${totalPayment.toLocaleString()} を支払わず、翌月の精算に合算します。`}
+        onConfirm={handleCarryOver}
+        isLoading={isLoading}
+        confirmLabel="繰り越す"
+        confirmLoadingLabel="処理中..."
+        variant="default"
+      />
+    </div>
+  );
+}
+
+type CompactSettlementProps = {
+  preview: PreviewData;
   memberColors: Record<string, string>;
   groupId: Id<"groups">;
   year: number;
@@ -183,6 +329,8 @@ function CompactSettlement({
   const [modalOpen, setModalOpen] = useState(false);
   const isMobile = useIsMobile();
 
+  const isCarriedOver = preview.existingSettlementStatus === "carried_over";
+
   return (
     <>
       {/* コンパクト表示（カード風） */}
@@ -191,7 +339,14 @@ function CompactSettlement({
         className="w-full bg-white border border-slate-200 rounded-lg p-3 text-left relative"
       >
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-medium text-slate-500">精算</span>
+          <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+            精算
+            {isCarriedOver && (
+              <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-px">
+                翌月へ繰越済み
+              </span>
+            )}
+          </span>
           <ChevronRight className="h-4 w-4 text-slate-300" />
         </div>
         {preview.payments.length > 0 ? (
@@ -224,7 +379,7 @@ function CompactSettlement({
                   <span className="font-medium text-slate-800">
                     ¥{payment.amount.toLocaleString()}
                   </span>
-                  {isMobile && (
+                  {isMobile && !isCarriedOver && (
                     <a
                       href="paypay://"
                       onClick={async (e) => {
@@ -288,6 +443,8 @@ function CompactSettlement({
                 </div>
               </div>
 
+              <CarryoverNote carryover={preview.carryover} />
+
               {preview.balances.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium text-slate-600 mb-2">
@@ -348,7 +505,7 @@ function CompactSettlement({
                             ¥{payment.amount.toLocaleString()}
                           </span>
                         </div>
-                        {isMobile && (
+                        {isMobile && !isCarriedOver && (
                           <div className="mt-2">
                             <PayPayButton amount={payment.amount} />
                           </div>
@@ -358,6 +515,13 @@ function CompactSettlement({
                   </div>
                 </div>
               )}
+
+              <CarryoverActions
+                preview={preview}
+                groupId={groupId}
+                year={year}
+                month={month}
+              />
             </div>
           </div>
         </div>

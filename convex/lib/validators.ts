@@ -49,11 +49,13 @@ export const memberRoleValidator = v.union(
  * - pending: 支払い待ち（精算確定後、支払い完了前）
  * - settled: 精算完了（全支払い完了）
  * - reopened: 再オープン（修正可能状態）
+ * - carried_over: 翌月に繰り越し（支払わず、次の精算に合算される）
  */
 export const settlementStatusValidator = v.union(
   v.literal("pending"),
   v.literal("settled"),
   v.literal("reopened"),
+  v.literal("carried_over"),
 );
 
 /**
