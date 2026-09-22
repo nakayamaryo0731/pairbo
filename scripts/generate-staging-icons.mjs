@@ -1,8 +1,10 @@
 /**
  * staging用アプリアイコンの生成
  *
- * public/icons/ の各アイコンに色相回転（青→橙）+ 下部の「STG」帯を適用し、
+ * public/icons/ の各アイコンをグレースケール化 + 下部の「STG」帯を適用し、
  * public/icons/staging/ に同名で出力する。
+ * （ブランドがピンク×青のデュオトーンになったため、色相回転ではなく
+ * グレースケールで「本番ではない」ことを表す）
  *
  * 実行: node scripts/generate-staging-icons.mjs
  */
@@ -43,7 +45,7 @@ for (const file of TARGETS) {
   const { width, height } = await sharp(src).metadata();
 
   await sharp(src)
-    .modulate({ hue: 120, saturation: 1.15 }) // 青 → 橙系
+    .grayscale()
     .composite([{ input: stgBandSvg(width, height), top: 0, left: 0 }])
     .png()
     .toFile(path.join(OUT_DIR, file));
@@ -53,7 +55,7 @@ for (const file of TARGETS) {
 
 // ブラウザタブ用のstagingファビコン（32px PNG）
 await sharp(path.join(SRC_DIR, "icon-72x72.png"))
-  .modulate({ hue: 120, saturation: 1.15 })
+  .grayscale()
   .resize(32, 32)
   .png()
   .toFile(path.join(OUT_DIR, "favicon-32x32.png"));
