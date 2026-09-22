@@ -44,6 +44,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --font-maru: var(--font-zen-maru), "Hiragino Maru Gothic ProN", sans-serif;
+  --font-kaku: var(--font-zen-kaku), "Hiragino Kaku Gothic ProN", sans-serif;
 }
 
 :root {
@@ -122,6 +124,37 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* LP: スクロール時のフェードイン（components/landing/Reveal.tsx） */
+.lp-reveal {
+  opacity: 0;
+  translate: 0 16px;
+  transition:
+    opacity 0.6s ease,
+    translate 0.6s ease;
+}
+.lp-reveal-shown {
+  opacity: 1;
+  translate: 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal {
+    transition: none;
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* LP: フローティングカードの浮遊 */
+@keyframes lp-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -7px;
   }
 }
 

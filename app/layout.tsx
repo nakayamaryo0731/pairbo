@@ -144,7 +144,15 @@ export default function RootLayout({
                   name: "本当に無料で使えますか？",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "基本機能はすべて無料です。傾斜折半や詳細分析が使えるPremiumプランもあります。",
+                    text: "基本機能はすべて無料です。傾斜折半や定期支出の自動記録、詳細分析が使えるPremiumプラン（月額¥100・年額¥1,000）もあります。Premiumはどちらか1人の課金でグループ全員が使えます。",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "家賃やサブスクなど、毎月決まった支出は？",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "定期支出として登録すると、毎月決まった日に自動で記録されます（Premium機能）。",
                   },
                 },
                 {
@@ -176,7 +184,7 @@ export default function RootLayout({
                   name: "パートナーにどうやって共有しますか？",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "招待URLを送るだけです。相手はアプリのインストールもアカウント作成も不要で、ブラウザからすぐに参加できます。",
+                    text: "招待URLを送るだけです。相手はブラウザからすぐに参加できます。",
                   },
                 },
                 {
