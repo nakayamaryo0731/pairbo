@@ -2,23 +2,24 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { phrases } from "./phrases";
 
 export function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border border-slate-200 rounded-lg bg-white">
+    <div className="rounded-xl border border-[#F2E7EA] bg-white">
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full p-4 text-left flex items-center justify-between gap-4"
+        className="flex w-full items-center justify-between gap-4 p-4 text-left"
       >
-        <span className="font-medium text-slate-800 text-sm">{q}</span>
+        <span className="text-sm font-bold text-[#43373C]">{phrases(q)}</span>
         <ChevronDown
-          className={`w-5 h-5 text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-5 w-5 shrink-0 text-[#EE6B8D] transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open && <div className="px-4 pb-4 text-sm text-slate-600">{a}</div>}
+      {open && <div className="px-4 pb-4 text-sm text-[#6E6167]">{a}</div>}
     </div>
   );
 }
