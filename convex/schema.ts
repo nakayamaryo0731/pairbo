@@ -196,10 +196,8 @@ export default defineSchema({
     lastUsedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_group", ["groupId"])
-    .index("by_group_last_used", ["groupId", "lastUsedAt"]),
-  // 用途: グループのタグ一覧、最近使用順での取得
+  }).index("by_group_last_used", ["groupId", "lastUsedAt"]),
+  // 用途: グループのタグ一覧、最近使用順での取得（groupId等値検索もこのインデックスで賄う）
 
   // ========================================
   // 支出タグ（中間テーブル）

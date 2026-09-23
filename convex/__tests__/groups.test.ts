@@ -33,7 +33,7 @@ describe("groups", () => {
       expect(groupId).toBeDefined();
 
       const group = await t.run(async (ctx) => {
-        return await ctx.db.get(groupId);
+        return await ctx.db.get("groups", groupId);
       });
 
       expect(group).not.toBeNull();
@@ -52,7 +52,7 @@ describe("groups", () => {
         });
 
       const group = await t.run(async (ctx) => {
-        return await ctx.db.get(groupId);
+        return await ctx.db.get("groups", groupId);
       });
 
       expect(group?.description).toBe("これはテスト用のグループです");
@@ -468,7 +468,7 @@ describe("groups", () => {
       });
 
       const group = await t.run(async (ctx) => {
-        return await ctx.db.get(groupId);
+        return await ctx.db.get("groups", groupId);
       });
 
       expect(group?.name).toBe("新しいグループ名");
@@ -510,7 +510,7 @@ describe("groups", () => {
         .mutation(api.groups.remove, { groupId });
 
       const group = await t.run(async (ctx) => {
-        return await ctx.db.get(groupId);
+        return await ctx.db.get("groups", groupId);
       });
 
       expect(group).toBeNull();

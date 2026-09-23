@@ -25,7 +25,7 @@ export const list = authQuery({
 
     const tags = await ctx.db
       .query("tags")
-      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .withIndex("by_group_last_used", (q) => q.eq("groupId", args.groupId))
       .collect();
 
     return tags.sort((a, b) => {
@@ -79,7 +79,7 @@ export const create = authMutation({
     // 重複チェック
     const existingTags = await ctx.db
       .query("tags")
-      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .withIndex("by_group_last_used", (q) => q.eq("groupId", args.groupId))
       .collect();
 
     const duplicate = existingTags.find(
@@ -155,7 +155,7 @@ export const update = authMutation({
       // 重複チェック（自分以外）
       const existingTags = await ctx.db
         .query("tags")
-        .withIndex("by_group", (q) => q.eq("groupId", tag.groupId))
+        .withIndex("by_group_last_used", (q) => q.eq("groupId", tag.groupId))
         .collect();
 
       const duplicate = existingTags.find(
@@ -177,7 +177,7 @@ export const update = authMutation({
       updates.color = args.color;
     }
 
-    await ctx.db.patch(args.tagId, updates);
+    await ctx.db.patch("tags", args.tagId, updates);
 
     ctx.logger.audit("TAG", "updated", {
       tagId: args.tagId,
@@ -212,10 +212,10 @@ export const remove = authMutation({
       .collect();
 
     for (const expenseTag of expenseTags) {
-      await ctx.db.delete(expenseTag._id);
+      await ctx.db.delete("expenseTags", expenseTag._id);
     }
 
-    await ctx.db.delete(args.tagId);
+    await ctx.db.delete("tags", args.tagId);
 
     ctx.logger.audit("TAG", "deleted", {
       tagId: args.tagId,
@@ -266,7 +266,7 @@ export const search = authQuery({
 
     const tags = await ctx.db
       .query("tags")
-      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .withIndex("by_group_last_used", (q) => q.eq("groupId", args.groupId))
       .collect();
 
     return tags
@@ -304,7 +304,7 @@ export const existsExact = authQuery({
 
     const tags = await ctx.db
       .query("tags")
-      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .withIndex("by_group_last_used", (q) => q.eq("groupId", args.groupId))
       .collect();
 
     const exactMatch = tags.find(
@@ -335,11 +335,11 @@ export const reorder = authMutation({
     }
 
     for (let i = 0; i < args.tagIds.length; i++) {
-      const tag = await ctx.db.get(args.tagIds[i]);
+      const tag = await ctx.db.get("tags", args.tagIds[i]);
       if (!tag || tag.groupId !== args.groupId) {
         throw new ConvexError("無効なタグが指定されました");
       }
-      await ctx.db.patch(args.tagIds[i], { sortOrder: i });
+      await ctx.db.patch("tags", args.tagIds[i], { sortOrder: i });
     }
 
     ctx.logger.audit("TAG", "reordered", {

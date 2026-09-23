@@ -31,7 +31,7 @@ describe("users", () => {
 
       // ユーザーがDBに存在することを確認
       const user = await t.run(async (ctx) => {
-        return await ctx.db.get(userId);
+        return await ctx.db.get("users", userId);
       });
 
       expect(user).not.toBeNull();

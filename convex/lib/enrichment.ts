@@ -74,7 +74,9 @@ export async function createUserMap(
   userIds: Id<"users">[],
 ): Promise<Map<Id<"users">, UserInfo>> {
   const uniqueIds = [...new Set(userIds)];
-  const users = await Promise.all(uniqueIds.map((id) => ctx.db.get(id)));
+  const users = await Promise.all(
+    uniqueIds.map((id) => ctx.db.get("users", id)),
+  );
 
   const map = new Map<Id<"users">, UserInfo>();
   for (const user of users) {
@@ -101,7 +103,9 @@ export async function createCategoryMap(
   categoryIds: Id<"categories">[],
 ): Promise<Map<Id<"categories">, CategoryInfo>> {
   const uniqueIds = [...new Set(categoryIds)];
-  const categories = await Promise.all(uniqueIds.map((id) => ctx.db.get(id)));
+  const categories = await Promise.all(
+    uniqueIds.map((id) => ctx.db.get("categories", id)),
+  );
 
   const map = new Map<Id<"categories">, CategoryInfo>();
   for (const category of categories) {
@@ -132,7 +136,9 @@ export async function extendUserMap(
   if (newIds.length === 0) return;
 
   const uniqueNewIds = [...new Set(newIds)];
-  const users = await Promise.all(uniqueNewIds.map((id) => ctx.db.get(id)));
+  const users = await Promise.all(
+    uniqueNewIds.map((id) => ctx.db.get("users", id)),
+  );
 
   for (const user of users) {
     if (user) {
@@ -213,7 +219,9 @@ export async function enrichExpenseList(
 
   // タグ情報を一括取得
   const allTagIds = [...new Set(allExpenseTags.flat().map((et) => et.tagId))];
-  const tagDocs = await Promise.all(allTagIds.map((id) => ctx.db.get(id)));
+  const tagDocs = await Promise.all(
+    allTagIds.map((id) => ctx.db.get("tags", id)),
+  );
   const tagMap = new Map(
     tagDocs
       .filter((t): t is NonNullable<typeof t> => t !== null)

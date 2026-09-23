@@ -43,7 +43,7 @@ describe("categories", () => {
 
       // 作成されたカテゴリを確認
       const category = await t.run(async (ctx) => {
-        return await ctx.db.get(categoryId);
+        return await ctx.db.get("categories", categoryId);
       });
 
       expect(category).not.toBeNull();
@@ -184,7 +184,7 @@ describe("categories", () => {
       });
 
       const category = await t.run(async (ctx) => {
-        return await ctx.db.get(categoryId);
+        return await ctx.db.get("categories", categoryId);
       });
 
       expect(category?.name).toBe("新しい名前");
@@ -218,7 +218,7 @@ describe("categories", () => {
       });
 
       const updated = await t.run(async (ctx) => {
-        return await ctx.db.get(presetCategory!._id);
+        return await ctx.db.get("categories", presetCategory!._id);
       });
 
       expect(updated?.name).toBe("変更した名前");
@@ -276,7 +276,7 @@ describe("categories", () => {
       });
 
       const category = await t.run(async (ctx) => {
-        return await ctx.db.get(categoryId);
+        return await ctx.db.get("categories", categoryId);
       });
 
       expect(category).toBeNull();

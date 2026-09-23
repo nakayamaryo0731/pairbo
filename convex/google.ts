@@ -304,7 +304,7 @@ export const upsertToken = internalMutation({
 
     const now = Date.now();
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("googleSheetsTokens", existing._id, {
         accessToken: args.accessToken,
         refreshToken: args.refreshToken,
         expiresAt: args.expiresAt,
@@ -333,7 +333,7 @@ export const deleteTokenByUser = internalMutation({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .unique();
     if (token) {
-      await ctx.db.delete(token._id);
+      await ctx.db.delete("googleSheetsTokens", token._id);
     }
   },
 });
@@ -353,7 +353,7 @@ export const saveOAuthState = internalMutation({
       .collect();
     for (const s of existing) {
       if (s.expiresAt < now) {
-        await ctx.db.delete(s._id);
+        await ctx.db.delete("googleOAuthStates", s._id);
       }
     }
     await ctx.db.insert("googleOAuthStates", {
@@ -373,7 +373,7 @@ export const consumeOAuthState = internalMutation({
       .unique();
     if (!record) return false;
     // 必ず削除（成否にかかわらず再利用させない）
-    await ctx.db.delete(record._id);
+    await ctx.db.delete("googleOAuthStates", record._id);
     if (record.userId !== args.userId) return false;
     if (record.expiresAt < Date.now()) return false;
     return true;
@@ -429,7 +429,7 @@ export const collectExportData = internalQuery({
     const memberDocs = await Promise.all(
       groupMembers
         .sort((a, b) => a.joinedAt - b.joinedAt)
-        .map((m) => ctx.db.get(m.userId)),
+        .map((m) => ctx.db.get("users", m.userId)),
     );
     const members = memberDocs
       .filter((u): u is NonNullable<typeof u> => u !== null)
@@ -496,7 +496,9 @@ export const collectExportData = internalQuery({
 
     // タグ情報を一括取得
     const allTagIds = [...new Set(allExpenseTags.flat().map((et) => et.tagId))];
-    const tagDocs = await Promise.all(allTagIds.map((id) => ctx.db.get(id)));
+    const tagDocs = await Promise.all(
+      allTagIds.map((id) => ctx.db.get("tags", id)),
+    );
     const tagMap = new Map(
       tagDocs
         .filter((t): t is NonNullable<typeof t> => t !== null)

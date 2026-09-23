@@ -68,7 +68,7 @@ async function validateTemplateRelations(
   ctx: AuthMutationCtx,
   args: RecurringTemplateInput,
 ) {
-  const category = await ctx.db.get(args.categoryId);
+  const category = await ctx.db.get("categories", args.categoryId);
   if (!category || category.groupId !== args.groupId) {
     throw new ConvexError("カテゴリが見つかりません");
   }
@@ -161,8 +161,8 @@ export const list = authQuery({
 
     const enriched = await Promise.all(
       templates.map(async (t) => {
-        const category = await ctx.db.get(t.categoryId);
-        const payer = await ctx.db.get(t.paidBy);
+        const category = await ctx.db.get("categories", t.categoryId);
+        const payer = await ctx.db.get("users", t.paidBy);
         return {
           ...t,
           category: category
@@ -230,7 +230,7 @@ export const update = authMutation({
       groupId: template.groupId,
     });
 
-    await ctx.db.patch(args.recurringExpenseId, {
+    await ctx.db.patch("recurringExpenses", args.recurringExpenseId, {
       amount: args.amount,
       categoryId: args.categoryId,
       paidBy: args.paidBy,
@@ -262,7 +262,7 @@ export const remove = authMutation({
     );
     await requireGroupMember(ctx, template.groupId);
 
-    await ctx.db.delete(args.recurringExpenseId);
+    await ctx.db.delete("recurringExpenses", args.recurringExpenseId);
 
     ctx.logger.audit("EXPENSE", "recurring_deleted", {
       recurringExpenseId: args.recurringExpenseId,
@@ -287,7 +287,7 @@ export const setPaused = authMutation({
     );
     await requireGroupMember(ctx, template.groupId);
 
-    await ctx.db.patch(args.recurringExpenseId, {
+    await ctx.db.patch("recurringExpenses", args.recurringExpenseId, {
       pausedAt: args.paused ? Date.now() : undefined,
       updatedAt: Date.now(),
     });
@@ -400,7 +400,7 @@ export const generateDue = internalMutation({
         const memberIds = await getGroupMemberIds(ctx, template.groupId);
         if (!memberIds.includes(template.paidBy)) {
           // 支払者が脱退したテンプレートは自動停止
-          await ctx.db.patch(template._id, {
+          await ctx.db.patch("recurringExpenses", template._id, {
             pausedAt: Date.now(),
             updatedAt: Date.now(),
           });
@@ -417,7 +417,7 @@ export const generateDue = internalMutation({
           expenseId,
         });
 
-        await ctx.db.patch(template._id, {
+        await ctx.db.patch("recurringExpenses", template._id, {
           lastGeneratedMonth: month,
           updatedAt: Date.now(),
         });

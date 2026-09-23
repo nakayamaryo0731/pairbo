@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { httpAction, ActionCtx } from "./_generated/server";
+import { httpAction, ActionCtx, env } from "./_generated/server";
 import { internal } from "./_generated/api";
 import Stripe from "stripe";
 import { Id } from "./_generated/dataModel";
@@ -34,15 +34,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const logger = new Logger();
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
       apiVersion: STRIPE_API_VERSION,
     });
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      logger.error("SUBSCRIPTION", "webhook_secret_missing");
-      return new Response("Webhook secret not configured", { status: 500 });
-    }
+    const webhookSecret = env.STRIPE_WEBHOOK_SECRET;
 
     // Stripe署名を検証
     const signature = request.headers.get("stripe-signature");
@@ -149,7 +144,7 @@ async function handleCheckoutSessionCompleted(
     return;
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: STRIPE_API_VERSION,
   });
 

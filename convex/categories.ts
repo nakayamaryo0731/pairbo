@@ -120,7 +120,7 @@ export const update = authMutation({
       throw new ConvexError("同じ名前のカテゴリが既に存在します");
     }
 
-    await ctx.db.patch(args.categoryId, {
+    await ctx.db.patch("categories", args.categoryId, {
       name: validatedName,
       icon: validatedIcon,
     });
@@ -165,7 +165,7 @@ export const remove = authMutation({
       );
     }
 
-    await ctx.db.delete(args.categoryId);
+    await ctx.db.delete("categories", args.categoryId);
 
     ctx.logger.audit("CATEGORY", "deleted", {
       categoryId: args.categoryId,
@@ -227,11 +227,11 @@ export const reorder = authMutation({
 
     // 各カテゴリのsortOrderを更新
     for (let i = 0; i < args.categoryIds.length; i++) {
-      const category = await ctx.db.get(args.categoryIds[i]);
+      const category = await ctx.db.get("categories", args.categoryIds[i]);
       if (!category || category.groupId !== args.groupId) {
         throw new ConvexError("無効なカテゴリが指定されました");
       }
-      await ctx.db.patch(args.categoryIds[i], { sortOrder: i });
+      await ctx.db.patch("categories", args.categoryIds[i], { sortOrder: i });
     }
 
     ctx.logger.audit("CATEGORY", "reordered", {
@@ -268,7 +268,7 @@ export const migratePresetCategories = internalMutation({
         const found = existingByName.get(oldName);
         if (found && !existingByName.has(newName)) {
           const preset = PRESET_CATEGORIES.find((p) => p.name === newName);
-          await ctx.db.patch(found._id, {
+          await ctx.db.patch("categories", found._id, {
             name: newName,
             icon: preset?.icon ?? found.icon,
           });
@@ -292,7 +292,7 @@ export const migratePresetCategories = internalMutation({
           });
           totalAdded++;
         } else if (!found.isPreset) {
-          await ctx.db.patch(found._id, {
+          await ctx.db.patch("categories", found._id, {
             isPreset: true,
             icon: preset.icon,
             sortOrder: preset.sortOrder,
@@ -305,7 +305,7 @@ export const migratePresetCategories = internalMutation({
       for (const [name, newIcon] of Object.entries(iconUpdates)) {
         const found = existingByName.get(name);
         if (found && found.isPreset && found.icon !== newIcon) {
-          await ctx.db.patch(found._id, { icon: newIcon });
+          await ctx.db.patch("categories", found._id, { icon: newIcon });
           totalUpdated++;
         }
       }
@@ -369,12 +369,12 @@ export const migrateIconsToLucide = internalMutation({
     for (const category of allCategories) {
       const lucideName = EMOJI_TO_LUCIDE[category.icon];
       if (lucideName) {
-        await ctx.db.patch(category._id, { icon: lucideName });
+        await ctx.db.patch("categories", category._id, { icon: lucideName });
         updated++;
       } else if (category.isPreset) {
         const preset = PRESET_CATEGORIES.find((p) => p.name === category.name);
         if (preset && category.icon !== preset.icon) {
-          await ctx.db.patch(category._id, { icon: preset.icon });
+          await ctx.db.patch("categories", category._id, { icon: preset.icon });
           updated++;
         }
       }

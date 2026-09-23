@@ -54,8 +54,8 @@ describe("tags", () => {
         .withIdentity(testIdentity)
         .mutation(api.tags.create, { groupId, name: "タグ2" });
 
-      const tag1 = await t.run(async (ctx) => ctx.db.get(tagId1));
-      const tag2 = await t.run(async (ctx) => ctx.db.get(tagId2));
+      const tag1 = await t.run(async (ctx) => ctx.db.get("tags", tagId1));
+      const tag2 = await t.run(async (ctx) => ctx.db.get("tags", tagId2));
 
       expect(tag1?.sortOrder).toBe(0);
       expect(tag2?.sortOrder).toBe(1);
@@ -156,7 +156,7 @@ describe("tags", () => {
         color: "red",
       });
 
-      const tag = await t.run(async (ctx) => ctx.db.get(tagId));
+      const tag = await t.run(async (ctx) => ctx.db.get("tags", tagId));
       expect(tag?.name).toBe("新しい名前");
       expect(tag?.color).toBe("red");
     });
@@ -199,7 +199,7 @@ describe("tags", () => {
       expect(result.deletedExpenseTagsCount).toBe(1);
 
       // タグが削除されている
-      const tag = await t.run(async (ctx) => ctx.db.get(tagId));
+      const tag = await t.run(async (ctx) => ctx.db.get("tags", tagId));
       expect(tag).toBeNull();
     });
   });

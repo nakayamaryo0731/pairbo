@@ -121,7 +121,7 @@ export const getInquiries = authQuery({
     for (const inquiry of inquiries.slice(0, 50)) {
       let displayName = userNameCache.get(inquiry.userId);
       if (displayName === undefined) {
-        const user = await ctx.db.get(inquiry.userId);
+        const user = await ctx.db.get("users", inquiry.userId);
         displayName = user?.displayName ?? "（退会済み）";
         userNameCache.set(inquiry.userId, displayName);
       }
@@ -267,7 +267,7 @@ export const resetReleaseSeenSince = internalMutation({
     let reset = 0;
     for (const user of users) {
       if (user.lastSeenReleaseAt != null && user.lastSeenReleaseAt >= since) {
-        await ctx.db.patch(user._id, {
+        await ctx.db.patch("users", user._id, {
           lastSeenReleaseAt: undefined,
           updatedAt: now,
         });

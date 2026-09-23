@@ -214,7 +214,7 @@ describe("recurringExpenses", () => {
       const { expenses, splits, template } = await t.run(async (ctx) => {
         const expenses = await ctx.db.query("expenses").collect();
         const splits = await ctx.db.query("expenseSplits").collect();
-        const template = await ctx.db.get(templateId);
+        const template = await ctx.db.get("recurringExpenses", templateId);
         return { expenses, splits, template };
       });
 
@@ -315,7 +315,7 @@ describe("recurringExpenses", () => {
 
       const { expenses, template } = await t.run(async (ctx) => ({
         expenses: await ctx.db.query("expenses").collect(),
-        template: await ctx.db.get(templateId),
+        template: await ctx.db.get("recurringExpenses", templateId),
       }));
       expect(expenses).toHaveLength(0);
       expect(template?.lastGeneratedMonth).toBeUndefined();
@@ -347,7 +347,7 @@ describe("recurringExpenses", () => {
             q.eq("groupId", groupId).eq("userId", partnerId),
           )
           .unique();
-        await ctx.db.delete(membership!._id);
+        await ctx.db.delete("groupMembers", membership!._id);
       });
 
       await t.mutation(internal.recurringExpenses.generateDue, {
@@ -382,7 +382,7 @@ describe("recurringExpenses", () => {
             q.eq("groupId", groupId).eq("userId", partnerId),
           )
           .unique();
-        await ctx.db.delete(membership!._id);
+        await ctx.db.delete("groupMembers", membership!._id);
       });
 
       await t.mutation(internal.recurringExpenses.generateDue, {
@@ -391,7 +391,7 @@ describe("recurringExpenses", () => {
 
       const { expenses, template } = await t.run(async (ctx) => ({
         expenses: await ctx.db.query("expenses").collect(),
-        template: await ctx.db.get(templateId),
+        template: await ctx.db.get("recurringExpenses", templateId),
       }));
       expect(expenses).toHaveLength(0);
       expect(template?.pausedAt).toBeDefined();
@@ -415,7 +415,7 @@ describe("recurringExpenses", () => {
       });
 
       const { expense, templates } = await t.run(async (ctx) => ({
-        expense: await ctx.db.get(expenseId),
+        expense: await ctx.db.get("expenses", expenseId),
         templates: await ctx.db.query("recurringExpenses").collect(),
       }));
 

@@ -84,7 +84,7 @@ export const listPurchasedByMonth = authQuery({
     });
 
     const users = await Promise.all(
-      Array.from(userIds).map((id) => ctx.db.get(id as Id<"users">)),
+      Array.from(userIds).map((id) => ctx.db.get("users", id as Id<"users">)),
     );
     const userMap = new Map(users.filter(Boolean).map((u) => [u!._id, u!]));
 
@@ -191,7 +191,7 @@ export const remove = authMutation({
       throw new ConvexError("購入済みのアイテムは削除できません");
     }
 
-    await ctx.db.delete(args.itemId);
+    await ctx.db.delete("shoppingItems", args.itemId);
 
     ctx.logger.info("SHOPPING", "item_removed", {
       itemId: args.itemId,
@@ -218,7 +218,7 @@ export const markPurchased = authMutation({
       throw new ConvexError("既に購入済みです");
     }
 
-    await ctx.db.patch(args.itemId, {
+    await ctx.db.patch("shoppingItems", args.itemId, {
       purchasedAt: Date.now(),
       purchasedBy: ctx.user._id,
     });
@@ -252,7 +252,7 @@ export const unmarkPurchased = authMutation({
       throw new ConvexError("支出と連携済みのため購入解除できません");
     }
 
-    await ctx.db.patch(args.itemId, {
+    await ctx.db.patch("shoppingItems", args.itemId, {
       purchasedAt: undefined,
       purchasedBy: undefined,
     });

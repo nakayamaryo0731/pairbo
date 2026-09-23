@@ -58,7 +58,7 @@
     ]
   },
   "devDependencies": {
-    "@convex-dev/eslint-plugin": "^2.0.0",
+    "@convex-dev/eslint-plugin": "^5.0.0",
     "@edge-runtime/vm": "^5.0.0",
     "@netlify/plugin-nextjs": "^5.16.0",
     "@next/bundle-analyzer": "^16.3.5",

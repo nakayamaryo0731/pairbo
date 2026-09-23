@@ -577,7 +577,9 @@ describe("settlements", () => {
       expect(detail.payments).toHaveLength(1);
       expect(detail.payments[0].amount).toBe(500);
 
-      const settlement = await t.run(async (ctx) => ctx.db.get(settlementId));
+      const settlement = await t.run(async (ctx) =>
+        ctx.db.get("settlements", settlementId),
+      );
       expect(settlement?.carryoverFrom).toBe(carryoverId);
     });
 

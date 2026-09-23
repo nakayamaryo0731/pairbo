@@ -33,12 +33,12 @@ export const getByToken = query({
       return { error: "already_used" as const };
     }
 
-    const group = await ctx.db.get(invitation.groupId);
+    const group = await ctx.db.get("groups", invitation.groupId);
     if (!group) {
       return { error: "invalid_token" as const };
     }
 
-    const inviter = await ctx.db.get(invitation.createdBy);
+    const inviter = await ctx.db.get("users", invitation.createdBy);
     const memberIds = await getGroupMemberIds(ctx, invitation.groupId);
     const memberCount = memberIds.length;
 
@@ -109,7 +109,7 @@ export const accept = authMutation({
       joinedAt: Date.now(),
     });
 
-    await ctx.db.patch(invitation._id, {
+    await ctx.db.patch("groupInvitations", invitation._id, {
       usedAt: Date.now(),
       usedBy: ctx.user._id,
     });
