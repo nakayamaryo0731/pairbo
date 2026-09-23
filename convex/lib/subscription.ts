@@ -17,7 +17,7 @@ export async function getUserPlan(
   ctx: QueryCtx | MutationCtx,
   userId: Id<"users">,
 ): Promise<"free" | "premium"> {
-  const user = await ctx.db.get(userId);
+  const user = await ctx.db.get("users", userId);
   if (user?.planOverride) {
     return user.planOverride;
   }

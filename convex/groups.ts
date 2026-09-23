@@ -86,7 +86,7 @@ export const listMyGroups = authQuery({
 
     const groupIds = memberships.map((m) => m.groupId);
     const [groupDocs, membersByGroup] = await Promise.all([
-      Promise.all(groupIds.map((id) => ctx.db.get(id))),
+      Promise.all(groupIds.map((id) => ctx.db.get("groups", id))),
       Promise.all(
         groupIds.map((groupId) =>
           ctx.db
@@ -256,7 +256,7 @@ export const updateName = authMutation({
       throw error;
     }
 
-    await ctx.db.patch(args.groupId, {
+    await ctx.db.patch("groups", args.groupId, {
       name: validated.name,
       updatedAt: Date.now(),
     });
@@ -297,7 +297,7 @@ export const updateClosingDay = authMutation({
       throw error;
     }
 
-    await ctx.db.patch(args.groupId, {
+    await ctx.db.patch("groups", args.groupId, {
       closingDay: args.closingDay,
       updatedAt: Date.now(),
     });
@@ -320,7 +320,7 @@ export const dismissInviteReminder = authMutation({
   handler: async (ctx, args) => {
     await requireGroupOwner(ctx, args.groupId);
     const now = Date.now();
-    await ctx.db.patch(args.groupId, {
+    await ctx.db.patch("groups", args.groupId, {
       inviteReminderDismissedAt: now,
       updatedAt: now,
     });
@@ -339,7 +339,7 @@ export const updateMemberColor = authMutation({
   handler: async (ctx, args) => {
     const membership = await requireGroupMember(ctx, args.groupId);
 
-    await ctx.db.patch(membership._id, { color: args.color });
+    await ctx.db.patch("groupMembers", membership._id, { color: args.color });
   },
 });
 
@@ -373,11 +373,15 @@ export const remove = authMutation({
         .query("expenseSplits")
         .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
         .collect();
-      await Promise.all(splits.map((split) => ctx.db.delete(split._id)));
+      await Promise.all(
+        splits.map((split) => ctx.db.delete("expenseSplits", split._id)),
+      );
     }
 
     // 2. 支出を削除
-    await Promise.all(expenses.map((expense) => ctx.db.delete(expense._id)));
+    await Promise.all(
+      expenses.map((expense) => ctx.db.delete("expenses", expense._id)),
+    );
 
     // 3. 精算支払いを削除
     const settlements = await ctx.db
@@ -390,12 +394,18 @@ export const remove = authMutation({
         .query("settlementPayments")
         .withIndex("by_settlement", (q) => q.eq("settlementId", settlement._id))
         .collect();
-      await Promise.all(payments.map((payment) => ctx.db.delete(payment._id)));
+      await Promise.all(
+        payments.map((payment) =>
+          ctx.db.delete("settlementPayments", payment._id),
+        ),
+      );
     }
 
     // 4. 精算を削除
     await Promise.all(
-      settlements.map((settlement) => ctx.db.delete(settlement._id)),
+      settlements.map((settlement) =>
+        ctx.db.delete("settlements", settlement._id),
+      ),
     );
 
     // 5. 買い物リストアイテムを削除
@@ -403,7 +413,9 @@ export const remove = authMutation({
       .query("shoppingItems")
       .withIndex("by_group_and_purchased", (q) => q.eq("groupId", args.groupId))
       .collect();
-    await Promise.all(shoppingItems.map((item) => ctx.db.delete(item._id)));
+    await Promise.all(
+      shoppingItems.map((item) => ctx.db.delete("shoppingItems", item._id)),
+    );
 
     // 6. カテゴリを削除
     const categories = await ctx.db
@@ -411,7 +423,7 @@ export const remove = authMutation({
       .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
       .collect();
     await Promise.all(
-      categories.map((category) => ctx.db.delete(category._id)),
+      categories.map((category) => ctx.db.delete("categories", category._id)),
     );
 
     // 7. 招待を削除
@@ -420,7 +432,9 @@ export const remove = authMutation({
       .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
       .collect();
     await Promise.all(
-      invitations.map((invitation) => ctx.db.delete(invitation._id)),
+      invitations.map((invitation) =>
+        ctx.db.delete("groupInvitations", invitation._id),
+      ),
     );
 
     // 8. メンバーを削除
@@ -428,10 +442,12 @@ export const remove = authMutation({
       .query("groupMembers")
       .withIndex("by_group_and_user", (q) => q.eq("groupId", args.groupId))
       .collect();
-    await Promise.all(members.map((member) => ctx.db.delete(member._id)));
+    await Promise.all(
+      members.map((member) => ctx.db.delete("groupMembers", member._id)),
+    );
 
     // 9. グループ本体を削除
-    await ctx.db.delete(args.groupId);
+    await ctx.db.delete("groups", args.groupId);
 
     ctx.logger.audit("GROUP", "deleted", {
       groupId: args.groupId,

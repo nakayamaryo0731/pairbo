@@ -30,7 +30,9 @@ describe("inquiries", () => {
 
       expect(inquiryId).toBeDefined();
 
-      const inquiry = await t.run(async (ctx) => ctx.db.get(inquiryId));
+      const inquiry = await t.run(async (ctx) =>
+        ctx.db.get("inquiries", inquiryId),
+      );
       expect(inquiry?.category).toBe("feature_request");
       expect(inquiry?.body).toBe("新しい機能が欲しいです");
     });

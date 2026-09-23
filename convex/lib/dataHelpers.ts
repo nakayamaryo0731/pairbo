@@ -16,6 +16,8 @@ export async function getOrThrow<T extends TableNames>(
   id: Id<T>,
   errorMessage: string,
 ): Promise<Doc<T>> {
+  // テーブル名は型パラメータ由来でジェネリックのため静的に指定できない
+  // eslint-disable-next-line @convex-dev/explicit-table-ids
   const entity = await ctx.db.get(id);
   if (!entity) {
     throw new ConvexError(errorMessage);

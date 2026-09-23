@@ -201,7 +201,7 @@ export const joinTestGroup = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get("users", args.userId);
     if (!user) {
       return { success: false, message: "ユーザーが見つかりません" };
     }
@@ -275,7 +275,7 @@ export const makeOwner = internalMutation({
       };
     }
 
-    await ctx.db.patch(membership._id, { role: "owner" });
+    await ctx.db.patch("groupMembers", membership._id, { role: "owner" });
 
     return {
       success: true,
@@ -332,10 +332,10 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
         .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
         .collect();
       for (const split of splits) {
-        await ctx.db.delete(split._id);
+        await ctx.db.delete("expenseSplits", split._id);
         deletedSplits++;
       }
-      await ctx.db.delete(expense._id);
+      await ctx.db.delete("expenses", expense._id);
       deletedExpenses++;
     }
 
@@ -344,7 +344,7 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       .withIndex("by_group", (q) => q.eq("groupId", group._id))
       .collect();
     for (const recurring of recurringExpenses) {
-      await ctx.db.delete(recurring._id);
+      await ctx.db.delete("recurringExpenses", recurring._id);
       deletedRecurringExpenses++;
     }
 
@@ -353,7 +353,7 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       .withIndex("by_group", (q) => q.eq("groupId", group._id))
       .collect();
     for (const category of categories) {
-      await ctx.db.delete(category._id);
+      await ctx.db.delete("categories", category._id);
       deletedCategories++;
     }
 
@@ -362,7 +362,7 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       .withIndex("by_group_and_purchased", (q) => q.eq("groupId", group._id))
       .collect();
     for (const item of shoppingItems) {
-      await ctx.db.delete(item._id);
+      await ctx.db.delete("shoppingItems", item._id);
       deletedShoppingItems++;
     }
 
@@ -376,10 +376,10 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
         .withIndex("by_settlement", (q) => q.eq("settlementId", settlement._id))
         .collect();
       for (const payment of payments) {
-        await ctx.db.delete(payment._id);
+        await ctx.db.delete("settlementPayments", payment._id);
         deletedSettlementPayments++;
       }
-      await ctx.db.delete(settlement._id);
+      await ctx.db.delete("settlements", settlement._id);
       deletedSettlements++;
     }
 
@@ -388,16 +388,16 @@ async function clearSeedDataInternal(ctx: MutationCtx) {
       .withIndex("by_group_and_user", (q) => q.eq("groupId", group._id))
       .collect();
     for (const member of members) {
-      await ctx.db.delete(member._id);
+      await ctx.db.delete("groupMembers", member._id);
       deletedMembers++;
     }
 
-    await ctx.db.delete(group._id);
+    await ctx.db.delete("groups", group._id);
     deletedGroups++;
   }
 
   for (const user of seedUsers) {
-    await ctx.db.delete(user._id);
+    await ctx.db.delete("users", user._id);
     deletedUsers++;
   }
 

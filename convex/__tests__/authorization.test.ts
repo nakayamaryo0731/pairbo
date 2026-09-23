@@ -44,7 +44,7 @@ describe("authorization ヘルパー関数", () => {
 
       // メンバーシップを取得
       const membership = await t.run(async (ctx) => {
-        const user = await ctx.db.get(userId);
+        const user = await ctx.db.get("users", userId);
         const mockCtx = {
           ...ctx,
           user: user!,
@@ -87,7 +87,7 @@ describe("authorization ヘルパー関数", () => {
       });
 
       const membership = await t.run(async (ctx) => {
-        const user = await ctx.db.get(userId);
+        const user = await ctx.db.get("users", userId);
         const mockCtx = {
           ...ctx,
           user: user!,
@@ -136,7 +136,7 @@ describe("authorization ヘルパー関数", () => {
       });
 
       const membership = await t.run(async (ctx) => {
-        const user = await ctx.db.get(userId);
+        const user = await ctx.db.get("users", userId);
         const mockCtx = {
           ...ctx,
           user: user!,
@@ -178,7 +178,7 @@ describe("authorization ヘルパー関数", () => {
 
       await expect(
         t.run(async (ctx) => {
-          const user = await ctx.db.get(userId);
+          const user = await ctx.db.get("users", userId);
           const mockCtx = {
             ...ctx,
             user: user!,
@@ -226,7 +226,7 @@ describe("authorization ヘルパー関数", () => {
       });
 
       const membership = await t.run(async (ctx) => {
-        const user = await ctx.db.get(userId);
+        const user = await ctx.db.get("users", userId);
         const mockCtx = {
           ...ctx,
           user: user!,
@@ -275,7 +275,7 @@ describe("authorization ヘルパー関数", () => {
 
       await expect(
         t.run(async (ctx) => {
-          const user = await ctx.db.get(userId);
+          const user = await ctx.db.get("users", userId);
           const mockCtx = {
             ...ctx,
             user: user!,
@@ -315,7 +315,7 @@ describe("authorization ヘルパー関数", () => {
 
       await expect(
         t.run(async (ctx) => {
-          const user = await ctx.db.get(userId);
+          const user = await ctx.db.get("users", userId);
           const mockCtx = {
             ...ctx,
             user: user!,
@@ -370,7 +370,7 @@ describe("authorization ヘルパー関数", () => {
       });
 
       const membership = await t.run(async (ctx) => {
-        const user = await ctx.db.get(userId);
+        const user = await ctx.db.get("users", userId);
         const mockCtx = {
           ...ctx,
           user: user!,
@@ -420,7 +420,7 @@ describe("authorization ヘルパー関数", () => {
 
       await expect(
         t.run(async (ctx) => {
-          const user = await ctx.db.get(userId);
+          const user = await ctx.db.get("users", userId);
           const mockCtx = {
             ...ctx,
             user: user!,
@@ -467,7 +467,7 @@ describe("authorization ヘルパー関数", () => {
 
       await expect(
         t.run(async (ctx) => {
-          const user = await ctx.db.get(userId);
+          const user = await ctx.db.get("users", userId);
           const mockCtx = {
             ...ctx,
             user: user!,

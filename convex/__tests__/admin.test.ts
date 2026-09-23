@@ -27,7 +27,7 @@ async function setupAdmin(t: ReturnType<typeof convexTest>) {
   });
   if (user) {
     await t.run(async (ctx) => {
-      await ctx.db.patch(user._id, { isAdmin: true });
+      await ctx.db.patch("users", user._id, { isAdmin: true });
     });
   }
 }
@@ -167,7 +167,7 @@ describe("resetReleaseSeenSince", () => {
     await t.run(async (ctx) => {
       const users = await ctx.db.query("users").collect();
       for (const u of users) {
-        await ctx.db.patch(u._id, {
+        await ctx.db.patch("users", u._id, {
           lastSeenReleaseAt:
             u.clerkId === "admin_clerk_id" ? since + 1000 : since - 1000,
         });

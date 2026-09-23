@@ -55,7 +55,7 @@ export const create = authMutation({
     // 認可チェック
     await requireGroupMember(ctx, args.groupId);
 
-    const category = await ctx.db.get(args.categoryId);
+    const category = await ctx.db.get("categories", args.categoryId);
     if (!category || category.groupId !== args.groupId) {
       throw new ConvexError("カテゴリが見つかりません");
     }
@@ -98,7 +98,7 @@ export const create = authMutation({
     let title = validatedTitle;
     if (!title && args.shoppingItemIds && args.shoppingItemIds.length > 0) {
       const items = await Promise.all(
-        args.shoppingItemIds.map((id) => ctx.db.get(id)),
+        args.shoppingItemIds.map((id) => ctx.db.get("shoppingItems", id)),
       );
       const itemNames = items
         .filter((item) => item !== null)
@@ -142,13 +142,13 @@ export const create = authMutation({
       const now = Date.now();
       await Promise.all(
         args.shoppingItemIds.map(async (itemId) => {
-          const item = await ctx.db.get(itemId);
+          const item = await ctx.db.get("shoppingItems", itemId);
           if (
             item &&
             item.groupId === args.groupId &&
             item.purchasedAt === undefined
           ) {
-            await ctx.db.patch(itemId, {
+            await ctx.db.patch("shoppingItems", itemId, {
               purchasedAt: now,
               purchasedBy: ctx.user._id,
               linkedExpenseId: expenseId,
@@ -181,7 +181,7 @@ export const create = authMutation({
       // タグの存在確認とグループ所属確認
       const now = Date.now();
       for (const tagId of args.tagIds) {
-        const tag = await ctx.db.get(tagId);
+        const tag = await ctx.db.get("tags", tagId);
         if (!tag || tag.groupId !== args.groupId) {
           throw new ConvexError("無効なタグが指定されました");
         }
@@ -193,7 +193,7 @@ export const create = authMutation({
         });
 
         // タグのlastUsedAtを更新
-        await ctx.db.patch(tagId, { lastUsedAt: now });
+        await ctx.db.patch("tags", tagId, { lastUsedAt: now });
       }
 
       ctx.logger.info("TAG", "tags_linked_to_expense", {
@@ -281,9 +281,9 @@ export const getById = authQuery({
       expenseTags,
       linkedShoppingItems,
     ] = await Promise.all([
-      ctx.db.get(expense.categoryId),
-      ctx.db.get(expense.paidBy),
-      ctx.db.get(expense.createdBy),
+      ctx.db.get("categories", expense.categoryId),
+      ctx.db.get("users", expense.paidBy),
+      ctx.db.get("users", expense.createdBy),
       ctx.db
         .query("expenseSplits")
         .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
@@ -302,13 +302,13 @@ export const getById = authQuery({
 
     // タグ情報を取得
     const tags = await Promise.all(
-      expenseTags.map((et) => ctx.db.get(et.tagId)),
+      expenseTags.map((et) => ctx.db.get("tags", et.tagId)),
     );
     const validTags = tags.filter((t) => t !== null);
 
     const splitUserIds = [...new Set(splits.map((s) => s.userId))];
     const splitUsers = await Promise.all(
-      splitUserIds.map((id) => ctx.db.get(id)),
+      splitUserIds.map((id) => ctx.db.get("users", id)),
     );
     const userMap = new Map(
       splitUsers
@@ -424,7 +424,7 @@ export const listByCategory = authQuery({
       "グループが見つかりません",
     );
 
-    const category = await ctx.db.get(args.categoryId);
+    const category = await ctx.db.get("categories", args.categoryId);
     if (!category || category.groupId !== args.groupId) {
       throw new ConvexError("カテゴリが見つかりません");
     }
@@ -503,7 +503,7 @@ export const listByTag = authQuery({
     } else {
       // 特定タグの支出
       const tagIdForQuery = args.tagId as Id<"tags">;
-      const tag = await ctx.db.get(tagIdForQuery);
+      const tag = await ctx.db.get("tags", tagIdForQuery);
       if (!tag || tag.groupId !== args.groupId) {
         throw new ConvexError("タグが見つかりません");
       }
@@ -549,7 +549,7 @@ export const listByCategoryAllTime = authQuery({
     // 認可チェック
     await requireGroupMember(ctx, args.groupId);
 
-    const category = await ctx.db.get(args.categoryId);
+    const category = await ctx.db.get("categories", args.categoryId);
     if (!category || category.groupId !== args.groupId) {
       throw new ConvexError("カテゴリが見つかりません");
     }
@@ -618,7 +618,7 @@ export const listByTagAllTime = authQuery({
     } else {
       // 特定タグの支出
       const tagIdForQuery = args.tagId as Id<"tags">;
-      const tag = await ctx.db.get(tagIdForQuery);
+      const tag = await ctx.db.get("tags", tagIdForQuery);
       if (!tag || tag.groupId !== args.groupId) {
         throw new ConvexError("タグが見つかりません");
       }
@@ -691,7 +691,7 @@ export const update = authMutation({
     // タイトルのバリデーション
     const validatedTitle = validateTitle(args.title);
 
-    const category = await ctx.db.get(args.categoryId);
+    const category = await ctx.db.get("categories", args.categoryId);
     if (!category || category.groupId !== expense.groupId) {
       throw new ConvexError("カテゴリが見つかりません");
     }
@@ -736,10 +736,12 @@ export const update = authMutation({
       .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
       .collect();
 
-    await Promise.all(existingSplits.map((split) => ctx.db.delete(split._id)));
+    await Promise.all(
+      existingSplits.map((split) => ctx.db.delete("expenseSplits", split._id)),
+    );
 
     // 支出を更新
-    await ctx.db.patch(args.expenseId, {
+    await ctx.db.patch("expenses", args.expenseId, {
       amount: args.amount,
       categoryId: args.categoryId,
       paidBy: args.paidBy,
@@ -769,7 +771,9 @@ export const update = authMutation({
         .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
         .collect();
 
-      await Promise.all(existingExpenseTags.map((et) => ctx.db.delete(et._id)));
+      await Promise.all(
+        existingExpenseTags.map((et) => ctx.db.delete("expenseTags", et._id)),
+      );
 
       // 新しいタグを追加
       if (args.tagIds.length > 0) {
@@ -788,7 +792,7 @@ export const update = authMutation({
 
         const now = Date.now();
         for (const tagId of args.tagIds) {
-          const tag = await ctx.db.get(tagId);
+          const tag = await ctx.db.get("tags", tagId);
           if (!tag || tag.groupId !== expense.groupId) {
             throw new ConvexError("無効なタグが指定されました");
           }
@@ -799,7 +803,7 @@ export const update = authMutation({
           });
 
           // タグのlastUsedAtを更新
-          await ctx.db.patch(tagId, { lastUsedAt: now });
+          await ctx.db.patch("tags", tagId, { lastUsedAt: now });
         }
       }
     }
@@ -839,7 +843,9 @@ export const remove = authMutation({
       .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
       .collect();
 
-    await Promise.all(splits.map((split) => ctx.db.delete(split._id)));
+    await Promise.all(
+      splits.map((split) => ctx.db.delete("expenseSplits", split._id)),
+    );
 
     // 関連するexpenseTagsを削除
     const expenseTags = await ctx.db
@@ -847,7 +853,9 @@ export const remove = authMutation({
       .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
       .collect();
 
-    await Promise.all(expenseTags.map((et) => ctx.db.delete(et._id)));
+    await Promise.all(
+      expenseTags.map((et) => ctx.db.delete("expenseTags", et._id)),
+    );
 
     // 買い物リストアイテムの連携解除（購入済み状態は維持）
     const linkedItems = await ctx.db
@@ -860,7 +868,7 @@ export const remove = authMutation({
     if (linkedItems.length > 0) {
       await Promise.all(
         linkedItems.map((item) =>
-          ctx.db.patch(item._id, {
+          ctx.db.patch("shoppingItems", item._id, {
             linkedExpenseId: undefined,
           }),
         ),
@@ -873,7 +881,7 @@ export const remove = authMutation({
     }
 
     // 支出を削除
-    await ctx.db.delete(args.expenseId);
+    await ctx.db.delete("expenses", args.expenseId);
 
     ctx.logger.audit("EXPENSE", "deleted", {
       expenseId: args.expenseId,
@@ -897,12 +905,12 @@ export const updateCategory = authMutation({
 
     await requireGroupMember(ctx, expense.groupId);
 
-    const category = await ctx.db.get(args.categoryId);
+    const category = await ctx.db.get("categories", args.categoryId);
     if (!category || category.groupId !== expense.groupId) {
       throw new ConvexError("カテゴリが見つかりません");
     }
 
-    await ctx.db.patch(args.expenseId, {
+    await ctx.db.patch("expenses", args.expenseId, {
       categoryId: args.categoryId,
       updatedAt: Date.now(),
     });
@@ -948,12 +956,14 @@ export const updateTags = authMutation({
       .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
       .collect();
 
-    await Promise.all(existingExpenseTags.map((et) => ctx.db.delete(et._id)));
+    await Promise.all(
+      existingExpenseTags.map((et) => ctx.db.delete("expenseTags", et._id)),
+    );
 
     // 新しいタグを追加
     const now = Date.now();
     for (const tagId of args.tagIds) {
-      const tag = await ctx.db.get(tagId);
+      const tag = await ctx.db.get("tags", tagId);
       if (!tag || tag.groupId !== expense.groupId) {
         throw new ConvexError("無効なタグが指定されました");
       }
@@ -963,10 +973,10 @@ export const updateTags = authMutation({
         tagId,
       });
 
-      await ctx.db.patch(tagId, { lastUsedAt: now });
+      await ctx.db.patch("tags", tagId, { lastUsedAt: now });
     }
 
-    await ctx.db.patch(args.expenseId, {
+    await ctx.db.patch("expenses", args.expenseId, {
       updatedAt: Date.now(),
     });
 

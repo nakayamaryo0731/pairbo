@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import {
   action,
+  env,
   internalMutation,
   internalQuery,
   query,
@@ -18,11 +19,7 @@ import Stripe from "stripe";
 const STRIPE_API_VERSION = "2026-08-26.dahlia" as const;
 
 function getStripe() {
-  const apiKey = process.env.STRIPE_SECRET_KEY;
-  if (!apiKey) {
-    throw new Error("STRIPE_SECRET_KEY is not set");
-  }
-  return new Stripe(apiKey, { apiVersion: STRIPE_API_VERSION });
+  return new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: STRIPE_API_VERSION });
 }
 
 // ========================================
@@ -211,12 +208,8 @@ export const createCheckoutSession = action({
     // Price IDを取得
     const priceId =
       args.priceType === "monthly"
-        ? process.env.STRIPE_PRICE_MONTHLY
-        : process.env.STRIPE_PRICE_YEARLY;
-
-    if (!priceId) {
-      throw new Error("Price ID is not configured");
-    }
+        ? env.STRIPE_PRICE_MONTHLY
+        : env.STRIPE_PRICE_YEARLY;
 
     // Checkoutセッション作成
     const session = await stripe.checkout.sessions.create({
@@ -378,7 +371,7 @@ export const upsertSubscription = internalMutation({
     const now = Date.now();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("subscriptions", existing._id, {
         stripeSubscriptionId: args.stripeSubscriptionId,
         plan: args.plan,
         status: args.status,
@@ -446,7 +439,7 @@ export const updateSubscriptionStatus = internalMutation({
       updates.currentPeriodEnd = args.currentPeriodEnd;
     }
 
-    await ctx.db.patch(subscription._id, updates);
+    await ctx.db.patch("subscriptions", subscription._id, updates);
   },
 });
 
@@ -462,7 +455,7 @@ export const deleteSubscription = internalMutation({
 
     if (subscription) {
       // 削除ではなくfreeプランに戻す
-      await ctx.db.patch(subscription._id, {
+      await ctx.db.patch("subscriptions", subscription._id, {
         plan: "free",
         status: "canceled",
         stripeSubscriptionId: undefined,
@@ -541,7 +534,7 @@ export const claimTrial = authMutation({
     }
 
     const expiresAt = now + TRIAL_DURATION_MS;
-    await ctx.db.patch(user._id, {
+    await ctx.db.patch("users", user._id, {
       trialExpiresAt: expiresAt,
       updatedAt: now,
     });
@@ -566,7 +559,7 @@ export const setAdminPlanOverride = authMutation({
     if (!ctx.user.isAdmin) {
       throw new Error("管理者権限が必要です");
     }
-    await ctx.db.patch(ctx.user._id, {
+    await ctx.db.patch("users", ctx.user._id, {
       planOverride: args.plan,
       updatedAt: Date.now(),
     });
@@ -588,11 +581,11 @@ export const setAdminFlag = internalMutation({
     isAdmin: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get("users", args.userId);
     if (!user) {
       throw new Error("ユーザーが見つかりません");
     }
-    await ctx.db.patch(args.userId, {
+    await ctx.db.patch("users", args.userId, {
       isAdmin: args.isAdmin,
       updatedAt: Date.now(),
     });

@@ -24,7 +24,9 @@ export async function buildCategoryBreakdown(
   }
 
   const categoryIds = [...categoryTotals.keys()];
-  const categories = await Promise.all(categoryIds.map((id) => ctx.db.get(id)));
+  const categories = await Promise.all(
+    categoryIds.map((id) => ctx.db.get("categories", id)),
+  );
 
   return categoryIds
     .map((categoryId, index) => {

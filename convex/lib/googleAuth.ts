@@ -6,6 +6,7 @@
  */
 
 import { ConvexError } from "convex/values";
+import { env } from "../_generated/server";
 import { Logger } from "./logger";
 
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -31,15 +32,11 @@ export class GoogleTokenInvalidError extends Error {
 }
 
 function getOAuthEnv() {
-  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI;
-  if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error(
-      "Google OAuth環境変数が設定されていません (GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REDIRECT_URI)",
-    );
-  }
-  return { clientId, clientSecret, redirectUri };
+  return {
+    clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+    clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+    redirectUri: env.GOOGLE_OAUTH_REDIRECT_URI,
+  };
 }
 
 async function parseErrorCode(res: Response): Promise<string | null> {

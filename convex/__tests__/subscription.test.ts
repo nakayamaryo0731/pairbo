@@ -413,7 +413,7 @@ describe("subscription helpers", () => {
             q.eq("groupId", groupId).eq("userId", partnerId),
           )
           .unique();
-        await ctx.db.delete(membership!._id);
+        await ctx.db.delete("groupMembers", membership!._id);
       });
 
       const result = await t.run(async (ctx) => {

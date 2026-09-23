@@ -60,7 +60,7 @@ export async function calculateTagBreakdown(
 
   // タグ情報を取得
   const tagIds = [...tagTotals.keys()];
-  const tags = await Promise.all(tagIds.map((id) => ctx.db.get(id)));
+  const tags = await Promise.all(tagIds.map((id) => ctx.db.get("tags", id)));
 
   const breakdown = tagIds
     .map((tagId, index) => {

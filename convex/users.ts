@@ -38,7 +38,7 @@ export const updateDisplayName = authMutation({
       );
     }
 
-    await ctx.db.patch(ctx.user._id, {
+    await ctx.db.patch("users", ctx.user._id, {
       displayName: trimmed,
       updatedAt: Date.now(),
     });
@@ -75,7 +75,7 @@ export const markReleasesRead = authMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    await ctx.db.patch(ctx.user._id, {
+    await ctx.db.patch("users", ctx.user._id, {
       lastSeenReleaseAt: now,
       updatedAt: now,
     });
@@ -89,7 +89,7 @@ export const completePwaOnboarding = authMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    await ctx.db.patch(ctx.user._id, {
+    await ctx.db.patch("users", ctx.user._id, {
       pwaOnboardingCompletedAt: now,
       updatedAt: now,
     });
@@ -112,7 +112,7 @@ export const setDefaultGroup = authMutation({
       await requireGroupMember(ctx, args.groupId);
     }
 
-    await ctx.db.patch(ctx.user._id, {
+    await ctx.db.patch("users", ctx.user._id, {
       defaultGroupId: args.groupId ?? undefined,
       updatedAt: Date.now(),
     });

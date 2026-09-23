@@ -23,7 +23,7 @@ describe("schema", () => {
       expect(userId).toBeDefined();
 
       const user = await t.run(async (ctx) => {
-        return await ctx.db.get(userId);
+        return await ctx.db.get("users", userId);
       });
 
       expect(user).not.toBeNull();
@@ -71,7 +71,7 @@ describe("schema", () => {
       expect(groupId).toBeDefined();
 
       const group = await t.run(async (ctx) => {
-        return await ctx.db.get(groupId);
+        return await ctx.db.get("groups", groupId);
       });
 
       expect(group).not.toBeNull();

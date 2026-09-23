@@ -405,9 +405,9 @@ export const cancelCarryOver = authMutation({
       .collect();
 
     for (const payment of payments) {
-      await ctx.db.delete(payment._id);
+      await ctx.db.delete("settlementPayments", payment._id);
     }
-    await ctx.db.delete(args.settlementId);
+    await ctx.db.delete("settlements", args.settlementId);
 
     ctx.logger.audit("SETTLEMENT", "carry_over_cancelled", {
       settlementId: args.settlementId,
@@ -456,7 +456,7 @@ export const markPaid = authMutation({
     }
 
     const now = Date.now();
-    await ctx.db.patch(args.paymentId, {
+    await ctx.db.patch("settlementPayments", args.paymentId, {
       isPaid: true,
       paidAt: now,
     });
@@ -473,7 +473,7 @@ export const markPaid = authMutation({
     );
 
     if (allPaid) {
-      await ctx.db.patch(payment.settlementId, {
+      await ctx.db.patch("settlements", payment.settlementId, {
         status: "settled",
         settledAt: now,
       });
@@ -519,7 +519,7 @@ export const reopen = authMutation({
       throw new ConvexError("この精算はまだ完了していません");
     }
 
-    await ctx.db.patch(args.settlementId, {
+    await ctx.db.patch("settlements", args.settlementId, {
       status: "reopened",
       settledAt: undefined,
     });
@@ -532,7 +532,7 @@ export const reopen = authMutation({
       .collect();
 
     for (const payment of payments) {
-      await ctx.db.patch(payment._id, {
+      await ctx.db.patch("settlementPayments", payment._id, {
         isPaid: false,
         paidAt: undefined,
       });
@@ -610,7 +610,7 @@ export const getById = authQuery({
     const membership = await requireGroupMember(ctx, settlement.groupId);
     const isOwner = membership.role === "owner";
 
-    const group = await ctx.db.get(settlement.groupId);
+    const group = await ctx.db.get("groups", settlement.groupId);
 
     const payments = await ctx.db
       .query("settlementPayments")

@@ -74,7 +74,7 @@ describe("invitations", () => {
           .withIndex("by_token", (q) => q.eq("token", token))
           .unique();
         if (invitation) {
-          await ctx.db.patch(invitation._id, {
+          await ctx.db.patch("groupInvitations", invitation._id, {
             expiresAt: Date.now() - 1000, // 過去に設定
           });
         }
@@ -110,7 +110,7 @@ describe("invitations", () => {
               q.eq("clerkId", ownerIdentity.subject),
             )
             .unique();
-          await ctx.db.patch(invitation._id, {
+          await ctx.db.patch("groupInvitations", invitation._id, {
             usedAt: Date.now(),
             usedBy: user!._id,
           });
@@ -244,7 +244,7 @@ describe("invitations", () => {
           .withIndex("by_token", (q) => q.eq("token", token))
           .unique();
         if (invitation) {
-          await ctx.db.patch(invitation._id, {
+          await ctx.db.patch("groupInvitations", invitation._id, {
             expiresAt: Date.now() - 1000,
           });
         }

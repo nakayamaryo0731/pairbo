@@ -438,7 +438,7 @@ describe("claimTrial", () => {
         .withIndex("by_clerk_id", (q) => q.eq("clerkId", claimIdentity.subject))
         .unique();
       if (!user) throw new Error("user not found");
-      await ctx.db.patch(user._id, { planOverride: "premium" });
+      await ctx.db.patch("users", user._id, { planOverride: "premium" });
     });
 
     const result = await t

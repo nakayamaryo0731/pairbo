@@ -101,7 +101,7 @@ const authMutationMiddleware = {
         createdAt: now,
         updatedAt: now,
       });
-      user = await ctx.db.get(userId);
+      user = await ctx.db.get("users", userId);
     }
 
     if (!user) {

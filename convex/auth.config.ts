@@ -1,7 +1,9 @@
+import { env } from "./_generated/server";
+
 const authConfig = {
   providers: [
     {
-      domain: process.env.CLERK_ISSUER_URL,
+      domain: env.CLERK_ISSUER_URL,
       applicationID: "convex",
     },
   ],
