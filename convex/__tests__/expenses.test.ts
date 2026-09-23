@@ -65,6 +65,38 @@ describe("expenses", () => {
       expect(expense.splitMethod).toBe("equal");
     });
 
+    test("0円の支出を登録できる（精算への寄与なし）", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const expenseId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.expenses.create, {
+          groupId,
+          amount: 0,
+          categoryId: detail.categories[0]._id,
+          paidBy: detail.members[0].userId,
+          date: "2024-12-30",
+          title: "ポイント払いの備忘録",
+        });
+
+      const expense = await t
+        .withIdentity(userAIdentity)
+        .query(api.expenses.getById, { expenseId });
+
+      expect(expense.amount).toBe(0);
+      expect(expense.splits.every((s) => s.amount === 0)).toBe(true);
+    });
+
     test("均等分割が正しく計算される（2人）", async () => {
       const t = convexTest(schema, modules);
 
@@ -171,7 +203,7 @@ describe("expenses", () => {
       expect(total).toBe(1000);
     });
 
-    test("金額が0以下の場合はエラー", async () => {
+    test("金額が負の場合はエラー", async () => {
       const t = convexTest(schema, modules);
 
       const groupId = await t
@@ -190,12 +222,12 @@ describe("expenses", () => {
       await expect(
         t.withIdentity(userAIdentity).mutation(api.expenses.create, {
           groupId,
-          amount: 0,
+          amount: -1,
           categoryId,
           paidBy: payerId,
           date: "2024-12-30",
         }),
-      ).rejects.toThrow("金額は1円から1億円の範囲で入力してください");
+      ).rejects.toThrow("金額は0円から1億円の範囲で入力してください");
     });
 
     test("金額が1億円を超える場合はエラー", async () => {
@@ -222,7 +254,7 @@ describe("expenses", () => {
           paidBy: payerId,
           date: "2024-12-30",
         }),
-      ).rejects.toThrow("金額は1円から1億円の範囲で入力してください");
+      ).rejects.toThrow("金額は0円から1億円の範囲で入力してください");
     });
 
     test("メモが500文字を超える場合はエラー", async () => {
@@ -928,12 +960,12 @@ describe("expenses", () => {
       await expect(
         t.withIdentity(userAIdentity).mutation(api.expenses.update, {
           expenseId,
-          amount: 0,
+          amount: -1,
           categoryId,
           paidBy: payerId,
           date: "2024-12-30",
         }),
-      ).rejects.toThrow("金額は1円から1億円の範囲で入力してください");
+      ).rejects.toThrow("金額は0円から1億円の範囲で入力してください");
     });
   });
 

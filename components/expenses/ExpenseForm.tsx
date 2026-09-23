@@ -289,7 +289,7 @@ export function ExpenseForm({
     setError(null);
 
     const amountNum = parseInt(amount, 10);
-    if (isNaN(amountNum) || amountNum < 1) {
+    if (isNaN(amountNum) || amountNum < 0) {
       setError("金額を入力してください");
       return;
     }
@@ -435,7 +435,7 @@ export function ExpenseForm({
 
   const isFormValid =
     amount !== "" &&
-    parseInt(amount, 10) >= 1 &&
+    parseInt(amount, 10) >= 0 &&
     categoryId !== "" &&
     paidBy &&
     (isRecurring ? title.trim() !== "" : date !== "") &&
@@ -481,7 +481,7 @@ export function ExpenseForm({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="text-4xl font-light text-slate-800 w-48 text-center bg-transparent border-none outline-none placeholder:text-slate-300"
-            min={1}
+            min={0}
             max={100000000}
             required
           />
