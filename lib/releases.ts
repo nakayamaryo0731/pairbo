@@ -64,8 +64,6 @@ export const releases: Release[] = [
     publishedAt: Date.UTC(2026, 8, 16),
     title: "定期支出の自動記録ができるようになりました",
     body: "家賃やサブスクなど、毎月決まった支出を自動で記録できるようになりました。\n支出の記録画面で「毎月自動で記録」をONにするか、グループ設定の「定期支出」から登録すると、毎月決まった日に自動で記録されます。\nPremium機能です。グループのどちらか1人が加入していれば、2人とも使えます。",
-    cta: { label: "Premiumを30日間無料で試す", action: "claim_trial" },
-    expiresAt: Date.UTC(2026, 9, 16),
     autoOpen: true,
   },
   {
