@@ -103,14 +103,17 @@ export const getSummary = authQuery({
 });
 
 /**
- * 問い合わせ一覧（管理者用、新しい順）
+ * 直近7日の問い合わせ一覧（管理者用、新しい順）
  */
 export const getInquiries = authQuery({
   args: {},
   handler: async (ctx) => {
     requireAdmin(ctx.user.isAdmin);
 
-    const inquiries = await ctx.db.query("inquiries").collect();
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const inquiries = (await ctx.db.query("inquiries").collect()).filter(
+      (i) => i.createdAt >= oneWeekAgo,
+    );
     inquiries.sort((a, b) => b.createdAt - a.createdAt);
 
     const userNameCache = new Map<string, string>();

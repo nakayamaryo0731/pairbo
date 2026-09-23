@@ -194,6 +194,7 @@ describe("getInquiries", () => {
     await setupNormalUser(t);
 
     const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
     await t.run(async (ctx) => {
       const users = await ctx.db.query("users").collect();
       const user = users.find((u) => u.clerkId === "user_clerk_id");
@@ -209,6 +210,13 @@ describe("getInquiries", () => {
         category: "bug_report",
         body: "新しい方",
         createdAt: now,
+      });
+      // 7日より前は一覧に含まれない
+      await ctx.db.insert("inquiries", {
+        userId: user._id,
+        category: "other",
+        body: "8日前の問い合わせ",
+        createdAt: now - 8 * oneDay,
       });
     });
 
