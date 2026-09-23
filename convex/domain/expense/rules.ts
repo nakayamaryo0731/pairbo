@@ -28,7 +28,7 @@ export function validateAmount(amount: number): void {
   }
   if (amount < EXPENSE_RULES.MIN_AMOUNT || amount > EXPENSE_RULES.MAX_AMOUNT) {
     throw new ExpenseValidationError(
-      "金額は1円から1億円の範囲で入力してください",
+      "金額は0円から1億円の範囲で入力してください",
     );
   }
 }

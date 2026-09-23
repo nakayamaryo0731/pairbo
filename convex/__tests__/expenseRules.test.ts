@@ -21,6 +21,7 @@ const userC = "user_c" as Id<"users">;
 describe("expense/rules", () => {
   describe("validateAmount", () => {
     test("有効な金額は通過する", () => {
+      expect(() => validateAmount(0)).not.toThrow();
       expect(() => validateAmount(1)).not.toThrow();
       expect(() => validateAmount(1000)).not.toThrow();
       expect(() => validateAmount(100_000_000)).not.toThrow();
@@ -33,17 +34,17 @@ describe("expense/rules", () => {
       );
     });
 
-    test("0以下はエラー", () => {
-      expect(() => validateAmount(0)).toThrow(ExpenseValidationError);
+    test("負の金額はエラー", () => {
+      expect(() => validateAmount(-1)).toThrow(ExpenseValidationError);
       expect(() => validateAmount(-100)).toThrow(
-        "金額は1円から1億円の範囲で入力してください",
+        "金額は0円から1億円の範囲で入力してください",
       );
     });
 
     test("1億円超はエラー", () => {
       expect(() => validateAmount(100_000_001)).toThrow(ExpenseValidationError);
       expect(() => validateAmount(100_000_001)).toThrow(
-        "金額は1円から1億円の範囲で入力してください",
+        "金額は0円から1億円の範囲で入力してください",
       );
     });
   });
@@ -157,7 +158,7 @@ describe("expense/rules", () => {
     test("金額が不正な場合はエラー", () => {
       expect(() =>
         validateExpenseInput({
-          amount: 0,
+          amount: -1,
           date: "2024-12-30",
         }),
       ).toThrow(ExpenseValidationError);
@@ -185,7 +186,7 @@ describe("expense/rules", () => {
 
   describe("EXPENSE_RULES", () => {
     test("定数が正しく定義されている", () => {
-      expect(EXPENSE_RULES.MIN_AMOUNT).toBe(1);
+      expect(EXPENSE_RULES.MIN_AMOUNT).toBe(0);
       expect(EXPENSE_RULES.MAX_AMOUNT).toBe(100_000_000);
       expect(EXPENSE_RULES.MAX_TITLE_LENGTH).toBe(100);
       expect(EXPENSE_RULES.MAX_MEMO_LENGTH).toBe(500);
