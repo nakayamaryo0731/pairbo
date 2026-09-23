@@ -76,8 +76,8 @@ export const releases: Release[] = [
     autoOpen: true,
   },
   {
-    id: "2026-09-21-end-of-month-closing-day",
-    publishedAt: Date.UTC(2026, 8, 21),
+    id: "2026-09-23-end-of-month-closing-day",
+    publishedAt: Date.UTC(2026, 8, 23),
     title: "締め日に「末日」を選べるようになりました",
     body: "グループ設定の締め日で「末日」を選ぶと、月初から月末までを1つの精算期間にできます。\n2月やうるう年など月ごとの日数の違いにも自動で対応します。",
   },
