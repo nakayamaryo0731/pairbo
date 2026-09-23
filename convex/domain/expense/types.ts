@@ -42,8 +42,8 @@ export interface ExpenseInput {
  * 支出のビジネスルール定数
  */
 export const EXPENSE_RULES = {
-  /** 最小金額（円） */
-  MIN_AMOUNT: 1,
+  /** 最小金額（円）。0円はポイント払い・備忘録用の記録 */
+  MIN_AMOUNT: 0,
   /** 最大金額（円） */
   MAX_AMOUNT: 100_000_000,
   /** タイトルの最大文字数 */

@@ -90,13 +90,14 @@ describe("splitCalculator", () => {
       );
     });
 
-    test("金額が0以下の場合はエラー", () => {
-      expect(() => calculateEqualSplit(0, [userA], userA)).toThrow(
-        "金額は1円以上である必要があります",
-      );
+    test("0円は全員0円の分割になる", () => {
+      const splits = calculateEqualSplit(0, [userA, userB], userA);
+      expect(splits.every((s) => s.amount === 0)).toBe(true);
+    });
 
+    test("金額が負の場合はエラー", () => {
       expect(() => calculateEqualSplit(-100, [userA], userA)).toThrow(
-        "金額は1円以上である必要があります",
+        "金額は0円以上である必要があります",
       );
     });
 

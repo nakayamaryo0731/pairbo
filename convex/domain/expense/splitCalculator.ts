@@ -29,8 +29,8 @@ export function calculateEqualSplit(
     throw new ConvexError("メンバーが指定されていません");
   }
 
-  if (amount <= 0) {
-    throw new ConvexError("金額は1円以上である必要があります");
+  if (amount < 0) {
+    throw new ConvexError("金額は0円以上である必要があります");
   }
 
   const count = memberIds.length;
@@ -55,8 +55,8 @@ export function calculateRatioSplit(
     throw new ConvexError("割合が指定されていません");
   }
 
-  if (amount <= 0) {
-    throw new ConvexError("金額は1円以上である必要があります");
+  if (amount < 0) {
+    throw new ConvexError("金額は0円以上である必要があります");
   }
 
   const totalRatio = ratios.reduce((sum, r) => sum + r.ratio, 0);
@@ -112,8 +112,8 @@ export function calculateFullSplit(
     throw new ConvexError("メンバーが指定されていません");
   }
 
-  if (amount <= 0) {
-    throw new ConvexError("金額は1円以上である必要があります");
+  if (amount < 0) {
+    throw new ConvexError("金額は0円以上である必要があります");
   }
 
   if (!memberIds.includes(bearerId)) {

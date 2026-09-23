@@ -76,8 +76,8 @@ export const releases: Release[] = [
     autoOpen: true,
   },
   {
-    id: "2026-09-21-end-of-month-closing-day",
-    publishedAt: Date.UTC(2026, 8, 21),
+    id: "2026-09-23-end-of-month-closing-day",
+    publishedAt: Date.UTC(2026, 8, 23),
     title: "締め日に「末日」を選べるようになりました",
     body: "グループ設定の締め日で「末日」を選ぶと、月初から月末までを1つの精算期間にできます。\n2月やうるう年など月ごとの日数の違いにも自動で対応します。",
   },
@@ -86,6 +86,13 @@ export const releases: Release[] = [
     publishedAt: Date.UTC(2026, 8, 22),
     title: "Pairboのアイコンが新しくなりました",
     body: "ふたりを表す2つの円を重ねた、新しいアイコンとロゴに変わりました。\nホーム画面やブラウザタブでの見た目が変わりますが、アプリの機能や使い方に変更はありません。\n（iPhoneでホーム画面に追加している場合は、一度削除して追加し直すと新しいアイコンになります）",
+    autoOpen: true,
+  },
+  {
+    id: "2026-09-23-zero-amount-expense",
+    publishedAt: Date.UTC(2026, 8, 23),
+    title: "0円の支出を記録できるようになりました",
+    body: "ポイントやクーポンで支払った分、出来事の備忘録など、実際の支払いがない記録を残せるようになりました。\n金額を0円にして登録すると、精算金額には影響しません。",
     autoOpen: true,
   },
 ];
