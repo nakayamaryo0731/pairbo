@@ -145,7 +145,7 @@ function InquiryList({ inquiries }: { inquiries: InquiryRow[] | undefined }) {
   return (
     <section>
       <h2 className="text-lg font-bold text-slate-800 mb-3">
-        問い合わせ
+        問い合わせ（直近7日）
         {inquiries && (
           <span className="text-sm font-normal text-slate-500 ml-2">
             ({inquiries.length}件)
@@ -159,7 +159,7 @@ function InquiryList({ inquiries }: { inquiries: InquiryRow[] | undefined }) {
           </div>
         ) : inquiries.length === 0 ? (
           <p className="px-4 py-8 text-center text-slate-500">
-            問い合わせはありません
+            直近7日の問い合わせはありません
           </p>
         ) : (
           inquiries.map((inquiry) => {
