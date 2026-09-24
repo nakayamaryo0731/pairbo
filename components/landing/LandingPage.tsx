@@ -16,7 +16,7 @@ import {
   Minus,
   Globe,
   ArrowRight,
-  ShoppingCart,
+  FileSpreadsheet,
   Repeat,
   Copy,
 } from "lucide-react";
@@ -76,7 +76,7 @@ const solutions = [
   },
   {
     pain: "精算の手間",
-    solution: "月末に自動で|精算額を計算",
+    solution: "月ごとに自動で|精算額を計算",
     description:
       "誰が誰にいくら払うか一目瞭然。|金額が小さい月は|翌月への繰り越しもできる。",
   },
@@ -98,7 +98,7 @@ const features = [
   {
     icon: Calculator,
     title: "自動精算",
-    description: "月末に自動計算。|翌月への繰り越しも対応。",
+    description: "月ごとに自動計算。|翌月への繰り越しも対応。",
     premium: false,
   },
   {
@@ -108,10 +108,10 @@ const features = [
     premium: true,
   },
   {
-    icon: ShoppingCart,
-    title: "買い物リスト",
-    description: "ふたりで共有できるリスト。|買ったらそのまま|支出に記録。",
-    premium: false,
+    icon: FileSpreadsheet,
+    title: "スプレッドシート出力",
+    description: "支出データを|Googleスプレッドシートに|いつでも出力。",
+    premium: true,
   },
   {
     icon: Zap,
@@ -122,7 +122,7 @@ const features = [
   {
     icon: PieChart,
     title: "分析グラフ",
-    description: "カテゴリ別・月別の|支出を可視化。|年次分析も。",
+    description: "カテゴリ別・月別の|支出を可視化。",
     premium: false,
   },
   {
@@ -133,14 +133,7 @@ const features = [
   },
 ];
 
-const subFeatures = [
-  "タグ管理",
-  "締め日設定（末日対応）",
-  "カスタムカテゴリ",
-  "Googleスプレッドシート出力",
-  "広告非表示（Premium）",
-  "複数グループ",
-];
+const subFeatures = ["締め日設定", "複数グループ"];
 
 type ComparisonValue = "yes" | "no" | "partial";
 
@@ -206,7 +199,7 @@ const faqs = [
   },
   {
     q: "共有口座やクレジットカードは|必要ですか？",
-    a: "いいえ。お財布は別々のままでOKです。それぞれが支払った支出を記録し、月末に差額を精算する仕組みです。",
+    a: "いいえ。お財布は別々のままでOKです。それぞれが支払った支出を記録し、月ごとに差額を精算する仕組みです。",
   },
   {
     q: "家賃やサブスクなど、|毎月決まった支出は？",
@@ -214,7 +207,7 @@ const faqs = [
   },
   {
     q: "精算を忘れそう・|面倒になりそうです",
-    a: "精算額は月末に自動で計算されます。金額が小さい月や忙しい月は「翌月に繰り越す」を選んで、翌月分とまとめて精算できます。",
+    a: "精算額は月ごとに自動で計算されます。金額が小さい月や忙しい月は「翌月に繰り越す」を選んで、翌月分とまとめて精算できます。",
   },
   {
     q: "パートナーに|どうやって共有しますか？",
@@ -455,8 +448,8 @@ function HeroSection() {
           <div className="flex flex-wrap justify-center gap-2 md:justify-start">
             {[
               "3タップで記録",
-              "月末に自動精算",
-              "買い物リスト共有",
+              "月ごとに自動精算",
+              "スプレッドシート出力",
               "定期支出も自動で",
             ].map((chip, i) => (
               <span
@@ -707,7 +700,7 @@ const steps = [
   },
   {
     step: "3",
-    title: "月末に精算",
+    title: "月ごとに精算",
     description:
       "自動計算された精算額を確認して|送金するだけ。|翌月への繰り越しもできる。",
     visual: MiniSettlement,
@@ -915,7 +908,7 @@ function PricingCtaSection() {
           </h2>
           <p className="mb-8 text-[15px] text-white/70">
             {phrases(
-              "傾斜折半や定期支出などが使える|Premiumも月額¥100|（年払いなら¥1,000）。|1人分の課金で、|グループ全員が使えます。",
+              "傾斜折半や定期支出などが使える|Premiumも月額¥100|（年払いなら¥1,000）。|1人分の課金で、グループ全員が使えます。",
             )}
           </p>
 
@@ -926,7 +919,7 @@ function PricingCtaSection() {
                 ¥0
               </p>
               <p className="text-xs text-white/70">
-                {phrases("記録・精算・|買い物リストなど|基本機能")}
+                {phrases("記録・精算・|分析グラフなど|基本機能")}
               </p>
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-[#EE6B8D]/25 to-[#4D9DE8]/25 p-4 ring-1 ring-white/15">
@@ -936,7 +929,7 @@ function PricingCtaSection() {
                 <span className="text-sm font-bold text-white/60">/月</span>
               </p>
               <p className="text-xs text-white/70">
-                {phrases("傾斜折半・|定期支出・|詳細分析・|広告非表示")}
+                {phrases("傾斜折半・|定期支出・|詳細分析など")}
               </p>
             </div>
           </div>

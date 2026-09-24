@@ -223,10 +223,6 @@ function PricingContent() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon />
-                  <span>買い物リスト</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckIcon />
                   <span>負担方法（均等・全額）</span>
                 </li>
                 <li className="flex items-center gap-2">
@@ -311,11 +307,19 @@ function PricingContent() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-emerald-500" />
+                  <span>定期支出の自動記録</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckIcon className="text-emerald-500" />
+                  <span>タグ管理・タグ別分析</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckIcon className="text-emerald-500" />
                   <span>年次分析・月別推移グラフ</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-emerald-500" />
-                  <span>広告非表示</span>
+                  <span>Googleスプレッドシート出力</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-emerald-500" />
