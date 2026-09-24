@@ -23,7 +23,7 @@ const AnalyticsContent = dynamic(
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TabNavigation } from "@/components/ui/TabNavigation";
 import { ClipboardList, BarChart3, Settings } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 import { NotificationBell } from "@/components/notifications";
 import { PwaOnboardingTour } from "@/components/pwa/PwaOnboardingTour";
 import { InviteReminderModal } from "@/components/groups/InviteReminderModal";
@@ -53,6 +53,7 @@ function getInitialTab(): TabId {
 export default function GroupDetailPage({ params }: PageProps) {
   const { groupId } = use(params);
   const [activeTab, setActiveTab] = useState<TabId>(getInitialTab);
+  const { userId } = useAuth();
   const detail = useQuery(api.groups.getDetail, {
     groupId: groupId as Id<"groups">,
   });
@@ -81,10 +82,10 @@ export default function GroupDetailPage({ params }: PageProps) {
 
   // 次回起動時にこのグループへ直接遷移できるよう記録（アクセス成功時のみ）
   useEffect(() => {
-    if (detail) {
-      setLastGroupId(groupId);
+    if (detail && userId) {
+      setLastGroupId(userId, groupId);
     }
-  }, [detail, groupId]);
+  }, [detail, userId, groupId]);
 
   const rightElement = (
     <div className="flex items-center gap-1">
