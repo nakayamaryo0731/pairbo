@@ -28,6 +28,7 @@ import { NotificationBell } from "@/components/notifications";
 import { PwaOnboardingTour } from "@/components/pwa/PwaOnboardingTour";
 import { InviteReminderModal } from "@/components/groups/InviteReminderModal";
 import { buildMemberColorMap } from "@/lib/userColors";
+import { setLastGroupId } from "@/lib/lastGroup";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -77,6 +78,13 @@ export default function GroupDetailPage({ params }: PageProps) {
       window.history.replaceState(null, "", url);
     }
   }, [activeTab, groupId]);
+
+  // 次回起動時にこのグループへ直接遷移できるよう記録（アクセス成功時のみ）
+  useEffect(() => {
+    if (detail) {
+      setLastGroupId(groupId);
+    }
+  }, [detail, groupId]);
 
   const rightElement = (
     <div className="flex items-center gap-1">

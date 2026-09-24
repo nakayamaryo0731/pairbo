@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
@@ -10,6 +10,7 @@ import { GroupListSkeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { NotificationBell } from "@/components/notifications";
 import { trackEvent } from "@/lib/analytics";
+import { getLastGroupId } from "@/lib/lastGroup";
 
 function GroupsContent() {
   const router = useRouter();
@@ -18,43 +19,45 @@ function GroupsContent() {
 
   const { isAuthenticated, isLoading } = useConvexAuth();
   const ensureUser = useMutation(api.users.ensureUser);
-  const [isUserReady, setIsUserReady] = useState(false);
 
-  const me = useQuery(api.users.getMe, isUserReady ? {} : "skip");
-  const groups = useQuery(api.groups.listMyGroups, isUserReady ? {} : "skip");
+  const me = useQuery(api.users.getMe, isAuthenticated ? {} : "skip");
+  const groups = useQuery(
+    api.groups.listMyGroups,
+    isAuthenticated ? {} : "skip",
+  );
 
+  // 最後に開いたグループへ、クエリ結果を待たずに即遷移する
+  const [redirectingToLastGroup] = useState(
+    () => !showList && getLastGroupId() !== null,
+  );
   useEffect(() => {
-    if (!isAuthenticated) {
-      return;
+    if (!redirectingToLastGroup) return;
+    const lastGroupId = getLastGroupId();
+    if (lastGroupId) {
+      router.replace(`/groups/${lastGroupId}`);
     }
+  }, [redirectingToLastGroup, router]);
 
-    let cancelled = false;
-    ensureUser()
-      .then(() => {
-        if (!cancelled) {
-          setIsUserReady(true);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-      setIsUserReady(false);
-    };
-  }, [isAuthenticated, ensureUser]);
+  // 初回サインイン時のみ: usersレコードを作成（getMeがnull = 未作成）
+  const ensureUserCalledRef = useRef(false);
+  useEffect(() => {
+    if (me !== null || ensureUserCalledRef.current) return;
+    ensureUserCalledRef.current = true;
+    ensureUser().catch(() => {});
+  }, [me, ensureUser]);
 
   // サインアップ直後の GA イベント送信
   useEffect(() => {
-    if (searchParams.get("from") === "signup" && isUserReady) {
+    if (searchParams.get("from") === "signup" && me) {
       trackEvent("sign_up", { method: "clerk" });
       router.replace("/groups", { scroll: false });
     }
-  }, [searchParams, isUserReady, router]);
+  }, [searchParams, me, router]);
 
   // 自動遷移処理（?list=true の場合はスキップ）
   useEffect(() => {
-    if (showList) return;
-    if (groups === undefined || me === undefined) return;
+    if (showList || redirectingToLastGroup) return;
+    if (groups === undefined || !me) return;
     if (groups.length === 0) return;
 
     if (groups.length === 1) {
@@ -68,7 +71,7 @@ function GroupsContent() {
         router.replace(`/groups/${defaultGroup._id}`);
       }
     }
-  }, [groups, me, router, showList]);
+  }, [groups, me, router, showList, redirectingToLastGroup]);
 
   if (isLoading) {
     return (
@@ -90,18 +93,16 @@ function GroupsContent() {
 
   // ローディング中または自動遷移中（?list=true の場合は自動遷移しない）
   const isRedirecting =
-    !showList &&
-    groups !== undefined &&
-    me !== undefined &&
-    (groups.length === 1 ||
-      (me.defaultGroupId && groups.some((g) => g._id === me.defaultGroupId)));
+    redirectingToLastGroup ||
+    (!showList &&
+      groups !== undefined &&
+      !!me &&
+      (groups.length === 1 ||
+        (me.defaultGroupId &&
+          groups.some((g) => g._id === me.defaultGroupId))));
 
-  if (
-    !isUserReady ||
-    groups === undefined ||
-    me === undefined ||
-    isRedirecting
-  ) {
+  // me == null はユーザー作成中（ensureUser実行中）
+  if (groups === undefined || me == null || isRedirecting) {
     return (
       <div className="flex min-h-screen flex-col">
         <AppHeader

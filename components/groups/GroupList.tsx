@@ -13,6 +13,7 @@ import { DeleteGroupDialog } from "./DeleteGroupDialog";
 import { Button } from "@/components/ui/button";
 import { GroupListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { setLastGroupId } from "@/lib/lastGroup";
 
 type Group = {
   _id: Id<"groups">;
@@ -59,10 +60,14 @@ export function GroupList() {
   const handleSetDefault = async (groupId: Id<"groups">) => {
     const isCurrentDefault = me?.defaultGroupId === groupId;
     await setDefaultGroup({ groupId: isCurrentDefault ? null : groupId });
+    // 次回起動の即時遷移先をデフォルト設定と揃える
+    if (!isCurrentDefault) {
+      setLastGroupId(groupId);
+    }
   };
 
-  // ローディング中
-  if (groups === undefined || me === undefined) {
+  // ローディング中（me == null はユーザー作成中も含む）
+  if (groups === undefined || me == null) {
     return <GroupListSkeleton />;
   }
 

@@ -38,6 +38,7 @@ import { useInlineEdit } from "@/hooks/useInlineEdit";
 import { useGroupPremium } from "@/hooks/useGroupPremium";
 import { InlineEditText, InlineEditDisplay } from "@/components/ui/InlineEdit";
 import { APP_VERSION } from "@/lib/version";
+import { setLastGroupId } from "@/lib/lastGroup";
 import { readTrialState } from "@/lib/trial";
 import type { ClosingDay } from "@/convex/domain/group/types";
 
@@ -120,6 +121,10 @@ export function GroupSettings({
 
   const handleSetDefault = async (checked: boolean) => {
     await setDefaultGroup({ groupId: checked ? group._id : null });
+    // 次回起動の即時遷移先をデフォルト設定と揃える
+    if (checked) {
+      setLastGroupId(group._id);
+    }
   };
 
   const myMember = members.find((m) => m.isMe);
