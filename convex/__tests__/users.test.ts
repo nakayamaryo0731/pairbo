@@ -152,9 +152,17 @@ describe("users", () => {
 
       const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
 
-      expect(me).toBeDefined();
-      expect(me.displayName).toBe(testIdentity.name);
-      expect(me.defaultGroupId).toBeUndefined();
+      expect(me).not.toBeNull();
+      expect(me?.displayName).toBe(testIdentity.name);
+      expect(me?.defaultGroupId).toBeUndefined();
+    });
+
+    test("ユーザー未作成の場合はnullが返る", async () => {
+      const t = convexTest(schema, modules);
+
+      const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
+
+      expect(me).toBeNull();
     });
 
     test("認証なしではエラーになる", async () => {
@@ -177,9 +185,9 @@ describe("users", () => {
       const after = Date.now();
 
       const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
-      expect(me.pwaOnboardingCompletedAt).toBeDefined();
-      expect(me.pwaOnboardingCompletedAt!).toBeGreaterThanOrEqual(before);
-      expect(me.pwaOnboardingCompletedAt!).toBeLessThanOrEqual(after);
+      expect(me?.pwaOnboardingCompletedAt).toBeDefined();
+      expect(me!.pwaOnboardingCompletedAt!).toBeGreaterThanOrEqual(before);
+      expect(me!.pwaOnboardingCompletedAt!).toBeLessThanOrEqual(after);
     });
 
     test("初回のgetMeではpwaOnboardingCompletedAtはundefined", async () => {
@@ -188,7 +196,7 @@ describe("users", () => {
       await t.withIdentity(testIdentity).mutation(api.users.ensureUser, {});
       const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
 
-      expect(me.pwaOnboardingCompletedAt).toBeUndefined();
+      expect(me?.pwaOnboardingCompletedAt).toBeUndefined();
     });
 
     test("認証なしではエラーになる", async () => {
@@ -221,7 +229,7 @@ describe("users", () => {
 
       // 確認
       const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
-      expect(me.defaultGroupId).toBe(groupId);
+      expect(me?.defaultGroupId).toBe(groupId);
     });
 
     test("デフォルトグループを解除できる", async () => {
@@ -246,7 +254,7 @@ describe("users", () => {
         .mutation(api.users.setDefaultGroup, { groupId: null });
 
       const me = await t.withIdentity(testIdentity).query(api.users.getMe, {});
-      expect(me.defaultGroupId).toBeUndefined();
+      expect(me?.defaultGroupId).toBeUndefined();
     });
 
     test("メンバーでないグループはデフォルトに設定できない", async () => {

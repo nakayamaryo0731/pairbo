@@ -47,6 +47,14 @@ async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
 }
 
 /**
+ * 認証済みだがユーザーレコードが未作成の可能性があるコンテキストの型（Query用）
+ */
+export type OptionalAuthQueryCtx = QueryCtx & {
+  user: AuthUser | null;
+  logger: Logger;
+};
+
+/**
  * Query用の認証ミドルウェア
  *
  * ユーザーが存在しない場合はエラーを投げる（読み取り専用のため作成不可）
@@ -114,6 +122,27 @@ const authMutationMiddleware = {
 };
 
 /**
+ * Query用の認証ミドルウェア（ユーザー未作成を許容）
+ *
+ * Clerk認証は必須だが、usersレコードが未作成の場合は user: null でhandlerに渡す。
+ * 初回サインイン直後（ensureUser完了前）でも呼び出せるクエリに使う。
+ */
+const optionalAuthQueryMiddleware = {
+  args: {},
+  input: async (
+    ctx: QueryCtx,
+    args: Record<string, unknown>,
+  ): Promise<{
+    ctx: OptionalAuthQueryCtx;
+    args: Record<string, unknown>;
+  }> => {
+    const { user } = await getAuthenticatedUser(ctx);
+    const logger = new Logger(user?._id);
+    return { ctx: { ...ctx, user, logger }, args };
+  },
+};
+
+/**
  * 認証必須のQuery
  *
  * 注意: 初回ログイン時はユーザーが存在しないためエラーになる。
@@ -129,6 +158,16 @@ const authMutationMiddleware = {
  * });
  */
 export const authQuery = customQuery(query, authQueryMiddleware);
+
+/**
+ * 認証必須だがユーザー未作成を許容するQuery
+ *
+ * ctx.user が null の場合のフォールバック値をhandler側で返すこと。
+ */
+export const optionalAuthQuery = customQuery(
+  query,
+  optionalAuthQueryMiddleware,
+);
 
 /**
  * 認証必須のMutation
