@@ -87,8 +87,8 @@ export const releases: Release[] = [
     autoOpen: true,
   },
   {
-    id: "2026-09-23-zero-amount-expense",
-    publishedAt: Date.UTC(2026, 8, 23),
+    id: "2026-09-24-zero-amount-expense",
+    publishedAt: Date.UTC(2026, 8, 24),
     title: "0円の支出を記録できるようになりました",
     body: "ポイントやクーポンで支払った分、出来事の備忘録など、実際の支払いがない記録を残せるようになりました。\n金額を0円にして登録すると、精算金額には影響しません。",
     autoOpen: true,
