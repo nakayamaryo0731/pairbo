@@ -18,7 +18,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: IS_STAGING ? "Pairbo STG" : "Pairbo - 2人のための共有家計簿",
     short_name: IS_STAGING ? "Pairbo STG" : "Pairbo",
     description: "割り勘・傾斜折半ができる共有家計簿アプリ",
-    start_url: "/",
+    // ログイン済みユーザーがLPを経由せずアプリ本体へ直行できるようにする
+    start_url: "/groups",
     scope: "/",
     display: "standalone",
     background_color: "#ffffff",
