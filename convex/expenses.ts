@@ -554,14 +554,14 @@ export const listByCategoryAllTime = authQuery({
       throw new ConvexError("カテゴリが見つかりません");
     }
 
-    // 全支出を取得（カテゴリでフィルタ）
-    const allExpenses = await ctx.db
+    // カテゴリのインデックスで取得（カテゴリはグループ所属確認済み。groupId一致は防御的チェック）
+    const allCategoryExpenses = await ctx.db
       .query("expenses")
-      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
+      .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId))
       .collect();
 
-    const categoryExpenses = allExpenses
-      .filter((e) => e.categoryId === args.categoryId)
+    const categoryExpenses = allCategoryExpenses
+      .filter((e) => e.groupId === args.groupId)
       .sort(
         (a, b) =>
           b.date.localeCompare(a.date) || b._creationTime - a._creationTime,

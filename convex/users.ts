@@ -1,5 +1,5 @@
 import { v, ConvexError } from "convex/values";
-import { authMutation, authQuery } from "./lib/auth";
+import { authMutation, optionalAuthQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
 
 const MAX_DISPLAY_NAME_LENGTH = 20;
@@ -52,10 +52,14 @@ export const updateDisplayName = authMutation({
 
 /**
  * 現在のユーザー情報取得
+ *
+ * 初回サインイン直後などusersレコード未作成の場合はnullを返す
+ * （呼び出し側がensureUserを実行するトリガーになる）。
  */
-export const getMe = authQuery({
+export const getMe = optionalAuthQuery({
   args: {},
   handler: async (ctx) => {
+    if (!ctx.user) return null;
     return {
       _id: ctx.user._id,
       displayName: ctx.user.displayName,

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ConvexClientProvider from "@/components/ConvexClientProvider";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { PwaInstallPromptProvider } from "@/components/pwa/PwaInstallPromptProvider";
 import { IS_STAGING } from "@/lib/appEnv";
@@ -204,11 +203,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <GoogleAnalytics />
-        <ConvexClientProvider>
-          <PwaInstallPromptProvider>
-            <div className="pb-14">{children}</div>
-          </PwaInstallPromptProvider>
-        </ConvexClientProvider>
+        <PwaInstallPromptProvider>
+          <div className="pb-14">{children}</div>
+        </PwaInstallPromptProvider>
       </body>
     </html>
   );

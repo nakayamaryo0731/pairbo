@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { GroupList } from "@/components/groups";
@@ -10,6 +10,7 @@ import { GroupListSkeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { NotificationBell } from "@/components/notifications";
 import { trackEvent } from "@/lib/analytics";
+import { getLastGroupId } from "@/lib/lastGroup";
 
 function GroupsContent() {
   const router = useRouter();
@@ -17,44 +18,61 @@ function GroupsContent() {
   const showList = searchParams.get("list") === "true";
 
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const { userId } = useAuth();
   const ensureUser = useMutation(api.users.ensureUser);
-  const [isUserReady, setIsUserReady] = useState(false);
 
-  const me = useQuery(api.users.getMe, isUserReady ? {} : "skip");
-  const groups = useQuery(api.groups.listMyGroups, isUserReady ? {} : "skip");
+  const me = useQuery(api.users.getMe, isAuthenticated ? {} : "skip");
+  const groups = useQuery(
+    api.groups.listMyGroups,
+    isAuthenticated ? {} : "skip",
+  );
 
+  // 最後に開いたグループへ、クエリ結果を待たずに即遷移する
+  // （サインアップ直後はGAイベント送信を待つ必要があるため対象外）
+  const isFromSignup = searchParams.get("from") === "signup";
+  const [redirectingToLastGroup] = useState(
+    () =>
+      !showList &&
+      !isFromSignup &&
+      userId != null &&
+      getLastGroupId(userId) !== null,
+  );
   useEffect(() => {
-    if (!isAuthenticated) {
-      return;
+    if (!redirectingToLastGroup || userId == null) return;
+    const lastGroupId = getLastGroupId(userId);
+    if (lastGroupId) {
+      router.replace(`/groups/${lastGroupId}`);
     }
+  }, [redirectingToLastGroup, userId, router]);
 
-    let cancelled = false;
+  // 初回サインイン時のみ: usersレコードを作成（getMeがnull = 未作成）。
+  // 失敗時はスケルトンのまま固まらないよう上限付きでリトライする
+  const [ensureUserAttempts, setEnsureUserAttempts] = useState(0);
+  const ensureUserInFlightRef = useRef(false);
+  useEffect(() => {
+    if (me !== null || ensureUserInFlightRef.current) return;
+    if (ensureUserAttempts >= 3) return;
+    ensureUserInFlightRef.current = true;
     ensureUser()
-      .then(() => {
-        if (!cancelled) {
-          setIsUserReady(true);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-      setIsUserReady(false);
-    };
-  }, [isAuthenticated, ensureUser]);
+      .catch(() => {})
+      .finally(() => {
+        ensureUserInFlightRef.current = false;
+        setEnsureUserAttempts((attempts) => attempts + 1);
+      });
+  }, [me, ensureUser, ensureUserAttempts]);
 
   // サインアップ直後の GA イベント送信
   useEffect(() => {
-    if (searchParams.get("from") === "signup" && isUserReady) {
+    if (searchParams.get("from") === "signup" && me) {
       trackEvent("sign_up", { method: "clerk" });
       router.replace("/groups", { scroll: false });
     }
-  }, [searchParams, isUserReady, router]);
+  }, [searchParams, me, router]);
 
   // 自動遷移処理（?list=true の場合はスキップ）
   useEffect(() => {
-    if (showList) return;
-    if (groups === undefined || me === undefined) return;
+    if (showList || redirectingToLastGroup) return;
+    if (groups === undefined || !me) return;
     if (groups.length === 0) return;
 
     if (groups.length === 1) {
@@ -68,7 +86,7 @@ function GroupsContent() {
         router.replace(`/groups/${defaultGroup._id}`);
       }
     }
-  }, [groups, me, router, showList]);
+  }, [groups, me, router, showList, redirectingToLastGroup]);
 
   if (isLoading) {
     return (
@@ -90,18 +108,16 @@ function GroupsContent() {
 
   // ローディング中または自動遷移中（?list=true の場合は自動遷移しない）
   const isRedirecting =
-    !showList &&
-    groups !== undefined &&
-    me !== undefined &&
-    (groups.length === 1 ||
-      (me.defaultGroupId && groups.some((g) => g._id === me.defaultGroupId)));
+    redirectingToLastGroup ||
+    (!showList &&
+      groups !== undefined &&
+      !!me &&
+      (groups.length === 1 ||
+        (me.defaultGroupId &&
+          groups.some((g) => g._id === me.defaultGroupId))));
 
-  if (
-    !isUserReady ||
-    groups === undefined ||
-    me === undefined ||
-    isRedirecting
-  ) {
+  // me == null はユーザー作成中（ensureUser実行中）
+  if (groups === undefined || me == null || isRedirecting) {
     return (
       <div className="flex min-h-screen flex-col">
         <AppHeader

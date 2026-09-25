@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { authMutation, authQuery } from "./lib/auth";
+import { authMutation, authQuery, optionalAuthQuery } from "./lib/auth";
 import { requireGroupMember, requireGroupOwner } from "./lib/authorization";
 import { PRESET_CATEGORIES } from "./lib/presetCategories";
 import { getOrThrow } from "./lib/dataHelpers";
@@ -75,13 +75,18 @@ export const create = authMutation({
 
 /**
  * ユーザーの所属グループ一覧取得
+ *
+ * usersレコード未作成（初回サインイン直後）の場合は空配列を返す。
  */
-export const listMyGroups = authQuery({
+export const listMyGroups = optionalAuthQuery({
   args: {},
   handler: async (ctx) => {
+    if (!ctx.user) return [];
+
+    const userId = ctx.user._id;
     const memberships = await ctx.db
       .query("groupMembers")
-      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
     const groupIds = memberships.map((m) => m.groupId);

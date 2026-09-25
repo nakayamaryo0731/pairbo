@@ -13,6 +13,8 @@ import { DeleteGroupDialog } from "./DeleteGroupDialog";
 import { Button } from "@/components/ui/button";
 import { GroupListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { setLastGroupId } from "@/lib/lastGroup";
+import { useAuth } from "@clerk/nextjs";
 
 type Group = {
   _id: Id<"groups">;
@@ -25,6 +27,7 @@ export function GroupList() {
   const router = useRouter();
   const groups = useQuery(api.groups.listMyGroups);
   const me = useQuery(api.users.getMe);
+  const { userId: clerkUserId } = useAuth();
   const updateName = useMutation(api.groups.updateName);
   const removeGroup = useMutation(api.groups.remove);
   const setDefaultGroup = useMutation(api.users.setDefaultGroup);
@@ -59,10 +62,14 @@ export function GroupList() {
   const handleSetDefault = async (groupId: Id<"groups">) => {
     const isCurrentDefault = me?.defaultGroupId === groupId;
     await setDefaultGroup({ groupId: isCurrentDefault ? null : groupId });
+    // 次回起動の即時遷移先をデフォルト設定と揃える
+    if (!isCurrentDefault && clerkUserId) {
+      setLastGroupId(clerkUserId, groupId);
+    }
   };
 
-  // ローディング中
-  if (groups === undefined || me === undefined) {
+  // ローディング中（me == null はユーザー作成中も含む）
+  if (groups === undefined || me == null) {
     return <GroupListSkeleton />;
   }
 

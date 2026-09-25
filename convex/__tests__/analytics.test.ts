@@ -208,6 +208,54 @@ describe("analytics", () => {
       expect(result.trend.every((t) => t.amount === 0)).toBe(true);
     });
 
+    test("取得範囲の境界日の支出が正しく集計される", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      // 締め日25日・2025年2月から3ヶ月分 → 範囲は 2024-11-26 〜 2025-02-25
+      const expenseDates = [
+        { date: "2024-11-25", amount: 1 }, // 範囲外（前日）
+        { date: "2024-11-26", amount: 10 }, // 最古期間の開始日
+        { date: "2025-02-25", amount: 100 }, // 最新期間の終了日
+        { date: "2025-02-26", amount: 1000 }, // 範囲外（翌日）
+      ];
+      for (const { date, amount } of expenseDates) {
+        await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+          groupId,
+          amount,
+          categoryId,
+          paidBy: payerId,
+          date,
+        });
+      }
+
+      const result = await t
+        .withIdentity(userAIdentity)
+        .query(api.analytics.getMonthlyTrend, {
+          groupId,
+          year: 2025,
+          month: 2,
+          months: 3,
+        });
+
+      expect(result.trend).toHaveLength(3);
+      expect(result.trend[0].amount).toBe(10); // 2024年12月分
+      expect(result.trend[1].amount).toBe(0); // 2025年1月分
+      expect(result.trend[2].amount).toBe(100); // 2025年2月分
+    });
+
     test("非メンバーはアクセスできない", async () => {
       const t = convexTest(schema, modules);
 
@@ -229,6 +277,69 @@ describe("analytics", () => {
           month: 1,
         }),
       ).rejects.toThrow("このグループにアクセスする権限がありません");
+    });
+  });
+
+  describe("getYearlyCategoryBreakdown", () => {
+    test("年の境界日の支出が正しく集計される", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const detail = await t
+        .withIdentity(userAIdentity)
+        .query(api.groups.getDetail, { groupId });
+
+      const categoryId = detail.categories[0]._id;
+      const payerId = detail.members[0].userId;
+
+      // Premiumサブスクリプションを設定（年次分析はPremium機能）
+      const now = Date.now();
+      await t.run(async (ctx) => {
+        await ctx.db.insert("subscriptions", {
+          userId: payerId,
+          stripeCustomerId: "cus_test",
+          stripeSubscriptionId: "sub_test",
+          plan: "premium",
+          status: "active",
+          currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+          currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+          cancelAtPeriodEnd: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      const expenseDates = [
+        { date: "2024-12-31", amount: 1 }, // 範囲外（前年末）
+        { date: "2025-01-01", amount: 10 }, // 年初
+        { date: "2025-12-31", amount: 100 }, // 年末
+        { date: "2026-01-01", amount: 1000 }, // 範囲外（翌年初）
+      ];
+      for (const { date, amount } of expenseDates) {
+        await t.withIdentity(userAIdentity).mutation(api.expenses.create, {
+          groupId,
+          amount,
+          categoryId,
+          paidBy: payerId,
+          date,
+        });
+      }
+
+      const result = await t
+        .withIdentity(userAIdentity)
+        .query(api.analytics.getYearlyCategoryBreakdown, {
+          groupId,
+          year: 2025,
+        });
+
+      expect(result.totalAmount).toBe(110);
+      expect(result.breakdown).toHaveLength(1);
+      expect(result.breakdown[0].amount).toBe(110);
     });
   });
 

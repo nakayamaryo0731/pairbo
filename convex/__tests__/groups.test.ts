@@ -189,6 +189,16 @@ describe("groups", () => {
       expect(groups).toHaveLength(2);
     });
 
+    test("ユーザー未作成の場合は空配列が返る", async () => {
+      const t = convexTest(schema, modules);
+
+      const groups = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.listMyGroups, {});
+
+      expect(groups).toEqual([]);
+    });
+
     test("グループ名と説明が正しく返される", async () => {
       const t = convexTest(schema, modules);
 

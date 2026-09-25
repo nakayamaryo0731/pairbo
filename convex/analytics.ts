@@ -77,19 +77,11 @@ export const getYearlyCategoryBreakdown = authQuery({
       };
     }
 
-    // 年の開始日と終了日を計算
-    const startDate = `${args.year}-01-01`;
-    const endDate = `${args.year}-12-31`;
-
     // 年間の支出を取得
-    const allExpenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
-      .collect();
-
-    const expenses = allExpenses.filter(
-      (e) => e.date >= startDate && e.date <= endDate,
-    );
+    const expenses = await getExpensesByPeriod(ctx, args.groupId, {
+      startDate: `${args.year}-01-01`,
+      endDate: `${args.year}-12-31`,
+    });
 
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -132,21 +124,14 @@ export const getMonthlyTrend = authQuery({
     );
 
     const monthsToFetch = args.months ?? 6;
-    const trend: {
+
+    // 過去Nヶ月分の期間を計算（古い月から順）
+    const periods: {
       year: number;
       month: number;
-      label: string;
-      amount: number;
+      period: { startDate: string; endDate: string };
       isCurrent: boolean;
     }[] = [];
-
-    // 全支出を一度に取得（効率化のため）
-    const allExpenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
-      .collect();
-
-    // 過去N ヶ月分の期間を計算
     for (let i = monthsToFetch - 1; i >= 0; i--) {
       let targetYear = args.year;
       let targetMonth = args.month - i;
@@ -157,27 +142,37 @@ export const getMonthlyTrend = authQuery({
         targetYear -= 1;
       }
 
-      const period = getSettlementPeriod(
-        group.closingDay,
-        targetYear,
-        targetMonth,
-      );
-      const label = getSettlementLabel(targetYear, targetMonth);
-
-      // 期間内の支出を集計
-      const periodExpenses = allExpenses.filter(
-        (e) => e.date >= period.startDate && e.date <= period.endDate,
-      );
-      const amount = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
-
-      trend.push({
+      periods.push({
         year: targetYear,
         month: targetMonth,
-        label,
-        amount,
+        period: getSettlementPeriod(group.closingDay, targetYear, targetMonth),
         isCurrent: i === 0,
       });
     }
+
+    if (periods.length === 0) {
+      return { trend: [] };
+    }
+
+    // N期間は連続区間なので、最古の開始日〜最新の終了日の1回のrange検索で全件取得できる
+    const expenses = await getExpensesByPeriod(ctx, args.groupId, {
+      startDate: periods[0].period.startDate,
+      endDate: periods[periods.length - 1].period.endDate,
+    });
+
+    const trend = periods.map(({ year, month, period, isCurrent }) => {
+      const amount = expenses
+        .filter((e) => e.date >= period.startDate && e.date <= period.endDate)
+        .reduce((sum, e) => sum + e.amount, 0);
+
+      return {
+        year,
+        month,
+        label: getSettlementLabel(year, month),
+        amount,
+        isCurrent,
+      };
+    });
 
     return { trend };
   },
@@ -261,19 +256,11 @@ export const getYearlyTagBreakdown = authQuery({
       };
     }
 
-    // 年の開始日と終了日を計算
-    const startDate = `${args.year}-01-01`;
-    const endDate = `${args.year}-12-31`;
-
     // 年間の支出を取得
-    const allExpenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_group_and_date", (q) => q.eq("groupId", args.groupId))
-      .collect();
-
-    const expenses = allExpenses.filter(
-      (e) => e.date >= startDate && e.date <= endDate,
-    );
+    const expenses = await getExpensesByPeriod(ctx, args.groupId, {
+      startDate: `${args.year}-01-01`,
+      endDate: `${args.year}-12-31`,
+    });
 
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
 
