@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { IS_STAGING } from "@/lib/appEnv";
+import { iconUrl } from "@/lib/appIcons";
 
-const ICON_DIR = IS_STAGING ? "/icons/staging" : "/icons";
 const ICON_SIZES = [
   "72x72",
   "96x96",
@@ -29,12 +29,12 @@ export default function manifest(): MetadataRoute.Manifest {
     prefer_related_applications: false,
     icons: [
       ...ICON_SIZES.map((sizes) => ({
-        src: `${ICON_DIR}/icon-${sizes}.png`,
+        src: iconUrl(`icon-${sizes}.png`),
         sizes,
         type: "image/png",
       })),
       {
-        src: `${ICON_DIR}/icon-maskable-512x512.png`,
+        src: iconUrl("icon-maskable-512x512.png"),
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

@@ -4,6 +4,7 @@ import "./globals.css";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { PwaInstallPromptProvider } from "@/components/pwa/PwaInstallPromptProvider";
 import { IS_STAGING } from "@/lib/appEnv";
+import { iconUrl } from "@/lib/appIcons";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,7 +61,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   ...(IS_STAGING && {
-    icons: { icon: "/icons/staging/favicon-32x32.png" },
+    icons: { icon: iconUrl("favicon-32x32.png") },
   }),
 };
 
@@ -80,14 +81,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <link
-          rel="apple-touch-icon"
-          href={
-            IS_STAGING
-              ? "/icons/staging/apple-touch-icon.png"
-              : "/icons/apple-touch-icon.png"
-          }
-        />
+        <link rel="apple-touch-icon" href={iconUrl("apple-touch-icon.png")} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
