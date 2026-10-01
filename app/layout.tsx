@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { SerwistProvider } from "@serwist/turbopack/react";
 import { PwaInstallPromptProvider } from "@/components/pwa/PwaInstallPromptProvider";
 import { IS_STAGING } from "@/lib/appEnv";
 import { iconUrl } from "@/lib/appIcons";
@@ -197,9 +198,17 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <GoogleAnalytics />
-        <PwaInstallPromptProvider>
-          <div className="pb-14">{children}</div>
-        </PwaInstallPromptProvider>
+        <SerwistProvider
+          swUrl="/serwist/sw.js"
+          disable={process.env.NODE_ENV !== "production"}
+          // 認証後ページのHTMLをキャッシュしない・オンライン復帰時の自動リロードで入力中の内容を失わないようにする
+          cacheOnNavigation={false}
+          reloadOnOnline={false}
+        >
+          <PwaInstallPromptProvider>
+            <div className="pb-14">{children}</div>
+          </PwaInstallPromptProvider>
+        </SerwistProvider>
       </body>
     </html>
   );
