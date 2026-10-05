@@ -41,13 +41,13 @@ const painPoints = [
   {
     icon: CreditCard,
     title: "共同口座やカードを|作るのが面倒",
-    description: "お財布は別々がいいけど、|共有の支出管理が|うまくいかない。",
+    description: "お財布は別々がいいけど、|共有の支出を|うまく管理できない。",
   },
   {
     icon: Smartphone,
     title: "同じアプリを|入れてもらうのが手間",
     description:
-      "相手のスマホに合うアプリを探して、|インストールしてもらって…|ハードルが高い。",
+      "相手のスマホに合うアプリを探して、|インストールしてもらうのは|ハードルが高い。",
   },
   {
     icon: Calculator,
@@ -92,13 +92,14 @@ const features = [
   {
     icon: Scale,
     title: "傾斜折半",
-    description: "均等・割合・|金額指定・全額負担。|ふたりに合った方法で。",
+    description:
+      "均等・割合・|金額指定・全額負担から|ふたりに合った方法を選べる。",
     premium: true,
   },
   {
     icon: Calculator,
     title: "自動精算",
-    description: "月ごとに自動計算。|翌月への繰り越しも対応。",
+    description: "月ごとに自動計算。|翌月への繰り越しもできる。",
     premium: false,
   },
   {
@@ -116,7 +117,7 @@ const features = [
   {
     icon: Zap,
     title: "かんたん記録",
-    description: "金額とカテゴリを選ぶだけ。|3タップで記録完了。",
+    description: "金額を入れて|カテゴリを選ぶだけ。|3タップで記録完了。",
     premium: false,
   },
   {
@@ -128,7 +129,8 @@ const features = [
   {
     icon: Globe,
     title: "Webアプリ + PWA",
-    description: "PCでもスマホでも|同じ体験。|ホーム画面追加でアプリ化。",
+    description:
+      "PCでもスマホでも|同じように使える。|ホーム画面に追加すれば|アプリのように使える。",
     premium: false,
   },
 ];
@@ -145,14 +147,19 @@ const comparisonRows: {
 }[] = [
   { label: "Webブラウザで利用", pairbo: "yes", app: "partial", sheet: "yes" },
   {
-    label: "ホーム画面追加でアプリ化（PWA）",
+    label: "ホーム画面に追加してアプリ化（PWA）",
     pairbo: "yes",
     app: "no",
     sheet: "no",
   },
   { label: "URLだけで相手を招待", pairbo: "yes", app: "no", sheet: "partial" },
-  { label: "PC・スマホ同じ体験", pairbo: "yes", app: "partial", sheet: "yes" },
-  { label: "常に最新版（更新不要）", pairbo: "yes", app: "no", sheet: "yes" },
+  {
+    label: "PC・スマホで同じように使える",
+    pairbo: "yes",
+    app: "partial",
+    sheet: "yes",
+  },
+  { label: "更新しなくても常に最新版", pairbo: "yes", app: "no", sheet: "yes" },
   {
     label: "ストレージをほぼ使わない",
     pairbo: "yes",
@@ -173,13 +180,13 @@ const testimonials = [
     persona: "新婚夫婦（30代）",
     scene: "生活費を別会計で管理",
     quote:
-      "共有口座を|作らなくても大丈夫。|URLを送るだけで|始められて楽すぎる。",
+      "共同口座を|作らなくても大丈夫。|URLを送るだけで|始められて楽すぎる。",
     accent: "blue" as const,
   },
   {
     persona: "シェアハウス（20代）",
     scene: "光熱費・日用品の割り勘",
-    quote: "月末の精算が|自動で出るから、|もめることがなくなった。",
+    quote: "月末の精算額が|自動で出るから、|もめることがなくなった。",
     accent: "rose" as const,
   },
 ];
@@ -187,7 +194,7 @@ const testimonials = [
 const faqs = [
   {
     q: "本当に無料で使えますか？",
-    a: "基本機能はすべて無料です。傾斜折半や定期支出の自動記録、詳細分析が使えるPremiumプラン（月額¥100・年額¥1,000）もあります。Premiumはどちらか1人の課金でグループ全員が使えます。",
+    a: "基本機能はすべて無料です。傾斜折半や定期支出の自動記録、詳細分析が使えるPremiumプラン（月額¥100・年額¥1,000）もあります。Premiumは、どちらか1人が課金すればグループ全員が使えます。",
   },
   {
     q: "アプリのインストールは|必要ですか？",
@@ -198,11 +205,11 @@ const faqs = [
     a: "均等割り・割合指定（傾斜折半）・金額指定・全額負担の4つの方法から選べます。収入差があるカップルでも、ふたりに合った負担バランスを設定できます。",
   },
   {
-    q: "共有口座やクレジットカードは|必要ですか？",
+    q: "共同口座やクレジットカードは|必要ですか？",
     a: "いいえ。お財布は別々のままでOKです。それぞれが支払った支出を記録し、月ごとに差額を精算する仕組みです。",
   },
   {
-    q: "家賃やサブスクなど、|毎月決まった支出は？",
+    q: "家賃やサブスクなど、|毎月決まった支出は|どう記録しますか？",
     a: "定期支出として登録すると、毎月決まった日に自動で記録されます（Premium機能）。",
   },
   {
@@ -215,14 +222,14 @@ const faqs = [
   },
   {
     q: "PCでも使えますか？",
-    a: "はい。ブラウザがあればPCでもスマホでもどこでも同じように使えます。",
+    a: "はい。ブラウザがあれば、PCでもスマホでも同じように使えます。",
   },
   {
-    q: "2人以上でも使えますか？",
+    q: "3人以上でも使えますか？",
     a: "はい。シェアハウスなど複数人のグループにも対応しています。",
   },
   {
-    q: "データのセキュリティは？",
+    q: "データは安全に管理されていますか？",
     a: "データは暗号化して保存しています。クレジットカード情報はStripe社が安全に管理します。",
   },
 ];
@@ -407,7 +414,7 @@ function HeroSection() {
           </p>
           <p className="mb-4">
             <span className="inline-block rounded-full bg-[#FDEAEF] px-3.5 py-1.5 text-[12.5px] font-bold text-[#B34D6B]">
-              {phrases("同棲カップル・夫婦のための|無料共有家計簿")}
+              {phrases("同棲カップル・夫婦のための|無料の共有家計簿")}
             </span>
           </p>
 
@@ -517,7 +524,7 @@ function SolutionSection() {
       <div className="mx-auto max-w-3xl">
         <Reveal>
           <h2 className="mb-2 text-center font-maru text-2xl font-black">
-            {phrases("Pairbo なら、|すべて解決。")}
+            {phrases("Pairboなら、|すべて解決。")}
           </h2>
           <p className="mb-10 text-center text-[#8D7F85]">
             {phrases("お財布は別々のまま、|支出だけフェアに管理")}
@@ -695,7 +702,7 @@ const steps = [
     step: "2",
     title: "支出を記録",
     description:
-      "買い物したら金額とカテゴリを|選んで記録。|負担方法もその場で選べる。",
+      "買い物したら金額を入れて、|カテゴリを選んで記録。|負担方法もその場で選べる。",
     visual: MiniExpenseForm,
   },
   {
@@ -790,7 +797,7 @@ function ComparisonSection() {
             {phrases("Webアプリだから|できること")}
           </h2>
           <p className="mb-10 text-center text-[#8D7F85]">
-            {phrases("ネイティブアプリにはない、|Pairbo ならではの強み")}
+            {phrases("ネイティブアプリにはない、|Pairboならではの強み")}
           </p>
         </Reveal>
 

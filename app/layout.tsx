@@ -135,12 +135,12 @@ export default function RootLayout({
                   name: "本当に無料で使えますか？",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "基本機能はすべて無料です。傾斜折半や定期支出の自動記録、詳細分析が使えるPremiumプラン（月額¥100・年額¥1,000）もあります。Premiumはどちらか1人の課金でグループ全員が使えます。",
+                    text: "基本機能はすべて無料です。傾斜折半や定期支出の自動記録、詳細分析が使えるPremiumプラン（月額¥100・年額¥1,000）もあります。Premiumは、どちらか1人が課金すればグループ全員が使えます。",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "家賃やサブスクなど、毎月決まった支出は？",
+                  name: "家賃やサブスクなど、毎月決まった支出はどう記録しますか？",
                   acceptedAnswer: {
                     "@type": "Answer",
                     text: "定期支出として登録すると、毎月決まった日に自動で記録されます（Premium機能）。",
@@ -164,7 +164,7 @@ export default function RootLayout({
                 },
                 {
                   "@type": "Question",
-                  name: "共有口座やクレジットカードは必要ですか？",
+                  name: "共同口座やクレジットカードは必要ですか？",
                   acceptedAnswer: {
                     "@type": "Answer",
                     text: "いいえ。お財布は別々のままでOKです。それぞれが支払った支出を記録し、月ごとに差額を精算する仕組みです。",
@@ -180,7 +180,7 @@ export default function RootLayout({
                 },
                 {
                   "@type": "Question",
-                  name: "データのセキュリティは？",
+                  name: "データは安全に管理されていますか？",
                   acceptedAnswer: {
                     "@type": "Answer",
                     text: "データは暗号化して保存しています。クレジットカード情報はStripe社が安全に管理します。",
