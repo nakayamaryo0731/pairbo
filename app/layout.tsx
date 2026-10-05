@@ -19,9 +19,6 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pairbo.app"),
-  alternates: {
-    canonical: "/",
-  },
   verification: {
     google: "WlzApyG_0w14M7XXCTaIrsShDFdFqfuK72W_w15m8kY",
   },
