@@ -4,6 +4,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/pricing",
   },
+  robots: { index: true, follow: true },
   title: "料金プラン | Pairbo - 同棲カップル向け共有家計簿",
   description:
     "Pairboの料金プラン。同棲の生活費管理に必要な基本機能はすべて無料。Premiumプラン（月額100円）で傾斜折半・詳細分析が利用可能。",
