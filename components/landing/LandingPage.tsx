@@ -258,7 +258,7 @@ export function LandingPage() {
 
 /* ========== ロゴ ========== */
 
-function PairDots({ size = "w-4 h-4" }: { size?: string }) {
+export function PairDots({ size = "w-4 h-4" }: { size?: string }) {
   return (
     <span className="inline-flex" aria-hidden>
       <span className={`${size} rounded-full bg-[#EE6B8D]`} />
@@ -714,7 +714,7 @@ const steps = [
   },
 ];
 
-function HowItWorksSection() {
+export function HowItWorksSection() {
   return (
     <section className="bg-[#FFF8F4] px-5 py-16">
       <div className="mx-auto max-w-2xl">
@@ -985,7 +985,7 @@ function FaqSection() {
 
 /* ========== 10. Footer ========== */
 
-function FooterSection() {
+export function FooterSection() {
   return (
     <footer className="bg-[#352B2F] px-5 py-8 text-[#B5A8AC]">
       <div className="mx-auto max-w-4xl">
@@ -1002,6 +1002,12 @@ function FooterSection() {
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-4 text-sm">
+            <Link
+              href="/guide/shared-wallet"
+              className="transition-colors hover:text-white"
+            >
+              共同財布アプリの選び方
+            </Link>
             <Link
               href="/privacy"
               className="transition-colors hover:text-white"
@@ -1047,7 +1053,7 @@ function FooterSection() {
 
 /* ========== Sticky CTA ========== */
 
-function StickyCta() {
+export function StickyCta() {
   return (
     <div className="pointer-events-none fixed right-0 bottom-14 left-0 z-40 px-4 pb-3 sm:hidden">
       <Link
