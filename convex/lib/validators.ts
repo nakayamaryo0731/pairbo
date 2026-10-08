@@ -83,6 +83,14 @@ export const subscriptionStatusValidator = v.union(
 );
 
 /**
+ * 課金間隔（Stripe Price の recurring.interval。Pairbo は月額・年額のみ）
+ */
+export const billingIntervalValidator = v.union(
+  v.literal("month"),
+  v.literal("year"),
+);
+
+/**
  * 問い合わせカテゴリ
  * - feature_request: 機能要望
  * - bug_report: 不具合報告

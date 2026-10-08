@@ -8,6 +8,7 @@ import {
 } from "./_generated/server";
 import { authMutation, authQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
+import { billingIntervalValidator } from "./lib/validators";
 import { isGroupPremium, isPremium } from "./lib/subscription";
 import { internal } from "./_generated/api";
 import Stripe from "stripe";
@@ -346,6 +347,7 @@ export const upsertSubscription = internalMutation({
       v.literal("past_due"),
       v.literal("trialing"),
     ),
+    billingInterval: v.optional(billingIntervalValidator),
     currentPeriodStart: v.number(),
     currentPeriodEnd: v.number(),
     cancelAtPeriodEnd: v.boolean(),
@@ -363,6 +365,7 @@ export const upsertSubscription = internalMutation({
         stripeSubscriptionId: args.stripeSubscriptionId,
         plan: args.plan,
         status: args.status,
+        billingInterval: args.billingInterval,
         currentPeriodStart: args.currentPeriodStart,
         currentPeriodEnd: args.currentPeriodEnd,
         cancelAtPeriodEnd: args.cancelAtPeriodEnd,
@@ -376,6 +379,7 @@ export const upsertSubscription = internalMutation({
         stripeSubscriptionId: args.stripeSubscriptionId,
         plan: args.plan,
         status: args.status,
+        billingInterval: args.billingInterval,
         currentPeriodStart: args.currentPeriodStart,
         currentPeriodEnd: args.currentPeriodEnd,
         cancelAtPeriodEnd: args.cancelAtPeriodEnd,
@@ -397,6 +401,7 @@ export const updateSubscriptionStatus = internalMutation({
     ),
     cancelAtPeriodEnd: v.optional(v.boolean()),
     currentPeriodEnd: v.optional(v.number()),
+    billingInterval: v.optional(billingIntervalValidator),
   },
   handler: async (ctx, args) => {
     const subscription = await ctx.db
@@ -427,6 +432,11 @@ export const updateSubscriptionStatus = internalMutation({
       updates.currentPeriodEnd = args.currentPeriodEnd;
     }
 
+    // Customer Portal で月額⇄年額を切り替えると customer.subscription.updated で届く
+    if (args.billingInterval !== undefined) {
+      updates.billingInterval = args.billingInterval;
+    }
+
     await ctx.db.patch("subscriptions", subscription._id, updates);
   },
 });
@@ -447,6 +457,7 @@ export const deleteSubscription = internalMutation({
         plan: "free",
         status: "canceled",
         stripeSubscriptionId: undefined,
+        billingInterval: undefined,
         currentPeriodStart: undefined,
         currentPeriodEnd: undefined,
         cancelAtPeriodEnd: false,
