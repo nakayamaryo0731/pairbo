@@ -198,6 +198,7 @@ type UserRow = {
   displayName: string;
   createdAt: number;
   plan: string;
+  billingInterval: "month" | "year" | null;
   groupCount: number;
   expenseCount: number;
   lastActivity: number | null;
@@ -223,7 +224,12 @@ const USER_COLUMNS: ColumnDef<UserRow>[] = [
     accessorKey: "plan",
     header: "プラン",
     enableSorting: false,
-    cell: ({ getValue }) => <PlanBadge plan={getValue<string>()} />,
+    cell: ({ row }) => (
+      <PlanBadge
+        plan={row.original.plan}
+        billingInterval={row.original.billingInterval}
+      />
+    ),
     filterFn: (row, _id, value: string) => row.getValue("plan") === value,
   },
   {
@@ -600,11 +606,20 @@ function formatDate(timestamp: number): string {
   });
 }
 
-function PlanBadge({ plan }: { plan: string }) {
+const BILLING_INTERVAL_LABEL = { month: "月額", year: "年額" } as const;
+
+function PlanBadge({
+  plan,
+  billingInterval,
+}: {
+  plan: string;
+  billingInterval: "month" | "year" | null;
+}) {
   if (plan === "premium") {
     return (
       <span className="inline-block px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">
         Premium
+        {billingInterval && `（${BILLING_INTERVAL_LABEL[billingInterval]}）`}
       </span>
     );
   }

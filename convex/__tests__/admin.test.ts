@@ -113,8 +113,78 @@ describe("admin", () => {
       const admin = users.find((u) => u.displayName === "管理者");
       expect(admin).toBeDefined();
       expect(admin?.plan).toBe("free");
+      expect(admin?.billingInterval).toBeNull();
       expect(admin?.groupCount).toBe(0);
       expect(admin?.expenseCount).toBe(0);
+    });
+
+    test("Premium ユーザーは課金間隔（月額/年額）を返す", async () => {
+      const t = convexTest(schema, modules);
+      await setupAdmin(t);
+      await setupNormalUser(t);
+      const now = Date.now();
+      const DAY_MS = 24 * 60 * 60 * 1000;
+
+      await t.run(async (ctx) => {
+        const users = await ctx.db.query("users").collect();
+        const normal = users.find((u) => u.clerkId === "user_clerk_id")!;
+        const adminUser = users.find((u) => u.clerkId === "admin_clerk_id")!;
+        await ctx.db.insert("subscriptions", {
+          userId: normal._id,
+          stripeCustomerId: "cus_yearly",
+          stripeSubscriptionId: "sub_yearly",
+          plan: "premium",
+          status: "active",
+          billingInterval: "year",
+          currentPeriodStart: now,
+          currentPeriodEnd: now + 365 * DAY_MS,
+          cancelAtPeriodEnd: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+        // billingInterval 導入前のレコード: 期間長から月額と推定される
+        await ctx.db.insert("subscriptions", {
+          userId: adminUser._id,
+          stripeCustomerId: "cus_legacy",
+          stripeSubscriptionId: "sub_legacy",
+          plan: "premium",
+          status: "active",
+          currentPeriodStart: now,
+          currentPeriodEnd: now + 30 * DAY_MS,
+          cancelAtPeriodEnd: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      const users = await t
+        .withIdentity(adminIdentity)
+        .query(api.admin.getUsers, {});
+
+      const normal = users.find((u) => u.displayName === "一般ユーザー");
+      expect(normal?.plan).toBe("premium");
+      expect(normal?.billingInterval).toBe("year");
+      const admin = users.find((u) => u.displayName === "管理者");
+      expect(admin?.plan).toBe("premium");
+      expect(admin?.billingInterval).toBe("month");
+    });
+
+    test("planOverride の Premium は課金間隔 null", async () => {
+      const t = convexTest(schema, modules);
+      await setupAdmin(t);
+      await t.run(async (ctx) => {
+        const users = await ctx.db.query("users").collect();
+        const adminUser = users.find((u) => u.clerkId === "admin_clerk_id")!;
+        await ctx.db.patch("users", adminUser._id, { planOverride: "premium" });
+      });
+
+      const users = await t
+        .withIdentity(adminIdentity)
+        .query(api.admin.getUsers, {});
+
+      const admin = users.find((u) => u.displayName === "管理者");
+      expect(admin?.plan).toBe("premium");
+      expect(admin?.billingInterval).toBeNull();
     });
 
     test("非管理者はユーザー一覧を取得できない", async () => {

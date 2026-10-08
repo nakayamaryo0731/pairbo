@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { authQuery } from "./lib/auth";
+import { resolveBillingInterval } from "./lib/stripeHelpers";
 import { internalMutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
@@ -195,22 +196,28 @@ export const getUsers = authQuery({
       }
     }
 
-    const subMap = new Map<string, string>();
+    const activeSubMap = new Map<string, (typeof subscriptions)[number]>();
     for (const s of subscriptions) {
       if (s.plan === "premium" && s.status === "active") {
-        subMap.set(s.userId, "premium");
+        activeSubMap.set(s.userId, s);
       }
     }
 
-    return users.map((u) => ({
-      _id: u._id,
-      displayName: u.displayName,
-      createdAt: u.createdAt,
-      plan: u.planOverride ?? subMap.get(u._id) ?? "free",
-      groupCount: groupCountMap.get(u._id) ?? 0,
-      expenseCount: expenseCountMap.get(u._id) ?? 0,
-      lastActivity: lastActivityMap.get(u._id) ?? null,
-    }));
+    return users.map((u) => {
+      const sub = activeSubMap.get(u._id);
+      return {
+        _id: u._id,
+        displayName: u.displayName,
+        createdAt: u.createdAt,
+        plan: u.planOverride ?? (sub ? "premium" : "free"),
+        // 管理者の planOverride は Stripe 契約がないので null
+        billingInterval:
+          u.planOverride || !sub ? null : resolveBillingInterval(sub),
+        groupCount: groupCountMap.get(u._id) ?? 0,
+        expenseCount: expenseCountMap.get(u._id) ?? 0,
+        lastActivity: lastActivityMap.get(u._id) ?? null,
+      };
+    });
   },
 });
 
