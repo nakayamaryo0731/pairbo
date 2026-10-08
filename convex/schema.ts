@@ -8,6 +8,7 @@ import {
   subscriptionPlanValidator,
   subscriptionStatusValidator,
   inquiryCategoryValidator,
+  billingIntervalValidator,
 } from "./lib/validators";
 
 export default defineSchema({
@@ -219,6 +220,7 @@ export default defineSchema({
     stripeSubscriptionId: v.optional(v.string()),
     plan: subscriptionPlanValidator,
     status: subscriptionStatusValidator,
+    billingInterval: v.optional(billingIntervalValidator),
     currentPeriodStart: v.optional(v.number()),
     currentPeriodEnd: v.optional(v.number()),
     cancelAtPeriodEnd: v.boolean(),

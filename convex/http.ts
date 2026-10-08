@@ -3,7 +3,7 @@ import { httpAction, ActionCtx, env } from "./_generated/server";
 import { internal } from "./_generated/api";
 import Stripe from "stripe";
 import { Id } from "./_generated/dataModel";
-import { mapSubscriptionStatus } from "./lib/stripeHelpers";
+import { mapBillingInterval, mapSubscriptionStatus } from "./lib/stripeHelpers";
 import { Logger } from "./lib/logger";
 
 const STRIPE_API_VERSION = "2026-08-26.dahlia" as const;
@@ -13,13 +13,14 @@ type StripeInvoiceWithSubscription = Stripe.Invoice & {
   subscription?: string;
 };
 
-/** サブスクリプションから期間情報を取得（items.data[0] から取得） */
+/** サブスクリプションから期間・課金間隔を取得（items.data[0] から取得） */
 function getSubscriptionPeriod(subscription: Stripe.Subscription) {
   const item = subscription.items.data[0];
   return {
     currentPeriodStart: item.current_period_start * 1000,
     currentPeriodEnd: item.current_period_end * 1000,
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    billingInterval: mapBillingInterval(item.price.recurring?.interval),
   };
 }
 
@@ -177,6 +178,7 @@ async function handleSubscriptionUpdated(
     status: mapSubscriptionStatus(subscription.status),
     cancelAtPeriodEnd: period.cancelAtPeriodEnd,
     currentPeriodEnd: period.currentPeriodEnd,
+    billingInterval: period.billingInterval,
   });
 
   logger.audit("SUBSCRIPTION", "updated", {

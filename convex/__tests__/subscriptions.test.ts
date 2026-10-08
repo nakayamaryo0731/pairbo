@@ -41,6 +41,44 @@ function makeSubscriptionArgs(
 }
 
 describe("subscriptions mutations", () => {
+  describe("billingInterval", () => {
+    test("upsert で保存され、updateSubscriptionStatus で切り替わり、delete で消える", async () => {
+      const t = convexTest(schema, modules);
+      const userId = await setupUser(t);
+      const getSub = () =>
+        t.run(async (ctx) =>
+          ctx.db
+            .query("subscriptions")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .unique(),
+        );
+
+      await t.mutation(
+        internal.subscriptions.upsertSubscription,
+        makeSubscriptionArgs(userId, { billingInterval: "month" as const }),
+      );
+      expect((await getSub())?.billingInterval).toBe("month");
+
+      await t.mutation(internal.subscriptions.updateSubscriptionStatus, {
+        stripeSubscriptionId: "sub_test_123",
+        status: "active",
+        billingInterval: "year",
+      });
+      expect((await getSub())?.billingInterval).toBe("year");
+
+      await t.mutation(internal.subscriptions.updateSubscriptionStatus, {
+        stripeSubscriptionId: "sub_test_123",
+        status: "active",
+      });
+      expect((await getSub())?.billingInterval).toBe("year");
+
+      await t.mutation(internal.subscriptions.deleteSubscription, {
+        stripeSubscriptionId: "sub_test_123",
+      });
+      expect((await getSub())?.billingInterval).toBeUndefined();
+    });
+  });
+
   describe("upsertSubscription", () => {
     test("新規作成: subscriptionsテーブルにレコードが作成される", async () => {
       const t = convexTest(schema, modules);
