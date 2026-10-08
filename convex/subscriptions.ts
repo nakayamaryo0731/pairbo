@@ -77,10 +77,12 @@ export const getMySubscription = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .unique();
 
+    // Pairbo 内部 trial は Stripe の trialing と別物。status は Stripe 契約の状態だけを表し、
+    // trial 中かどうかはフロントが trialExpiresAt で判定する
     if (!subscription) {
       return {
         plan: trialActive ? ("premium" as const) : ("free" as const),
-        status: trialActive ? ("trialing" as const) : null,
+        status: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         trialExpiresAt,

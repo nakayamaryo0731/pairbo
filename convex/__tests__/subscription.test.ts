@@ -605,5 +605,53 @@ describe("subscription helpers", () => {
       expect(result.plan).toBe("free");
       expect(result.status).toBeNull();
     });
+
+    test("内部トライアル中（Stripe契約なし） → premium だが status は null、trialExpiresAt を返す", async () => {
+      const t = convexTest(schema, modules);
+      const userId = await setupUser(t);
+      const expiresAt = Date.now() + 10 * 24 * 60 * 60 * 1000;
+      await t.run(async (ctx) => {
+        await ctx.db.patch("users", userId, { trialExpiresAt: expiresAt });
+      });
+
+      const result = await t
+        .withIdentity({ subject: "test_clerk_user_1" })
+        .query(api.subscriptions.getMySubscription, {});
+
+      expect(result.plan).toBe("premium");
+      expect(result.status).toBeNull();
+      expect(result.trialExpiresAt).toBe(expiresAt);
+    });
+
+    test("トライアル期限切れ（Stripe契約なし） → free、trialExpiresAt は null", async () => {
+      const t = convexTest(schema, modules);
+      const userId = await setupUser(t);
+      await t.run(async (ctx) => {
+        await ctx.db.patch("users", userId, {
+          trialExpiresAt: Date.now() - 1000,
+        });
+      });
+
+      const result = await t
+        .withIdentity({ subject: "test_clerk_user_1" })
+        .query(api.subscriptions.getMySubscription, {});
+
+      expect(result.plan).toBe("free");
+      expect(result.status).toBeNull();
+      expect(result.trialExpiresAt).toBeNull();
+    });
+
+    test("Stripe で trialing 中は status に trialing を返す（内部トライアルと区別）", async () => {
+      const t = convexTest(schema, modules);
+      const userId = await setupUser(t);
+      await setupSubscription(t, userId, { status: "trialing" });
+
+      const result = await t
+        .withIdentity({ subject: "test_clerk_user_1" })
+        .query(api.subscriptions.getMySubscription, {});
+
+      expect(result.plan).toBe("premium");
+      expect(result.status).toBe("trialing");
+    });
   });
 });
