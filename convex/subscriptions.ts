@@ -177,10 +177,6 @@ export const createCheckoutSession = action({
       throw new Error("認証が必要です");
     }
 
-    const stripe = getStripe();
-
-    // 既存のStripe顧客を取得または作成
-    let stripeCustomerId: string;
     const existingSubscription = await ctx.runQuery(
       internal.subscriptions.getSubscriptionByUserId,
       { userId: user._id },
@@ -193,27 +189,17 @@ export const createCheckoutSession = action({
       throw new Error("既にアクティブなサブスクリプションがあります");
     }
 
-    if (existingSubscription?.stripeCustomerId) {
-      stripeCustomerId = existingSubscription.stripeCustomerId;
-    } else {
-      // 新規顧客作成
-      const customer = await stripe.customers.create({
-        metadata: {
-          userId: user._id,
-        },
-      });
-      stripeCustomerId = customer.id;
-    }
-
-    // Price IDを取得
     const priceId =
       args.priceType === "monthly"
         ? env.STRIPE_PRICE_MONTHLY
         : env.STRIPE_PRICE_YEARLY;
 
-    // Checkoutセッション作成
-    const session = await stripe.checkout.sessions.create({
-      customer: stripeCustomerId,
+    // 顧客は事前に作らず Checkout に作らせる。事前作成だとセッション作成が失敗した場合に
+    // 空の Customer が Stripe に残り続ける（再契約時は既存顧客を再利用）
+    const session = await getStripe().checkout.sessions.create({
+      ...(existingSubscription?.stripeCustomerId
+        ? { customer: existingSubscription.stripeCustomerId }
+        : {}),
       mode: "subscription",
       line_items: [
         {
