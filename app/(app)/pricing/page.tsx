@@ -7,6 +7,7 @@ import { useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { UserButton } from "@clerk/nextjs";
+import * as Sentry from "@sentry/nextjs";
 import { trackEvent } from "@/lib/analytics";
 import { readTrialState } from "@/lib/trial";
 
@@ -76,7 +77,10 @@ function PricingContent() {
         });
       }
       window.location.href = url;
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err, {
+        extra: { action: "checkout", priceType },
+      });
       alert("エラーが発生しました");
     } finally {
       setLoading(false);
@@ -90,7 +94,8 @@ function PricingContent() {
         returnUrl: `${window.location.origin}/pricing`,
       });
       window.location.href = url;
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err, { extra: { action: "portal" } });
       alert("エラーが発生しました");
     } finally {
       setLoading(false);
@@ -367,8 +372,8 @@ function PricingContent() {
                 answer="クレジットカード（Visa、Mastercard、American Express、JCB）がご利用いただけます。"
               />
               <FaqItem
-                question="年払いから月払いに変更できますか？"
-                answer="Stripe Customer Portalからプランの変更が可能です。"
+                question="月払いと年払いは切り替えられますか？"
+                answer="はい。ご契約後に表示される「プランを管理」から変更できます。月払い→年払いはすぐに切り替わり、年払い→月払いは現在の期間が終わったタイミングで切り替わります。"
               />
             </div>
           </div>

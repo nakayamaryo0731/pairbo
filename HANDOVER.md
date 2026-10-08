@@ -253,6 +253,13 @@ Deploy: Netlify + Convex
 | STRIPE_PRICE_MONTHLY  | 月額プランのPrice ID          |
 | STRIPE_PRICE_YEARLY   | 年額プランのPrice ID          |
 
+**Price を変更したら Staging と本番の両方を更新する。** 2026-03 の年額改定で Staging だけ更新し、本番はアーカイブ済み Price のまま半年放置 → 年払いの Checkout 作成が全件失敗していた（2026-10-08 発覚）。
+
+```bash
+npx convex env set STRIPE_PRICE_YEARLY price_xxx          # Staging
+npx convex env set STRIPE_PRICE_YEARLY price_xxx --prod   # 本番
+```
+
 ### Stripe Webhook
 
 エンドポイント: `https://hip-moose-165.convex.site/stripe/webhook`
