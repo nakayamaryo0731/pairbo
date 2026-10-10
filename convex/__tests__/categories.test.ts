@@ -226,6 +226,37 @@ describe("categories", () => {
       expect(updated?.isPreset).toBe(true);
     });
 
+    test("一覧にないアイコン名には更新できず、元のアイコンが残る", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const categoryId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.categories.create, {
+          groupId,
+          name: "ゲーム",
+          icon: "gamepad-2",
+        });
+
+      await expect(
+        t.withIdentity(testIdentity).mutation(api.categories.update, {
+          categoryId,
+          name: "ゲーム",
+          icon: "constructor",
+        }),
+      ).rejects.toThrow("アイコン名の形式が正しくありません");
+
+      const category = await t.run(async (ctx) => {
+        return await ctx.db.get("categories", categoryId);
+      });
+      expect(category?.icon).toBe("gamepad-2");
+    });
+
     test("メンバーでないユーザーは更新できない", async () => {
       const t = convexTest(schema, modules);
 

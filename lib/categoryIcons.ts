@@ -79,10 +79,14 @@ import {
   Cross,
   type LucideIcon,
 } from "lucide-react";
+import {
+  isValidCategoryIcon,
+  type CategoryIconName,
+} from "@/convex/domain/category";
 
 export type { LucideIcon };
 
-export const ICON_MAP: Record<string, LucideIcon> = {
+export const ICON_MAP: Record<CategoryIconName, LucideIcon> = {
   "shopping-cart": ShoppingCart,
   "utensils-crossed": UtensilsCrossed,
   "spray-can": SprayCan,
@@ -166,12 +170,13 @@ export const ICON_MAP: Record<string, LucideIcon> = {
 export const DEFAULT_ICON = "package";
 
 export function getIconComponent(name: string): LucideIcon {
-  return ICON_MAP[name] ?? ICON_MAP[DEFAULT_ICON];
+  // ICON_MAP[name] で直接引くと "constructor" などで Object.prototype のプロパティを拾うため、一覧で判定する
+  return isValidCategoryIcon(name) ? ICON_MAP[name] : ICON_MAP[DEFAULT_ICON];
 }
 
 export type IconCategory = {
   label: string;
-  icons: string[];
+  icons: CategoryIconName[];
 };
 
 export const ICON_CATEGORIES: IconCategory[] = [

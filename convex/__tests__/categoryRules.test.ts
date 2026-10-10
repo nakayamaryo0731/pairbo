@@ -2,9 +2,11 @@ import { describe, expect, test } from "vitest";
 import {
   validateCategoryName,
   validateCategoryIcon,
+  isValidCategoryIcon,
   CategoryValidationError,
 } from "../domain/category";
 import { CATEGORY_RULES } from "../domain/category/types";
+import { PRESET_CATEGORIES } from "../lib/presetCategories";
 
 describe("カテゴリ名バリデーション", () => {
   describe("validateCategoryName", () => {
@@ -61,7 +63,7 @@ describe("カテゴリ名バリデーション", () => {
 
 describe("カテゴリアイコンバリデーション", () => {
   describe("validateCategoryIcon", () => {
-    test("kebab-caseのアイコン名を受け付ける", () => {
+    test("一覧にあるアイコン名を受け付ける", () => {
       expect(validateCategoryIcon("shopping-cart")).toBe("shopping-cart");
       expect(validateCategoryIcon("package")).toBe("package");
       expect(validateCategoryIcon("home")).toBe("home");
@@ -113,6 +115,40 @@ describe("カテゴリアイコンバリデーション", () => {
       expect(() => validateCategoryIcon("home-")).toThrow(
         CategoryValidationError,
       );
+    });
+
+    test("形式が正しくても一覧にないアイコン名はエラー", () => {
+      expect(() => validateCategoryIcon("unknown-icon")).toThrow(
+        "アイコン名の形式が正しくありません",
+      );
+    });
+
+    test("Object.prototype のプロパティ名はエラー", () => {
+      for (const name of ["constructor", "tostring", "valueof"]) {
+        expect(() => validateCategoryIcon(name)).toThrow(
+          CategoryValidationError,
+        );
+      }
+    });
+
+    test("プリセットカテゴリのアイコンはすべて受け付ける", () => {
+      for (const preset of PRESET_CATEGORIES) {
+        expect(validateCategoryIcon(preset.icon)).toBe(preset.icon);
+      }
+    });
+  });
+
+  describe("isValidCategoryIcon", () => {
+    test("一覧にあるアイコン名は true", () => {
+      expect(isValidCategoryIcon("package")).toBe(true);
+      expect(isValidCategoryIcon("gamepad-2")).toBe(true);
+    });
+
+    test("一覧にないアイコン名や Object.prototype のプロパティ名は false", () => {
+      expect(isValidCategoryIcon("unknown-icon")).toBe(false);
+      expect(isValidCategoryIcon("constructor")).toBe(false);
+      expect(isValidCategoryIcon("__proto__")).toBe(false);
+      expect(isValidCategoryIcon("toString")).toBe(false);
     });
   });
 });
