@@ -1,7 +1,12 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { authQuery } from "./lib/auth";
 import { requireGroupMember } from "./lib/authorization";
-import { getSettlementPeriod, getSettlementLabel } from "./domain/settlement";
+import {
+  getSettlementPeriod,
+  getSettlementLabel,
+  validateSettlementPeriodInput,
+  SettlementValidationError,
+} from "./domain/settlement";
 import { getExpensesByPeriod } from "./lib/expenseHelper";
 import { getOrThrow } from "./lib/dataHelpers";
 import { buildCategoryBreakdown } from "./lib/analyticsHelper";
@@ -103,6 +108,8 @@ export const getYearlyCategoryBreakdown = authQuery({
   },
 });
 
+const MAX_TREND_MONTHS = 24;
+
 /**
  * 月別支出推移
  */
@@ -117,13 +124,30 @@ export const getMonthlyTrend = authQuery({
     // 認可チェック
     await requireGroupMember(ctx, args.groupId);
 
+    const monthsToFetch = args.months ?? 6;
+    try {
+      validateSettlementPeriodInput(args.year, args.month);
+    } catch (error) {
+      if (error instanceof SettlementValidationError) {
+        throw new ConvexError(error.message);
+      }
+      throw error;
+    }
+    if (
+      !Number.isInteger(monthsToFetch) ||
+      monthsToFetch < 1 ||
+      monthsToFetch > MAX_TREND_MONTHS
+    ) {
+      throw new ConvexError(
+        `取得月数は1〜${MAX_TREND_MONTHS}の間で指定してください`,
+      );
+    }
+
     const group = await getOrThrow(
       ctx,
       args.groupId,
       "グループが見つかりません",
     );
-
-    const monthsToFetch = args.months ?? 6;
 
     // 過去Nヶ月分の期間を計算（古い月から順）
     const periods: {
