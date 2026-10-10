@@ -1,3 +1,5 @@
+import { isValidMemberColor } from "@/convex/domain/group";
+
 /**
  * メンバーカラーの背景色 / 文字色ペア
  * - bg: カードや凡例の背景に使う淡い色（opacity-20で重ねる前提）
@@ -24,13 +26,17 @@ const BG_TO_TEXT: Record<string, string> = Object.fromEntries(
 
 /**
  * メンバーのuserIdリスト（joinedAt順）からカラーマップを生成
+ * - 保存色が `#RRGGBB` 形式でなければ既定色を使う（CSS 値に連結されるため）
  */
 export function buildMemberColorMap(
   members: { userId: string; color?: string }[],
 ): Record<string, string> {
   const map: Record<string, string> = {};
   members.forEach((m, i) => {
-    map[m.userId] = m.color ?? MEMBER_COLORS[i % MEMBER_COLORS.length];
+    map[m.userId] =
+      m.color && isValidMemberColor(m.color)
+        ? m.color
+        : MEMBER_COLORS[i % MEMBER_COLORS.length];
   });
   return map;
 }

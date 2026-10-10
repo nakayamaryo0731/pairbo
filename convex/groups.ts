@@ -7,6 +7,7 @@ import { createUserMap } from "./lib/enrichment";
 import {
   validateGroupInput,
   validateClosingDay,
+  isValidMemberColor,
   GROUP_RULES,
   GroupValidationError,
 } from "./domain/group";
@@ -343,6 +344,13 @@ export const updateMemberColor = authMutation({
   },
   handler: async (ctx, args) => {
     const membership = await requireGroupMember(ctx, args.groupId);
+
+    if (!isValidMemberColor(args.color)) {
+      ctx.logger.warn("GROUP", "update_member_color_validation_failed", {
+        groupId: args.groupId,
+      });
+      throw new GroupValidationError("カラーの形式が正しくありません");
+    }
 
     await ctx.db.patch("groupMembers", membership._id, { color: args.color });
   },

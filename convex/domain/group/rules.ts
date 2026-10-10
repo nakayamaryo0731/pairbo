@@ -96,3 +96,12 @@ export function validateClosingDay(closingDay: ClosingDay): void {
     throw new GroupValidationError("締め日は1〜28または末日で設定してください");
   }
 }
+
+/**
+ * メンバーカラーの形式チェック（`#RRGGBB` のみ許可）
+ *
+ * 保存値は支出カードの linear-gradient などの CSS 値に連結されるため、色以外の文字列を通さない。
+ */
+export function isValidMemberColor(color: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(color);
+}
