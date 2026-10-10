@@ -4,6 +4,7 @@ import {
   validateGroupDescription,
   validateGroupInput,
   validateClosingDay,
+  isValidMemberColor,
   GroupValidationError,
   GROUP_RULES,
 } from "../domain/group";
@@ -149,6 +150,32 @@ describe("group/rules", () => {
       expect(() => validateClosingDay(29)).toThrow(
         "締め日は1〜28または末日で設定してください",
       );
+    });
+  });
+
+  describe("isValidMemberColor", () => {
+    test("#RRGGBB 形式は通過する", () => {
+      expect(isValidMemberColor("#fca5a5")).toBe(true);
+      expect(isValidMemberColor("#FCA5A5")).toBe(true);
+      expect(isValidMemberColor("#000000")).toBe(true);
+    });
+
+    test("#RRGGBB 以外の形式は拒否する", () => {
+      expect(isValidMemberColor("")).toBe(false);
+      expect(isValidMemberColor("red")).toBe(false);
+      expect(isValidMemberColor("#fff")).toBe(false);
+      expect(isValidMemberColor("#fca5a5aa")).toBe(false);
+      expect(isValidMemberColor("#gggggg")).toBe(false);
+      expect(isValidMemberColor(" #fca5a5")).toBe(false);
+      expect(isValidMemberColor("#fca5a5\n")).toBe(false);
+    });
+
+    test("CSS 値を閉じて別の値を続ける文字列は拒否する", () => {
+      expect(
+        isValidMemberColor(
+          "red, red), url(https://example.com/a.png), linear-gradient(red, red",
+        ),
+      ).toBe(false);
     });
   });
 

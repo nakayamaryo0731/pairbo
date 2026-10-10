@@ -505,6 +505,59 @@ describe("groups", () => {
     });
   });
 
+  describe("updateMemberColor", () => {
+    const setup = async () => {
+      const t = convexTest(schema, modules);
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, { name: "テストグループ" });
+      const getMyColor = () =>
+        t.run(async (ctx) => {
+          const user = await ctx.db
+            .query("users")
+            .withIndex("by_clerk_id", (q) =>
+              q.eq("clerkId", testIdentity.subject),
+            )
+            .unique();
+          const membership = await ctx.db
+            .query("groupMembers")
+            .withIndex("by_group_and_user", (q) =>
+              q.eq("groupId", groupId).eq("userId", user!._id),
+            )
+            .unique();
+          return membership?.color;
+        });
+      return { t, groupId, getMyColor };
+    };
+
+    test("#RRGGBB 形式の色を保存できる", async () => {
+      const { t, groupId, getMyColor } = await setup();
+
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.updateMemberColor, { groupId, color: "#93c5fd" });
+
+      expect(await getMyColor()).toBe("#93c5fd");
+    });
+
+    test("#RRGGBB 形式でない色は拒否し、保存値を変えない", async () => {
+      const { t, groupId, getMyColor } = await setup();
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.updateMemberColor, { groupId, color: "#93c5fd" });
+
+      await expect(
+        t.withIdentity(testIdentity).mutation(api.groups.updateMemberColor, {
+          groupId,
+          color:
+            "red, red), url(https://example.com/a.png), linear-gradient(red, red",
+        }),
+      ).rejects.toThrow("カラーの形式が正しくありません");
+
+      expect(await getMyColor()).toBe("#93c5fd");
+    });
+  });
+
   describe("remove", () => {
     test("オーナーがグループを削除できる", async () => {
       const t = convexTest(schema, modules);

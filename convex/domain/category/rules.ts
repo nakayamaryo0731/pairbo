@@ -1,4 +1,8 @@
-import { CATEGORY_RULES } from "./types";
+import {
+  CATEGORY_ICON_NAMES,
+  CATEGORY_RULES,
+  type CategoryIconName,
+} from "./types";
 
 export class CategoryValidationError extends Error {
   constructor(message: string) {
@@ -20,12 +24,16 @@ export function validateCategoryName(name: string): string {
   return trimmed;
 }
 
-export function validateCategoryIcon(icon: string): string {
+export function isValidCategoryIcon(name: string): name is CategoryIconName {
+  return (CATEGORY_ICON_NAMES as readonly string[]).includes(name);
+}
+
+export function validateCategoryIcon(icon: string): CategoryIconName {
   const trimmed = icon.trim();
-  if (trimmed.length === 0 || trimmed.length > CATEGORY_RULES.ICON_MAX_LENGTH) {
+  if (trimmed.length === 0) {
     throw new CategoryValidationError("アイコン名を入力してください");
   }
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed)) {
+  if (!isValidCategoryIcon(trimmed)) {
     throw new CategoryValidationError("アイコン名の形式が正しくありません");
   }
   return trimmed;

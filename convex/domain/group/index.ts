@@ -14,4 +14,5 @@ export {
   validateGroupDescription,
   validateGroupInput,
   validateClosingDay,
+  isValidMemberColor,
 } from "./rules";

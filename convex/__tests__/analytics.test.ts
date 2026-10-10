@@ -278,6 +278,77 @@ describe("analytics", () => {
         }),
       ).rejects.toThrow("このグループにアクセスする権限がありません");
     });
+
+    test("上限の24ヶ月分を年をまたいで取得できる", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      const result = await t
+        .withIdentity(userAIdentity)
+        .query(api.analytics.getMonthlyTrend, {
+          groupId,
+          year: 2025,
+          month: 1,
+          months: 24,
+        });
+
+      expect(result.trend).toHaveLength(24);
+      expect(result.trend[0]).toMatchObject({ year: 2023, month: 2 });
+      expect(result.trend[23]).toMatchObject({ year: 2025, month: 1 });
+    });
+
+    test("年・月が範囲外ならエラー", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+      const query = (year: number, month: number) =>
+        t
+          .withIdentity(userAIdentity)
+          .query(api.analytics.getMonthlyTrend, { groupId, year, month });
+
+      await expect(query(2025, -1e300)).rejects.toThrow(
+        "月は1〜12の間で指定してください",
+      );
+      await expect(query(2025, 13)).rejects.toThrow(
+        "月は1〜12の間で指定してください",
+      );
+      await expect(query(2025, 1.5)).rejects.toThrow(
+        "月は整数で入力してください",
+      );
+      await expect(query(1999, 1)).rejects.toThrow(
+        "年は2000〜2100の間で指定してください",
+      );
+    });
+
+    test("取得月数が1〜24の整数でなければエラー", async () => {
+      const t = convexTest(schema, modules);
+
+      const groupId = await t
+        .withIdentity(userAIdentity)
+        .mutation(api.groups.create, {
+          name: "テストグループ",
+        });
+
+      for (const months of [0, 25, 2.5, 1e9]) {
+        await expect(
+          t.withIdentity(userAIdentity).query(api.analytics.getMonthlyTrend, {
+            groupId,
+            year: 2025,
+            month: 1,
+            months,
+          }),
+        ).rejects.toThrow("取得月数は1〜24の間で指定してください");
+      }
+    });
   });
 
   describe("getYearlyCategoryBreakdown", () => {
