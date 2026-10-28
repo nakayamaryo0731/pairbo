@@ -310,3 +310,53 @@ describe("getInquiries", () => {
     ).rejects.toThrow("管理者権限が必要です");
   });
 });
+
+describe("getReviews", () => {
+  test("管理者は感想一覧を新しい順で取得できる", async () => {
+    const t = convexTest(schema, modules);
+    await setupAdmin(t);
+    await setupNormalUser(t);
+
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      const users = await ctx.db.query("users").collect();
+      const user = users.find((u) => u.clerkId === "user_clerk_id");
+      if (!user) throw new Error("user not found");
+      await ctx.db.insert("reviews", {
+        userId: user._id,
+        relationship: "married",
+        before: "古い方",
+        change: "変化",
+        publishConsent: false,
+        createdAt: now - 1000,
+      });
+      await ctx.db.insert("reviews", {
+        userId: user._id,
+        relationship: "cohabiting",
+        ageRange: "20s",
+        before: "新しい方",
+        change: "変化",
+        publishConsent: true,
+        createdAt: now,
+      });
+    });
+
+    const reviews = await t
+      .withIdentity(adminIdentity)
+      .query(api.admin.getReviews, {});
+
+    expect(reviews).toHaveLength(2);
+    expect(reviews[0].before).toBe("新しい方");
+    expect(reviews[0].publishConsent).toBe(true);
+    expect(reviews[0].displayName).toBe("一般ユーザー");
+  });
+
+  test("一般ユーザーは感想一覧を取得できない", async () => {
+    const t = convexTest(schema, modules);
+    await setupNormalUser(t);
+
+    await expect(
+      t.withIdentity(userIdentity).query(api.admin.getReviews, {}),
+    ).rejects.toThrow("管理者権限が必要です");
+  });
+});
