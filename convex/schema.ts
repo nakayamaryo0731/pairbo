@@ -9,6 +9,8 @@ import {
   subscriptionStatusValidator,
   inquiryCategoryValidator,
   billingIntervalValidator,
+  reviewRelationshipValidator,
+  reviewAgeRangeValidator,
 } from "./lib/validators";
 
 export default defineSchema({
@@ -25,6 +27,7 @@ export default defineSchema({
     lastSeenReleaseAt: v.optional(v.number()),
     pwaOnboardingCompletedAt: v.optional(v.number()),
     trialExpiresAt: v.optional(v.number()),
+    reviewPromptClosedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_clerk_id", ["clerkId"]),
@@ -242,6 +245,22 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_user", ["userId", "createdAt"]),
   // 用途: ユーザーからの問い合わせ管理、レート制限の期間絞り込み
+
+  // ========================================
+  // 感想（LP掲載候補）
+  // ========================================
+  reviews: defineTable({
+    userId: v.id("users"),
+    relationship: reviewRelationshipValidator,
+    ageRange: v.optional(reviewAgeRangeValidator),
+    before: v.string(), // 使う前のお金の分け方
+    change: v.string(), // 使って変わったこと
+    likes: v.optional(v.string()), // 気に入っているところ
+    improvements: v.optional(v.string()), // 改善してほしいところ
+    publishConsent: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
+  // 用途: 1人1回の重複チェック
 
   // ========================================
   // Stripe Webhook 冪等性

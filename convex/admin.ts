@@ -139,6 +139,39 @@ export const getInquiries = authQuery({
 });
 
 /**
+ * 感想一覧（管理者用）
+ *
+ * 件数が少ない前提なので期間で絞らず全件を返す
+ */
+export const getReviews = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    requireAdmin(ctx.user.isAdmin);
+
+    const reviews = await ctx.db.query("reviews").collect();
+    reviews.sort((a, b) => b.createdAt - a.createdAt);
+
+    return await Promise.all(
+      reviews.map(async (review) => {
+        const user = await ctx.db.get("users", review.userId);
+        return {
+          _id: review._id,
+          relationship: review.relationship,
+          ageRange: review.ageRange,
+          before: review.before,
+          change: review.change,
+          likes: review.likes,
+          improvements: review.improvements,
+          publishConsent: review.publishConsent,
+          createdAt: review.createdAt,
+          displayName: user?.displayName ?? "（退会済み）",
+        };
+      }),
+    );
+  },
+});
+
+/**
  * ユーザー一覧（管理者用）
  */
 export const getUsers = authQuery({

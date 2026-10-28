@@ -322,6 +322,10 @@ npx convex run seed:clearTestData
 
 # ユーザーをテストグループに追加（userId は Convex Dashboard で確認）
 npx convex run seed:joinTestGroup '{"userId": "j57abc123..."}'
+
+# テストグループを感想のお願いの対象条件に合わせる（何度でも出し直せる）
+# 詳細は docs/design-review-collection.md
+npx convex run seed:makeReviewPromptEligible
 ```
 
 ## What We Won't Do

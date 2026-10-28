@@ -26,6 +26,7 @@ import { buildMemberColorMap } from "@/lib/userColors";
 import { getErrorMessage } from "@/lib/errors";
 import { InviteCtaBanner } from "./InviteCtaBanner";
 import { TrialRemainingBanner } from "@/components/ui/TrialRemainingBanner";
+import { ReviewPromptBanner } from "@/components/reviews/ReviewPromptBanner";
 
 type Member = {
   userId: Id<"users">;
@@ -148,6 +149,9 @@ export function GroupDetail({
           <InviteCtaBanner groupId={group._id} />
         </div>
       )}
+
+      {/* 感想のお願い（使い続けているふたり組のみ） */}
+      <ReviewPromptBanner groupId={group._id} />
 
       {/* 支出一覧 */}
       <div className="px-4 pb-36 scrollbar-hide">

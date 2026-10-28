@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, MutationCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { PRESET_CATEGORIES } from "./lib/presetCategories";
+import { REVIEW_RULES } from "./domain/review";
 import {
   SEED_USERS,
   TEST_GROUP,
@@ -238,6 +239,105 @@ export const joinTestGroup = internalMutation({
       success: true,
       message: "テストグループに参加しました",
       groupId: testGroup._id,
+    };
+  },
+});
+
+/**
+ * テストグループを感想のお願いの対象条件に合わせる（ローカル確認用）
+ *
+ * メンバーの参加日を条件の日数より前にずらし、支出を条件の件数まで増やす。
+ * メンバーが閉じた記録と送信済みの感想も消すので、何度でもお願いを出し直せる
+ *
+ * 実行: npx convex run seed:makeReviewPromptEligible
+ */
+export const makeReviewPromptEligible = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const groups = await ctx.db.query("groups").collect();
+    const testGroup = groups.find((g) => g.name === TEST_GROUP.name);
+    if (!testGroup) {
+      return {
+        success: false,
+        message:
+          "テストグループが見つかりません。先に seedTestData を実行してください",
+      };
+    }
+
+    const now = Date.now();
+    const joinedAt =
+      now - (REVIEW_RULES.MIN_PAIRED_DAYS + 1) * 24 * 60 * 60 * 1000;
+    const members = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) => q.eq("groupId", testGroup._id))
+      .collect();
+    for (const member of members) {
+      await ctx.db.patch("groupMembers", member._id, { joinedAt });
+      await ctx.db.patch("users", member.userId, {
+        reviewPromptClosedAt: undefined,
+      });
+      const reviews = await ctx.db
+        .query("reviews")
+        .withIndex("by_user", (q) => q.eq("userId", member.userId))
+        .collect();
+      for (const review of reviews) {
+        await ctx.db.delete("reviews", review._id);
+      }
+    }
+
+    const seedUserIds: Id<"users">[] = [];
+    for (const seedUser of SEED_USERS) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerk_id", (q) => q.eq("clerkId", seedUser.clerkId))
+        .unique();
+      if (user) seedUserIds.push(user._id);
+    }
+
+    const categories = await ctx.db
+      .query("categories")
+      .withIndex("by_group", (q) => q.eq("groupId", testGroup._id))
+      .collect();
+    const categoryMap = new Map(categories.map((c) => [c.name, c._id]));
+    const samples = SAMPLE_EXPENSES.filter((e) =>
+      categoryMap.has(e.categoryName),
+    );
+
+    const existingExpenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_group_and_date", (q) => q.eq("groupId", testGroup._id))
+      .take(REVIEW_RULES.MIN_EXPENSES);
+    const needed = REVIEW_RULES.MIN_EXPENSES - existingExpenses.length;
+
+    for (let i = 0; i < needed && samples.length > 0; i++) {
+      const sample = samples[i % samples.length];
+      const paidByUserId = seedUserIds[sample.paidByIndex];
+      const expenseId = await ctx.db.insert("expenses", {
+        groupId: testGroup._id,
+        amount: sample.amount,
+        categoryId: categoryMap.get(sample.categoryName)!,
+        paidBy: paidByUserId,
+        date: generateRandomDate(),
+        memo: sample.memo,
+        splitMethod: sample.splitMethod,
+        createdBy: paidByUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+      await createExpenseSplits(
+        ctx,
+        expenseId,
+        sample.amount,
+        sample.splitMethod,
+        seedUserIds,
+        paidByUserId,
+      );
+    }
+
+    return {
+      success: true,
+      message: "テストグループを感想のお願いの対象にしました",
+      addedExpenses: Math.max(needed, 0),
     };
   },
 });

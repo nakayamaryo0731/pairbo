@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const users = useQuery(api.admin.getUsers);
   const groups = useQuery(api.admin.getGroups);
   const inquiries = useQuery(api.admin.getInquiries);
+  const reviews = useQuery(api.admin.getReviews);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -62,6 +63,7 @@ export default function AdminDashboard() {
         <InquiryList inquiries={inquiries} />
         <UserTable users={users} />
         <GroupTable groups={groups} />
+        <ReviewTable reviews={reviews} />
       </main>
     </div>
   );
@@ -436,6 +438,147 @@ function GroupTable({ groups }: { groups: GroupRow[] | undefined }) {
         table={table}
         isLoading={groups === undefined}
         emptyMessage="グループがありません"
+      />
+    </section>
+  );
+}
+
+/* ========== Review Table ========== */
+
+type ReviewRow = {
+  _id: string;
+  relationship: "cohabiting" | "married" | "other";
+  ageRange?: "20s" | "30s" | "40s_plus";
+  before: string;
+  change: string;
+  likes?: string;
+  improvements?: string;
+  publishConsent: boolean;
+  createdAt: number;
+  displayName: string;
+};
+
+const RELATIONSHIP_LABELS: Record<ReviewRow["relationship"], string> = {
+  cohabiting: "同棲カップル",
+  married: "夫婦",
+  other: "その他",
+};
+
+const AGE_RANGE_LABELS: Record<NonNullable<ReviewRow["ageRange"]>, string> = {
+  "20s": "20代",
+  "30s": "30代",
+  "40s_plus": "40代以上",
+};
+
+const REVIEW_COLUMNS: ColumnDef<ReviewRow>[] = [
+  {
+    accessorKey: "publishConsent",
+    header: "掲載",
+    enableSorting: false,
+    cell: ({ getValue }) => {
+      const consent = getValue<boolean>();
+      return (
+        <span
+          className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
+            consent
+              ? "bg-green-100 text-green-700"
+              : "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {consent ? "OK" : "NG"}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "displayName",
+    header: "回答者",
+    enableSorting: false,
+    cell: ({ getValue }) => (
+      <span className="text-slate-800 whitespace-nowrap">
+        {String(getValue())}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "relationship",
+    header: "関係",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <span className="text-slate-600 whitespace-nowrap">
+        {RELATIONSHIP_LABELS[row.original.relationship]}
+        {row.original.ageRange &&
+          `（${AGE_RANGE_LABELS[row.original.ageRange]}）`}
+      </span>
+    ),
+  },
+  reviewTextColumn("before", "使う前"),
+  reviewTextColumn("change", "変わったこと"),
+  reviewTextColumn("likes", "気に入っている点"),
+  reviewTextColumn("improvements", "改善してほしい点"),
+  {
+    accessorKey: "createdAt",
+    header: "送信日",
+    cell: ({ getValue }) => (
+      <span className="text-slate-600">{formatDate(getValue<number>())}</span>
+    ),
+  },
+];
+
+// 1件1行に収めるため本文は省略表示し、全文はホバーで見る
+function reviewTextColumn(
+  key: "before" | "change" | "likes" | "improvements",
+  header: string,
+): ColumnDef<ReviewRow> {
+  return {
+    accessorKey: key,
+    header,
+    enableSorting: false,
+    cell: ({ getValue }) => {
+      const text = getValue<string | undefined>();
+      return text ? (
+        <span className="block max-w-48 truncate text-slate-700" title={text}>
+          {text}
+        </span>
+      ) : (
+        <span className="text-slate-400">—</span>
+      );
+    },
+  };
+}
+
+function ReviewTable({ reviews }: { reviews: ReviewRow[] | undefined }) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const data = useMemo(() => reviews ?? [], [reviews]);
+
+  const table = useReactTable({
+    data,
+    columns: REVIEW_COLUMNS,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: DEFAULT_PAGE_SIZE } },
+  });
+
+  const consentCount = reviews?.filter((r) => r.publishConsent).length ?? 0;
+
+  return (
+    <section>
+      <h2 className="text-lg font-bold text-slate-800 mb-3">
+        感想一覧
+        {reviews && (
+          <span className="text-sm font-normal text-slate-500 ml-2">
+            ({reviews.length}件・掲載OK {consentCount}件)
+          </span>
+        )}
+      </h2>
+      <DataTable
+        table={table}
+        isLoading={reviews === undefined}
+        emptyMessage="まだ感想はありません"
       />
     </section>
   );
