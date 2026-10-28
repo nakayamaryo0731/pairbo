@@ -868,8 +868,12 @@ function TestimonialsSection() {
           <h2 className="mb-2 text-center font-maru text-2xl font-black">
             こんなシーンで活躍
           </h2>
-          <p className="mb-10 text-center text-[#8D7F85]">
+          <p className="mb-2 text-center text-[#8D7F85]">
             {phrases("お財布が別のまま、|フェアに支出管理")}
+          </p>
+          {/* 実際の利用者の声に差し替えるまでの間、架空の例だと分かるようにする */}
+          <p className="mb-10 text-center text-xs text-[#A49399]">
+            ※ 利用シーンをイメージした例です
           </p>
         </Reveal>
 
