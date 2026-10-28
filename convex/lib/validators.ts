@@ -101,3 +101,24 @@ export const inquiryCategoryValidator = v.union(
   v.literal("bug_report"),
   v.literal("other"),
 );
+
+/**
+ * 感想を書いた人とパートナーの関係
+ * - cohabiting: 同棲カップル
+ * - married: 夫婦
+ * - other: その他
+ */
+export const reviewRelationshipValidator = v.union(
+  v.literal("cohabiting"),
+  v.literal("married"),
+  v.literal("other"),
+);
+
+/**
+ * 感想を書いた人の年代
+ */
+export const reviewAgeRangeValidator = v.union(
+  v.literal("20s"),
+  v.literal("30s"),
+  v.literal("40s_plus"),
+);
