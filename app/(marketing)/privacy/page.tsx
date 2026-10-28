@@ -38,6 +38,7 @@ export default function PrivacyPolicyPage() {
               <li>表示名（サービス内での識別のため）</li>
               <li>支出情報（金額、カテゴリ、日付、メモ）</li>
               <li>グループ情報（グループ名、メンバー構成）</li>
+              <li>アンケートの回答（感想・ご意見）</li>
               <li>
                 決済情報（Stripeを通じて処理、当サービスでは保存しません）
               </li>
@@ -58,6 +59,9 @@ export default function PrivacyPolicyPage() {
               <li>精算金額の計算</li>
               <li>サービスの改善・新機能の開発</li>
               <li>お問い合わせへの対応</li>
+              <li>
+                ご同意いただいたアンケート回答の、当サービスのWebサイトへの掲載（氏名は掲載しません）
+              </li>
             </ul>
           </section>
 
@@ -175,7 +179,7 @@ export default function PrivacyPolicyPage() {
             <p className="text-sm text-slate-500">
               制定日：2026年1月1日
               <br />
-              最終更新日：2026年1月1日
+              最終更新日：2026年10月28日
             </p>
           </div>
         </div>
