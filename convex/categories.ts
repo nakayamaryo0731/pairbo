@@ -3,9 +3,13 @@ import { authMutation, authQuery } from "./lib/auth";
 import { internalMutation } from "./_generated/server";
 import { requireGroupMember } from "./lib/authorization";
 import { getOrThrow } from "./lib/dataHelpers";
+import { getGroupMemberIds } from "./lib/groupHelper";
+import { canUseSlopedSplit } from "./lib/subscription";
+import { ratiosValidator } from "./lib/validators";
 import {
   validateCategoryName,
   validateCategoryIcon,
+  validateDefaultRatios,
   CategoryValidationError,
 } from "./domain/category";
 import { PRESET_CATEGORIES } from "./lib/presetCategories";
@@ -129,6 +133,48 @@ export const update = authMutation({
       categoryId: args.categoryId,
       groupId: category.groupId,
       name: validatedName,
+    });
+  },
+});
+
+/**
+ * カテゴリのデフォルト割合を設定（null で解除）
+ */
+export const setDefaultRatios = authMutation({
+  args: {
+    categoryId: v.id("categories"),
+    ratios: v.union(ratiosValidator, v.null()),
+  },
+  handler: async (ctx, args) => {
+    const category = await getOrThrow(
+      ctx,
+      args.categoryId,
+      "カテゴリが見つかりません",
+    );
+
+    await requireGroupMember(ctx, category.groupId);
+
+    // 解除はPremiumが切れた後でもできるようにする
+    if (args.ratios) {
+      if (!(await canUseSlopedSplit(ctx, category.groupId))) {
+        throw new ConvexError(
+          "傾斜折半機能はPremiumプランでご利用いただけます",
+        );
+      }
+      validateDefaultRatios(
+        args.ratios,
+        await getGroupMemberIds(ctx, category.groupId),
+      );
+    }
+
+    await ctx.db.patch("categories", args.categoryId, {
+      defaultRatios: args.ratios ?? undefined,
+    });
+
+    ctx.logger.audit("CATEGORY", "default_ratios_updated", {
+      categoryId: args.categoryId,
+      groupId: category.groupId,
+      hasDefaultRatios: args.ratios !== null,
     });
   },
 });

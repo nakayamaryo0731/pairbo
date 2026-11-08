@@ -15,6 +15,14 @@ export const splitMethodValidator = v.union(
 );
 
 /**
+ * 割合指定（各メンバーの%）
+ * 支出の負担方法とカテゴリのデフォルト割合で共用する
+ */
+export const ratiosValidator = v.array(
+  v.object({ userId: v.id("users"), ratio: v.number() }),
+);
+
+/**
  * 負担方法の詳細指定
  * expenses.create の入力と recurringExpenses の保存で共用する
  */
@@ -25,7 +33,7 @@ export const splitDetailsValidator = v.union(
   }),
   v.object({
     method: v.literal("ratio"),
-    ratios: v.array(v.object({ userId: v.id("users"), ratio: v.number() })),
+    ratios: ratiosValidator,
   }),
   v.object({
     method: v.literal("amount"),

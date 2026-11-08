@@ -599,4 +599,186 @@ describe("categories", () => {
       ).rejects.toThrow("無効なカテゴリが指定されました");
     });
   });
+
+  describe("setDefaultRatios", () => {
+    async function setupPairGroup({ premium }: { premium: boolean }) {
+      const t = convexTest(schema, modules);
+      const groupId = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.create, { name: "テストグループ" });
+      const { token } = await t
+        .withIdentity(testIdentity)
+        .mutation(api.groups.createInvitation, { groupId });
+      await t
+        .withIdentity(testIdentity2)
+        .mutation(api.invitations.accept, { token });
+
+      const detail = await t
+        .withIdentity(testIdentity)
+        .query(api.groups.getDetail, { groupId });
+      const [user1, user2] = detail.members.map((m) => m.userId);
+      const categoryId = detail.categories[0]._id;
+
+      if (premium) {
+        const now = Date.now();
+        await t.run(async (ctx) => {
+          await ctx.db.insert("subscriptions", {
+            userId: user1,
+            stripeCustomerId: "cus_test",
+            stripeSubscriptionId: "sub_test",
+            plan: "premium",
+            status: "active",
+            currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+            currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+            cancelAtPeriodEnd: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+        });
+      }
+
+      const getDefaultRatios = async () =>
+        (await t.run(async (ctx) => await ctx.db.get("categories", categoryId)))
+          ?.defaultRatios;
+
+      return { t, user1, user2, categoryId, getDefaultRatios };
+    }
+
+    test("Premiumグループはデフォルト割合を設定・解除できる", async () => {
+      const { t, user1, user2, categoryId, getDefaultRatios } =
+        await setupPairGroup({ premium: true });
+      const ratios = [
+        { userId: user1, ratio: 60 },
+        { userId: user2, ratio: 40 },
+      ];
+
+      await t
+        .withIdentity(testIdentity2)
+        .mutation(api.categories.setDefaultRatios, { categoryId, ratios });
+      expect(await getDefaultRatios()).toEqual(ratios);
+
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.categories.setDefaultRatios, {
+          categoryId,
+          ratios: null,
+        });
+      expect(await getDefaultRatios()).toBeUndefined();
+    });
+
+    test("カテゴリ名を更新してもデフォルト割合は維持される", async () => {
+      const { t, user1, user2, categoryId, getDefaultRatios } =
+        await setupPairGroup({ premium: true });
+      const ratios = [
+        { userId: user1, ratio: 70 },
+        { userId: user2, ratio: 30 },
+      ];
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.categories.setDefaultRatios, { categoryId, ratios });
+
+      await t.withIdentity(testIdentity).mutation(api.categories.update, {
+        categoryId,
+        name: "食料品",
+        icon: "shopping-cart",
+      });
+
+      expect(await getDefaultRatios()).toEqual(ratios);
+    });
+
+    test("Freeグループはデフォルト割合を設定できない", async () => {
+      const { t, user1, user2, categoryId } = await setupPairGroup({
+        premium: false,
+      });
+
+      await expect(
+        t.withIdentity(testIdentity).mutation(api.categories.setDefaultRatios, {
+          categoryId,
+          ratios: [
+            { userId: user1, ratio: 60 },
+            { userId: user2, ratio: 40 },
+          ],
+        }),
+      ).rejects.toThrow("傾斜折半機能はPremiumプランでご利用いただけます");
+    });
+
+    test("Freeグループでもデフォルト割合を解除できる", async () => {
+      const { t, user1, user2, categoryId, getDefaultRatios } =
+        await setupPairGroup({ premium: false });
+      await t.run(async (ctx) => {
+        await ctx.db.patch("categories", categoryId, {
+          defaultRatios: [
+            { userId: user1, ratio: 60 },
+            { userId: user2, ratio: 40 },
+          ],
+        });
+      });
+
+      await t
+        .withIdentity(testIdentity)
+        .mutation(api.categories.setDefaultRatios, {
+          categoryId,
+          ratios: null,
+        });
+
+      expect(await getDefaultRatios()).toBeUndefined();
+    });
+
+    test("グループ外のユーザーは設定できない", async () => {
+      const { t, user1, user2, categoryId } = await setupPairGroup({
+        premium: true,
+      });
+
+      await expect(
+        t
+          .withIdentity({ subject: "outsider", name: "部外者" })
+          .mutation(api.categories.setDefaultRatios, {
+            categoryId,
+            ratios: [
+              { userId: user1, ratio: 60 },
+              { userId: user2, ratio: 40 },
+            ],
+          }),
+      ).rejects.toThrow("このグループにアクセスする権限がありません");
+    });
+
+    test("グループ外のメンバーを含む割合は設定できない", async () => {
+      const { t, user1, categoryId } = await setupPairGroup({ premium: true });
+      const outsiderId = await t.run(async (ctx) => {
+        const now = Date.now();
+        return await ctx.db.insert("users", {
+          clerkId: "outsider",
+          displayName: "部外者",
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      await expect(
+        t.withIdentity(testIdentity).mutation(api.categories.setDefaultRatios, {
+          categoryId,
+          ratios: [
+            { userId: user1, ratio: 50 },
+            { userId: outsiderId, ratio: 50 },
+          ],
+        }),
+      ).rejects.toThrow("割合の対象メンバーがグループに所属していません");
+    });
+
+    test("合計が100%でない割合は設定できない", async () => {
+      const { t, user1, user2, categoryId } = await setupPairGroup({
+        premium: true,
+      });
+
+      await expect(
+        t.withIdentity(testIdentity).mutation(api.categories.setDefaultRatios, {
+          categoryId,
+          ratios: [
+            { userId: user1, ratio: 60 },
+            { userId: user2, ratio: 30 },
+          ],
+        }),
+      ).rejects.toThrow("割合の合計は100%である必要があります");
+    });
+  });
 });
