@@ -13,15 +13,18 @@ import {
 import { TagSelector } from "./TagSelector";
 import { ShoppingCart, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { CategoryIcon } from "@/components/categories/CategoryIcon";
+import { CategoryRatioManager } from "@/components/categories/CategoryRatioManager";
 import { MemberColorDot } from "@/components/ui/MemberColorDot";
 import { Switch } from "@/components/ui/switch";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { trackEvent } from "@/lib/analytics";
+import { equalRatioMap, toRatioMap, type Ratios } from "@/lib/splitRatios";
 
 type Category = {
   _id: Id<"categories">;
   name: string;
   icon: string;
+  defaultRatios?: Ratios;
 };
 
 type Member = {
@@ -111,12 +114,26 @@ export function ExpenseForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const memberIds = members.map((m) => m.userId);
+  // カテゴリ別の割合は2人グループのみ設定できるため、人数が変わった後の古い設定は使わない
+  const canUseCategoryRatios = isPremium && members.length === 2;
+  // 編集・複製では保存済みの負担方法を優先し、カテゴリのデフォルトは使わない
+  const getDefaultRatios = (id: Id<"categories"> | "") =>
+    hasInitialData || !canUseCategoryRatios
+      ? undefined
+      : categories.find((c) => c._id === id)?.defaultRatios;
+
   const [amount, setAmount] = useState(
     hasInitialData ? String(initialData.amount) : "",
   );
   const [categoryId, setCategoryId] = useState<Id<"categories"> | "">(
     hasInitialData ? initialData.categoryId : (categories[0]?._id ?? ""),
   );
+  // デフォルト割合を反映して以降、負担方法が手動変更されていないカテゴリ
+  const [appliedDefaultCategoryId, setAppliedDefaultCategoryId] =
+    useState<Id<"categories"> | null>(() =>
+      categoryId && getDefaultRatios(categoryId) ? categoryId : null,
+    );
   const [paidBy, setPaidBy] = useState<Id<"users">>(
     hasInitialData
       ? initialData.paidBy
@@ -135,7 +152,11 @@ export function ExpenseForm({
   const [registerRecurring, setRegisterRecurring] = useState(false);
 
   const [splitMethod, setSplitMethod] = useState<SplitMethod>(
-    hasInitialData ? initialData.splitMethod : "equal",
+    hasInitialData
+      ? initialData.splitMethod
+      : appliedDefaultCategoryId
+        ? "ratio"
+        : "equal",
   );
   const [ratios, setRatios] = useState<Map<Id<"users">, number>>(() => {
     if (hasInitialData && initialData.ratios) {
@@ -143,15 +164,10 @@ export function ExpenseForm({
       initialData.ratios.forEach((r) => map.set(r.userId, r.ratio));
       return map;
     }
-    const defaultRatio = Math.floor(100 / members.length);
-    const map = new Map<Id<"users">, number>();
-    members.forEach((m, i) => {
-      map.set(
-        m.userId,
-        i === 0 ? 100 - defaultRatio * (members.length - 1) : defaultRatio,
-      );
-    });
-    return map;
+    const defaultRatios = getDefaultRatios(categoryId);
+    return defaultRatios
+      ? toRatioMap(defaultRatios, memberIds)
+      : equalRatioMap(memberIds);
   });
   const [amounts, setAmounts] = useState<Map<Id<"users">, number>>(() => {
     if (hasInitialData && initialData.amounts) {
@@ -188,7 +204,26 @@ export function ExpenseForm({
   );
   const [isShoppingListOpen, setIsShoppingListOpen] = useState(false);
 
+  const handleCategorySelect = (id: Id<"categories">) => {
+    setCategoryId(id);
+    const defaultRatios = getDefaultRatios(id);
+    if (defaultRatios) {
+      setSplitMethod("ratio");
+      setRatios(toRatioMap(defaultRatios, memberIds));
+      setSelectedMemberIds(new Set(memberIds));
+      setAppliedDefaultCategoryId(id);
+    } else if (appliedDefaultCategoryId) {
+      setSplitMethod("equal");
+      setRatios(equalRatioMap(memberIds));
+      setSelectedMemberIds(new Set(memberIds));
+      setAppliedDefaultCategoryId(null);
+    }
+  };
+
+  const markSplitEdited = () => setAppliedDefaultCategoryId(null);
+
   const handleMethodChange = (newMethod: SplitMethod) => {
+    if (newMethod !== splitMethod) markSplitEdited();
     setSplitMethod(newMethod);
     if (newMethod === "amount") {
       const amountNum = parseInt(amount, 10) || 0;
@@ -208,21 +243,12 @@ export function ExpenseForm({
   };
 
   const handleSelectedMemberIdsChange = (newIds: Set<Id<"users">>) => {
+    markSplitEdited();
     setSelectedMemberIds(newIds);
     // 選択メンバーが変わったら、割合と金額をリセット
     const selectedMembers = members.filter((m) => newIds.has(m.userId));
     // 割合: 選択メンバーで均等配分
-    const defaultRatio = Math.floor(100 / selectedMembers.length);
-    const newRatios = new Map<Id<"users">, number>();
-    selectedMembers.forEach((m, i) => {
-      newRatios.set(
-        m.userId,
-        i === 0
-          ? 100 - defaultRatio * (selectedMembers.length - 1)
-          : defaultRatio,
-      );
-    });
-    setRatios(newRatios);
+    setRatios(equalRatioMap(selectedMembers.map((m) => m.userId)));
     // 金額: 選択メンバーで均等配分
     const amountNum = parseInt(amount, 10) || 0;
     if (amountNum > 0 && selectedMembers.length > 0) {
@@ -441,6 +467,10 @@ export function ExpenseForm({
     (isRecurring ? title.trim() !== "" : date !== "") &&
     isSplitValid();
 
+  const appliedDefaultCategory = categories.find(
+    (c) => c._id === appliedDefaultCategoryId,
+  );
+
   const previewAmount = parseInt(amount, 10) || 0;
   const previewCount = selectedMemberIds.size;
   const equalPreview =
@@ -531,7 +561,7 @@ export function ExpenseForm({
             <button
               key={category._id}
               type="button"
-              onClick={() => setCategoryId(category._id)}
+              onClick={() => handleCategorySelect(category._id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all shrink-0 ${
                 categoryId === category._id
                   ? "bg-blue-500 text-white"
@@ -579,8 +609,27 @@ export function ExpenseForm({
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
             負担方法
           </span>
-          {equalPreview && (
-            <span className="text-xs text-slate-500">{equalPreview}</span>
+          {appliedDefaultCategory ? (
+            <span className="text-xs text-blue-600">
+              {appliedDefaultCategory.name}の割合を適用中
+            </span>
+          ) : splitMethod === "ratio" && canUseCategoryRatios ? (
+            <CategoryRatioManager
+              categories={categories}
+              members={members}
+              memberColors={memberColors}
+            >
+              <button
+                type="button"
+                className="text-xs text-blue-600 hover:underline"
+              >
+                カテゴリごとに保存できます ›
+              </button>
+            </CategoryRatioManager>
+          ) : (
+            equalPreview && (
+              <span className="text-xs text-slate-500">{equalPreview}</span>
+            )
           )}
         </div>
         <SplitMethodSelector
@@ -591,7 +640,10 @@ export function ExpenseForm({
           onSelectedMemberIdsChange={handleSelectedMemberIdsChange}
           totalAmount={parseInt(amount, 10) || 0}
           ratios={ratios}
-          onRatiosChange={setRatios}
+          onRatiosChange={(newRatios) => {
+            markSplitEdited();
+            setRatios(newRatios);
+          }}
           amounts={amounts}
           onAmountsChange={setAmounts}
           bearerId={bearerId}
