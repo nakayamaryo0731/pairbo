@@ -116,10 +116,15 @@ export default function ExpenseNewPage({ params }: PageProps) {
     fromExpenseId ? { expenseId: fromExpenseId } : "skip",
   );
 
-  const { isPremium } = useGroupPremium(groupId as Id<"groups">);
+  // ExpenseForm は初期表示時の isPremium でカテゴリのデフォルト割合を反映するため、判定を待つ
+  const { isPremium, isLoading: isPremiumLoading } = useGroupPremium(
+    groupId as Id<"groups">,
+  );
 
   const isLoading =
-    detail === undefined || (fromExpenseId && sourceExpense === undefined);
+    detail === undefined ||
+    isPremiumLoading ||
+    (fromExpenseId && sourceExpense === undefined);
 
   if (isLoading) {
     return (

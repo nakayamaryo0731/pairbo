@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vitest";
+import type { Id } from "../_generated/dataModel";
 import {
   validateCategoryName,
   validateCategoryIcon,
   isValidCategoryIcon,
+  validateDefaultRatios,
   CategoryValidationError,
 } from "../domain/category";
 import { CATEGORY_RULES } from "../domain/category/types";
@@ -150,5 +152,89 @@ describe("カテゴリアイコンバリデーション", () => {
       expect(isValidCategoryIcon("__proto__")).toBe(false);
       expect(isValidCategoryIcon("toString")).toBe(false);
     });
+  });
+});
+
+describe("デフォルト割合バリデーション", () => {
+  const userA = "user_a" as Id<"users">;
+  const userB = "user_b" as Id<"users">;
+  const userC = "user_c" as Id<"users">;
+  const members = [userA, userB];
+
+  test("合計100%のメンバー割合を受け付ける", () => {
+    expect(() =>
+      validateDefaultRatios(
+        [
+          { userId: userA, ratio: 60 },
+          { userId: userB, ratio: 40 },
+        ],
+        members,
+      ),
+    ).not.toThrow();
+  });
+
+  test("一部メンバーのみの割合も受け付ける", () => {
+    expect(() =>
+      validateDefaultRatios([{ userId: userA, ratio: 100 }], members),
+    ).not.toThrow();
+  });
+
+  test("空配列はエラー", () => {
+    expect(() => validateDefaultRatios([], members)).toThrow(
+      "割合が指定されていません",
+    );
+  });
+
+  test("同じメンバーの重複はエラー", () => {
+    expect(() =>
+      validateDefaultRatios(
+        [
+          { userId: userA, ratio: 50 },
+          { userId: userA, ratio: 50 },
+        ],
+        members,
+      ),
+    ).toThrow("同じメンバーの割合が重複しています");
+  });
+
+  test("グループ外のメンバーはエラー", () => {
+    expect(() =>
+      validateDefaultRatios(
+        [
+          { userId: userA, ratio: 50 },
+          { userId: userC, ratio: 50 },
+        ],
+        members,
+      ),
+    ).toThrow(CategoryValidationError);
+  });
+
+  test("合計が100%でない場合はエラー", () => {
+    expect(() =>
+      validateDefaultRatios(
+        [
+          { userId: userA, ratio: 60 },
+          { userId: userB, ratio: 30 },
+        ],
+        members,
+      ),
+    ).toThrow("割合の合計は100%である必要があります");
+  });
+
+  test("範囲外・非整数の割合はエラー", () => {
+    for (const [a, b] of [
+      [110, -10],
+      [50.5, 49.5],
+    ]) {
+      expect(() =>
+        validateDefaultRatios(
+          [
+            { userId: userA, ratio: a },
+            { userId: userB, ratio: b },
+          ],
+          members,
+        ),
+      ).toThrow("割合は0〜100の整数で指定してください");
+    }
   });
 });

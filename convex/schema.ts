@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import {
   splitMethodValidator,
   splitDetailsValidator,
+  ratiosValidator,
   memberRoleValidator,
   settlementStatusValidator,
   subscriptionPlanValidator,
@@ -86,6 +87,7 @@ export default defineSchema({
     icon: v.string(),
     isPreset: v.boolean(),
     sortOrder: v.number(),
+    defaultRatios: v.optional(ratiosValidator), // 新規記録時に適用する負担割合（Premium）
     createdAt: v.number(),
   }).index("by_group", ["groupId"]),
   // 用途: グループのカテゴリ一覧

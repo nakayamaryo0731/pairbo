@@ -6,8 +6,9 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { InviteDialog } from "./InviteDialog";
-import { CategoryManager } from "@/components/categories";
+import { CategoryManager, CategoryRatioManager } from "@/components/categories";
 import { TagManager } from "@/components/tags";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   Popover,
@@ -26,6 +27,7 @@ import {
   CreditCard,
   MessageCircle,
   RefreshCw,
+  SlidersHorizontal,
   Star,
   Shield,
   Check,
@@ -42,12 +44,14 @@ import { setLastGroupId } from "@/lib/lastGroup";
 import { useAuth } from "@clerk/nextjs";
 import { readTrialState } from "@/lib/trial";
 import type { ClosingDay } from "@/convex/domain/group/types";
+import type { Ratios } from "@/lib/splitRatios";
 
 type Category = {
   _id: Id<"categories">;
   name: string;
   icon: string;
   isPreset: boolean;
+  defaultRatios?: Ratios;
 };
 
 type Member = {
@@ -120,6 +124,7 @@ export function GroupSettings({
   const [membersOpen, setMembersOpen] = useState(false);
 
   const isDefaultGroup = me?.defaultGroupId === group._id;
+  const ratioCategoryCount = categories.filter((c) => c.defaultRatios).length;
 
   const handleSetDefault = async (checked: boolean) => {
     await setDefaultGroup({ groupId: checked ? group._id : null });
@@ -385,6 +390,42 @@ export function GroupSettings({
           </div>
           <CategoryManager groupId={group._id} categories={categories} />
         </div>
+        {/* 割合を1本のスライダーで表すため2人グループのみ */}
+        {members.length === 2 && (
+          <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
+                <SlidersHorizontal className="h-4 w-4 text-slate-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-slate-500">カテゴリ別の負担割合</p>
+                {isGroupPremiumActive ? (
+                  <p className="font-medium text-slate-800">
+                    {ratioCategoryCount > 0
+                      ? `${ratioCategoryCount}個のカテゴリに設定中`
+                      : "カテゴリを選ぶだけで割合を入力"}
+                  </p>
+                ) : (
+                  <p className="text-sm text-slate-400 flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 text-yellow-500" />
+                    Premiumプラン限定
+                  </p>
+                )}
+              </div>
+            </div>
+            {isGroupPremiumActive && (
+              <CategoryRatioManager
+                categories={categories}
+                members={members}
+                memberColors={memberColors}
+              >
+                <Button variant="outline" size="sm">
+                  負担割合
+                </Button>
+              </CategoryRatioManager>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3 px-3 py-2.5">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">

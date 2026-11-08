@@ -3,3 +3,4 @@ export { CategoryForm } from "./CategoryForm";
 export { CategoryIcon } from "./CategoryIcon";
 export { IconPicker } from "./IconPicker";
 export { DeleteCategoryDialog } from "./DeleteCategoryDialog";
+export { CategoryRatioManager } from "./CategoryRatioManager";

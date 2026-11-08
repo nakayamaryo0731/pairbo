@@ -1,3 +1,5 @@
+import type { Id } from "../../_generated/dataModel";
+import { validateRatioSplit, type RatioSplitInput } from "../expense";
 import {
   CATEGORY_ICON_NAMES,
   CATEGORY_RULES,
@@ -37,4 +39,26 @@ export function validateCategoryIcon(icon: string): CategoryIconName {
     throw new CategoryValidationError("アイコン名の形式が正しくありません");
   }
   return trimmed;
+}
+
+/**
+ * カテゴリのデフォルト割合のバリデーション
+ *
+ * 支出の割合指定と同じ数値ルール（0〜100の整数、合計100）に加え、
+ * 対象がグループメンバーで重複がないことを検証する
+ */
+export function validateDefaultRatios(
+  ratios: RatioSplitInput[],
+  groupMemberIds: Id<"users">[],
+): void {
+  const userIds = ratios.map((r) => r.userId);
+  if (new Set(userIds).size !== userIds.length) {
+    throw new CategoryValidationError("同じメンバーの割合が重複しています");
+  }
+  if (userIds.some((id) => !groupMemberIds.includes(id))) {
+    throw new CategoryValidationError(
+      "割合の対象メンバーがグループに所属していません",
+    );
+  }
+  validateRatioSplit(ratios, userIds);
 }

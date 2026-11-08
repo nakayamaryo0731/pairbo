@@ -45,8 +45,10 @@ export function ExpenseCreateModal({
     fromExpenseId ? { expenseId: fromExpenseId } : "skip",
   );
 
-  const { isPremium } = useGroupPremium(groupId);
-  const isWaitingForSource = !!fromExpenseId && sourceExpense === undefined;
+  // ExpenseForm は初期表示時の isPremium でカテゴリのデフォルト割合を反映するため、判定を待つ
+  const { isPremium, isLoading: isPremiumLoading } = useGroupPremium(groupId);
+  const isWaiting =
+    isPremiumLoading || (!!fromExpenseId && sourceExpense === undefined);
 
   useEscapeKey(onClose);
 
@@ -104,7 +106,7 @@ export function ExpenseCreateModal({
         </div>
 
         <div>
-          {isWaitingForSource ? (
+          {isWaiting ? (
             <div className="space-y-6 py-2">
               <div className="text-center py-4">
                 <div className="h-14 w-48 mx-auto bg-slate-100 rounded-xl animate-pulse" />
